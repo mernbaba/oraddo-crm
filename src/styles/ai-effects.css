@@ -1,0 +1,16 @@
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    #200B43 0%,
+    #422462 25%,
+    #937CB4 50%,
+    #422462 75%,
+    #200B43 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 4s linear infinite;
+}
