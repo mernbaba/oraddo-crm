@@ -25,8 +25,7 @@ export function HRSalariesManagement() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
-
-  // Mock salary data for all employees
+ 
   const [salaries] = useState([
     {
       id: 1,
@@ -161,8 +160,7 @@ export function HRSalariesManagement() {
       paymentMethod: "Bank Transfer",
     },
   ]);
-
-  // Filtered salaries
+ 
   const filteredSalaries = salaries.filter((salary) => {
     const matchesSearch =
       salary.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -174,8 +172,7 @@ export function HRSalariesManagement() {
 
     return matchesSearch && matchesStatus;
   });
-
-  // Statistics
+ 
   const stats = {
     totalEmployees: salaries.length,
     totalPayroll: salaries.reduce((sum, s) => sum + s.netSalary, 0),
@@ -255,7 +252,7 @@ export function HRSalariesManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -280,8 +277,7 @@ export function HRSalariesManagement() {
           </Button>
         </div>
       </div>
-
-      {/* Month/Year Selection */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/40 p-5 shadow-md">
         <div className="flex items-center gap-4">
           <Calendar className="h-5 w-5 text-[#422462]" />
@@ -324,8 +320,7 @@ export function HRSalariesManagement() {
           </div>
         </div>
       </div>
-
-      {/* Statistics Cards */}
+ 
       <div className="grid grid-cols-5 gap-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/40 p-4 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-center justify-between">
@@ -383,8 +378,7 @@ export function HRSalariesManagement() {
           </div>
         </div>
       </div>
-
-      {/* Filters */}
+ 
       <div className="flex items-center gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]/50" />
@@ -407,8 +401,7 @@ export function HRSalariesManagement() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* Salaries Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -528,8 +521,7 @@ export function HRSalariesManagement() {
           </table>
         </div>
       </div>
-
-      {/* Salary Details Modal */}
+ 
       {selectedEmployee && (
         <Modal
           isOpen={showDetailsModal}
@@ -541,7 +533,7 @@ export function HRSalariesManagement() {
           size="lg"
         >
           <div className="space-y-6">
-            {/* Employee Header */}
+ 
             <div className="flex items-center gap-4 pb-4 border-b border-[#937CB4]/20">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-xl shadow-xl">
                 {selectedEmployee.name
@@ -565,10 +557,9 @@ export function HRSalariesManagement() {
                 {selectedEmployee.status}
               </span>
             </div>
-
-            {/* Salary Breakdown */}
+ 
             <div className="grid grid-cols-2 gap-4">
-              {/* Earnings Section */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-4">
                 <h4 className="font-bold text-green-700 mb-3 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
@@ -615,8 +606,7 @@ export function HRSalariesManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Deductions Section */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4">
                 <h4 className="font-bold text-red-700 mb-3 flex items-center gap-2">
                   <ChevronDown className="h-4 w-4" />
@@ -652,8 +642,7 @@ export function HRSalariesManagement() {
                 </div>
               </div>
             </div>
-
-            {/* Net Salary */}
+ 
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#200B43] to-[#422462] p-5 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
@@ -674,8 +663,7 @@ export function HRSalariesManagement() {
                 </div>
               </div>
             </div>
-
-            {/* Payment Info */}
+ 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
                 <h4 className="text-xs font-semibold text-[#5A4079] mb-1">Payment Method</h4>
@@ -686,8 +674,7 @@ export function HRSalariesManagement() {
                 <p className="text-sm font-medium text-[#200B43]">{selectedEmployee.empType}</p>
               </div>
             </div>
-
-            {/* Actions */}
+ 
             <div className="flex justify-end gap-3 pt-2">
               <Button
                 variant="outline"

@@ -8,7 +8,7 @@ import { Textarea } from "./ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
 import { HROrgOnboarding as HROnboardingSystem } from "./hr-onboarding-system";
 
-// HR Organization Management - Employee Resignation Management
+ 
 export function HROrgResignationManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewModal, setViewModal] = useState<number | null>(null);
@@ -76,7 +76,7 @@ export function HROrgResignationManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -97,7 +97,6 @@ export function HROrgResignationManagement() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
@@ -142,8 +141,7 @@ export function HROrgResignationManagement() {
           </div>
         </div>
       </div>
-
-      {/* Resignations Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-[#200B43] mb-4">Resignation Requests</h3>
@@ -205,8 +203,7 @@ export function HROrgResignationManagement() {
           </div>
         </div>
       </div>
-
-      {/* Create/Process Modal */}
+ 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Process Resignation" size="lg">
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -253,8 +250,7 @@ export function HROrgResignationManagement() {
           </div>
         </form>
       </Modal>
-
-      {/* View Modal - Step by Step Process Timeline */}
+ 
       {viewModal !== null && (
         <Modal isOpen={true} onClose={() => setViewModal(null)} title="Resignation & Exit Process Timeline" size="lg">
           {resignations.filter(r => r.id === viewModal).map((resignation) => (
@@ -285,15 +281,13 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step-by-Step Process Timeline */}
+ 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-[#200B43] flex items-center gap-2">
                   <Clock className="h-5 w-5 text-[#422462]" />
                   Resignation & Exit Process Steps
                 </h3>
-
-                {/* Step 1: Resignation Submission */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-green-500 border-4 border-white flex items-center justify-center">
                     <Check className="h-3 w-3 text-white" />
@@ -311,8 +305,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 2: Manager Approval */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-green-500 border-4 border-white flex items-center justify-center">
                     <Check className="h-3 w-3 text-white" />
@@ -330,8 +323,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 3: HR Processing */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-blue-500 border-4 border-white flex items-center justify-center">
                     <Clock className="h-3 w-3 text-white" />
@@ -349,8 +341,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 4: Department Clearances */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
                     <AlertCircle className="h-3 w-3 text-gray-600" />
@@ -369,8 +360,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 5: Knowledge Transfer */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
                     <AlertCircle className="h-3 w-3 text-gray-600" />
@@ -387,8 +377,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 6: Exit Interview */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
                     <AlertCircle className="h-3 w-3 text-gray-600" />
@@ -405,8 +394,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 7: Final Settlement */}
+ 
                 <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
                     <AlertCircle className="h-3 w-3 text-gray-600" />
@@ -426,8 +414,7 @@ export function HROrgResignationManagement() {
                     </div>
                   </div>
                 </div>
-
-                {/* Step 8: Exit Complete */}
+ 
                 <div className="relative pl-8">
                   <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
                     <AlertCircle className="h-3 w-3 text-gray-600" />
@@ -445,8 +432,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons */}
+ 
               <div className="flex gap-3 justify-end pt-4 border-t border-[#937CB4]/20">
                 <Button 
                   variant="outline" 
@@ -470,8 +456,7 @@ export function HROrgResignationManagement() {
           ))}
         </Modal>
       )}
-
-      {/* Edit Modal - Update Process Steps */}
+ 
       {editModal !== null && (
         <Modal isOpen={true} onClose={() => setEditModal(null)} title="Update Resignation & Exit Process" size="lg">
           {resignations.filter(r => r.id === editModal).map((resignation) => (
@@ -488,8 +473,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 1: Resignation Submission */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">1</div>
@@ -513,8 +497,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 2: Manager Approval */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">2</div>
@@ -539,8 +522,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 3: HR Processing */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">3</div>
@@ -565,8 +547,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 4: Department Clearances */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">4</div>
@@ -603,8 +584,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 5: Knowledge Transfer */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">5</div>
@@ -629,8 +609,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 6: Exit Interview */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">6</div>
@@ -659,8 +638,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 7: Final Settlement */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">7</div>
@@ -697,8 +675,7 @@ export function HROrgResignationManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Step 8: Exit Complete */}
+ 
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">8</div>
@@ -747,8 +724,7 @@ export function HROrgResignationManagement() {
     </div>
   );
 }
-
-// HR Organization Management - Daily Report Management
+ 
 export function HROrgDailyReport() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewDetailsModal, setViewDetailsModal] = useState<number | null>(null);
@@ -791,7 +767,7 @@ export function HROrgDailyReport() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+  
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -817,8 +793,7 @@ export function HROrgDailyReport() {
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid gap-4 md:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
@@ -859,8 +834,7 @@ export function HROrgDailyReport() {
           </div>
         </div>
       </div>
-
-      {/* Reports List */}
+ 
       <div className="space-y-4">
         {reports.map((report) => (
           <div key={report.id} className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
@@ -935,8 +909,7 @@ export function HROrgDailyReport() {
           </div>
         ))}
       </div>
-
-      {/* Create Report Modal */}
+ 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Submit Daily Report" size="lg">
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -973,8 +946,7 @@ export function HROrgDailyReport() {
           </div>
         </form>
       </Modal>
-
-      {/* View Details Modal */}
+ 
       {viewDetailsModal !== null && (() => {
         const report = reports.find(r => r.id === viewDetailsModal);
         if (!report) return null;
@@ -987,7 +959,7 @@ export function HROrgDailyReport() {
             size="lg"
           >
             <div className="space-y-6">
-              {/* Employee Information */}
+ 
               <div className="flex items-center gap-4 pb-4 border-b border-[#937CB4]/20">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-xl shadow-lg">
                   {report.employeeName.split(' ').map(n => n[0]).join('')}
@@ -1004,8 +976,7 @@ export function HROrgDailyReport() {
                   {report.status}
                 </span>
               </div>
-
-              {/* Report Date & Time Info */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF] to-white p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -1030,8 +1001,7 @@ export function HROrgDailyReport() {
                   </div>
                 </div>
               </div>
-
-              {/* Tasks & Project Info */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-white to-[#F0E9FF] p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -1056,8 +1026,7 @@ export function HROrgDailyReport() {
                   </div>
                 </div>
               </div>
-
-              {/* Work Summary */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white p-5 shadow-md">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center shadow-sm">
@@ -1074,8 +1043,7 @@ export function HROrgDailyReport() {
                   </p>
                 </div>
               </div>
-
-              {/* Action Buttons */}
+ 
               {report.status === "Submitted" && (
                 <div className="flex gap-3 pt-4 border-t border-[#937CB4]/20">
                   <Button 
@@ -1093,8 +1061,7 @@ export function HROrgDailyReport() {
                   </Button>
                 </div>
               )}
-
-              {/* Close Button */}
+ 
               <div className="flex justify-end pt-2">
                 <Button 
                   variant="outline" 
@@ -1111,8 +1078,7 @@ export function HROrgDailyReport() {
     </div>
   );
 }
-
-// HR Organization Management - Employee Documentation
+ 
 export function HROrgDocumentation() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1197,7 +1163,7 @@ export function HROrgDocumentation() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+   
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -1226,8 +1192,7 @@ export function HROrgDocumentation() {
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid gap-4 md:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
@@ -1270,8 +1235,7 @@ export function HROrgDocumentation() {
           </div>
         </div>
       </div>
-
-      {/* Search and Filter */}
+ 
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079]" />
@@ -1285,8 +1249,7 @@ export function HROrgDocumentation() {
           Filter
         </Button>
       </div>
-
-      {/* Documents Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-[#200B43] mb-4">Employee Documents</h3>
@@ -1372,8 +1335,7 @@ export function HROrgDocumentation() {
           </div>
         </div>
       </div>
-
-      {/* Upload Document Modal */}
+ 
       <Modal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} title="Upload Document" size="lg">
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1424,8 +1386,7 @@ export function HROrgDocumentation() {
           </div>
         </form>
       </Modal>
-
-      {/* Create Document Modal */}
+ 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create Document" size="xl">
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1460,8 +1421,7 @@ export function HROrgDocumentation() {
                 <FileText className="h-5 w-5 text-[#422462]" />
                 <h4 className="font-semibold text-[#200B43]">Document Details for {selectedDocType}</h4>
               </div>
-
-              {/* Offer Letter Fields */}
+ 
               {selectedDocType === "Offer Letter" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1490,8 +1450,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Joining Letter Fields */}
+ 
               {selectedDocType === "Joining Letter" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1510,8 +1469,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Experience Letter Fields */}
+ 
               {selectedDocType === "Experience Letter" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1534,8 +1492,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Letter of Recommendation Fields */}
+ 
               {selectedDocType === "Letter of Recommendation" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1558,8 +1515,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Internship Certificate Fields */}
+ 
               {selectedDocType === "Internship Certificate" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1587,8 +1543,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Contract Document Fields */}
+ 
               {selectedDocType === "Contract Document" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1612,8 +1567,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Employment Agreement Fields */}
+ 
               {selectedDocType === "Employment Agreement" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1632,8 +1586,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* NDA Fields */}
+ 
               {selectedDocType === "Non-Disclosure Agreement (NDA)" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1652,8 +1605,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Appraisal Document Fields */}
+ 
               {selectedDocType === "Appraisal Document" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1684,8 +1636,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Relieving Letter Fields */}
+ 
               {selectedDocType === "Relieving Letter" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -1717,8 +1668,7 @@ export function HROrgDocumentation() {
                   </div>
                 </>
               )}
-
-              {/* Common Additional Fields */}
+ 
               <div>
                 <Label htmlFor="additionalNotes">Additional Notes</Label>
                 <Textarea id="additionalNotes" rows={2} placeholder="Any additional information..." className="border-[#937CB4]/30" />
@@ -1745,7 +1695,6 @@ export function HROrgDocumentation() {
   );
 }
 
-// HR Organization Management - Leave Management (Existing)
 export function HROrgLeaveManagement() {
   return (
     <div className="space-y-6">
@@ -1768,7 +1717,6 @@ export function HROrgLeaveManagement() {
   );
 }
 
-// HR Organization Management - Attendance Management (Existing)
 export function HROrgAttendanceManagement() {
   return (
     <div className="space-y-6">
@@ -1791,12 +1739,11 @@ export function HROrgAttendanceManagement() {
   );
 }
 
-// HR Organization Management - Onboarding (Existing)
 export function HROrgOnboarding() {
   return <HROnboardingSystem />;
 }
 
-// HR Organization Management - Salaries Management (Existing)
+
 export function HROrgSalaries() {
   return (
     <div className="space-y-6">
@@ -1819,7 +1766,7 @@ export function HROrgSalaries() {
   );
 }
 
-// HR Organization Management - Team Performance (Existing)
+
 export function HROrgTeamPerformance() {
   return (
     <div className="space-y-6">
@@ -1842,7 +1789,6 @@ export function HROrgTeamPerformance() {
   );
 }
 
-// HR Organization Management - Salary Advance Requests (Existing)
 export function HROrgSalaryAdvance() {
   return (
     <div className="space-y-6">

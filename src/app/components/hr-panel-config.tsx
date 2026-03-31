@@ -3,8 +3,7 @@ import { Users, Clock, Calendar, Briefcase, Check, AlertCircle } from "lucide-re
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-
-// HR Organization Management - HR Panel (System Configuration & Control Center)
+ 
 export function HROrgHRPanel() {
   const [isSaved, setIsSaved] = useState(false);
 
@@ -16,7 +15,7 @@ export function HROrgHRPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -37,7 +36,7 @@ export function HROrgHRPanel() {
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        {/* Attendance System Configuration */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center">
@@ -50,7 +49,7 @@ export function HROrgHRPanel() {
           </div>
 
           <div className="space-y-4">
-            {/* Punch-In/Out System */}
+ 
             <div className="flex items-center justify-between p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <div>
                 <Label className="text-base font-semibold text-[#200B43]">Will you follow Punch-In and Punch-Out System?</Label>
@@ -67,8 +66,7 @@ export function HROrgHRPanel() {
                 </label>
               </div>
             </div>
-
-            {/* Office Timings */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <Label className="text-base font-semibold text-[#200B43] mb-3 block">Office Timings</Label>
               <div className="grid grid-cols-2 gap-4">
@@ -92,8 +90,7 @@ export function HROrgHRPanel() {
                 </div>
               </div>
             </div>
-
-            {/* LOP for Late Punch-Ins */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -124,8 +121,7 @@ export function HROrgHRPanel() {
             </div>
           </div>
         </div>
-
-        {/* Leave Management Configuration */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center">
@@ -138,7 +134,7 @@ export function HROrgHRPanel() {
           </div>
 
           <div className="space-y-4">
-            {/* Leave Bucket for Employees */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <Label className="text-base font-semibold text-[#200B43] mb-3 block">Leave Bucket for Employees</Label>
               <div className="grid grid-cols-3 gap-4">
@@ -174,8 +170,7 @@ export function HROrgHRPanel() {
                 </div>
               </div>
             </div>
-
-            {/* Work from Home */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -204,8 +199,7 @@ export function HROrgHRPanel() {
                 />
               </div>
             </div>
-
-            {/* Leave Bucket for Interns */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <Label className="text-base font-semibold text-[#200B43] mb-3 block">Leave Bucket for Interns</Label>
               <div className="grid grid-cols-2 gap-4">
@@ -231,8 +225,7 @@ export function HROrgHRPanel() {
                 </div>
               </div>
             </div>
-
-            {/* Leave Bucket Renewal */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <Label className="text-base font-semibold text-[#200B43] mb-3 block">Leave Bucket Renewal Configuration</Label>
               <div className="grid grid-cols-2 gap-4">
@@ -272,8 +265,7 @@ export function HROrgHRPanel() {
             </div>
           </div>
         </div>
-
-        {/* Additional HR Policies */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center">
@@ -312,8 +304,7 @@ export function HROrgHRPanel() {
                 </div>
               </div>
             </div>
-
-            {/* Overtime Policy */}
+ 
             <div className="flex items-center justify-between p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <div>
                 <Label className="text-base font-semibold text-[#200B43]">Overtime Compensation</Label>
@@ -330,8 +321,7 @@ export function HROrgHRPanel() {
                 </label>
               </div>
             </div>
-
-            {/* Half Day Policy */}
+ 
             <div className="p-4 bg-[#F0E9FF]/30 rounded-lg border border-[#937CB4]/20">
               <Label className="text-base font-semibold text-[#200B43] mb-3 block">Half Day Configuration</Label>
               <div>
@@ -348,8 +338,7 @@ export function HROrgHRPanel() {
             </div>
           </div>
         </div>
-
-        {/* Save Button */}
+ 
         <div className="flex justify-end gap-3">
           <Button 
             type="button" 
@@ -367,8 +356,7 @@ export function HROrgHRPanel() {
           </Button>
         </div>
       </form>
-
-      {/* Info Box */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-blue-200 bg-blue-50/50 backdrop-blur-xl p-6 shadow-lg">
         <div className="flex items-start gap-3">
           <AlertCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />

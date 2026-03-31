@@ -39,7 +39,7 @@ export function HRTeamPerformanceManagement() {
     "September 2025",
   ];
 
-  // Team performance data for all employees
+ 
   const [teamPerformance] = useState([
     {
       id: 1,
@@ -391,7 +391,7 @@ export function HRTeamPerformanceManagement() {
     },
   ]);
 
-  // Filter and sort employees
+ 
   const filteredEmployees = teamPerformance
     .filter((emp) => {
       const matchesSearch =
@@ -441,8 +441,7 @@ export function HRTeamPerformanceManagement() {
         return aValue < bValue ? 1 : -1;
       }
     });
-
-  // Statistics
+ 
   const stats = {
     totalEmployees: teamPerformance.length,
     avgScore: Math.round(
@@ -523,7 +522,7 @@ export function HRTeamPerformanceManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -562,8 +561,7 @@ export function HRTeamPerformanceManagement() {
           </Button>
         </div>
       </div>
-
-      {/* Statistics Cards */}
+ 
       <div className="grid grid-cols-5 gap-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/40 p-4 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-center justify-between">
@@ -621,8 +619,7 @@ export function HRTeamPerformanceManagement() {
           </div>
         </div>
       </div>
-
-      {/* Filters */}
+ 
       <div className="flex items-center gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]/50" />
@@ -660,8 +657,7 @@ export function HRTeamPerformanceManagement() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* Performance Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -839,8 +835,7 @@ export function HRTeamPerformanceManagement() {
           </table>
         </div>
       </div>
-
-      {/* Employee Performance Details Modal */}
+ 
       {selectedEmployee && (
         <Modal
           isOpen={showDetailsModal}
@@ -852,7 +847,7 @@ export function HRTeamPerformanceManagement() {
           size="xl"
         >
           <div className="space-y-6">
-            {/* Employee Header */}
+ 
             <div className="flex items-center gap-4 pb-4 border-b border-[#937CB4]/20">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-xl shadow-xl">
                 {selectedEmployee.avatar}
@@ -885,10 +880,9 @@ export function HRTeamPerformanceManagement() {
                 </span>
               </div>
             </div>
-
-            {/* Performance Metrics Grid */}
+ 
             <div className="grid grid-cols-2 gap-4">
-              {/* Attendance & Punctuality */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="h-5 w-5 text-[#422462]" />
@@ -911,8 +905,7 @@ export function HRTeamPerformanceManagement() {
                   ))}
                 </div>
               </div>
-
-              {/* Work Quality */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-5 w-5 text-[#422462]" />
@@ -935,8 +928,7 @@ export function HRTeamPerformanceManagement() {
                   ))}
                 </div>
               </div>
-
-              {/* Productivity */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="h-5 w-5 text-[#422462]" />
@@ -959,8 +951,7 @@ export function HRTeamPerformanceManagement() {
                   ))}
                 </div>
               </div>
-
-              {/* Collaboration & Team Work */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-[#422462]" />
@@ -986,8 +977,7 @@ export function HRTeamPerformanceManagement() {
                 </div>
               </div>
             </div>
-
-            {/* Professional Development */}
+ 
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Award className="h-5 w-5 text-[#422462]" />
@@ -1010,8 +1000,7 @@ export function HRTeamPerformanceManagement() {
                 ))}
               </div>
             </div>
-
-            {/* Actions */}
+ 
             <div className="flex justify-end gap-3 pt-2">
               <Button
                 onClick={() => {
