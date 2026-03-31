@@ -16,8 +16,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-// Attendance Data
+ 
 const attendanceData = [
   { id: "1", employee: "Sarah Williams", date: "2026-01-10", checkIn: "08:45 AM", checkOut: "05:30 PM", status: "present", hours: 8.75 },
   { id: "2", employee: "Michael Torres", date: "2026-01-10", checkIn: "09:00 AM", checkOut: "06:00 PM", status: "present", hours: 9.0 },
@@ -35,8 +34,7 @@ const attendanceTrends = [
   { month: "Nov", present: 93, absent: 5, late: 2 },
   { month: "Dec", present: 96, absent: 2, late: 2 },
 ];
-
-// Employee Self Service Data
+ 
 const leaveRequests = [
   { id: "1", employee: "Sarah Williams", type: "Vacation", from: "2026-01-20", to: "2026-01-25", days: 5, status: "pending", reason: "Family vacation" },
   { id: "2", employee: "Michael Torres", type: "Sick Leave", from: "2026-01-12", to: "2026-01-13", days: 2, status: "approved", reason: "Medical appointment" },
@@ -50,8 +48,7 @@ const employeeDocuments = [
   { id: "3", name: "Benefits Enrollment.pdf", type: "Benefits", date: "2025-12-10", size: "312 KB" },
   { id: "4", name: "Performance Review Q4.pdf", type: "Review", date: "2025-12-28", size: "189 KB" },
 ];
-
-// Tasks Data
+ 
 const tasks = [
   { id: "1", title: "Complete onboarding checklist", assignedTo: "Sarah Williams", dueDate: "2026-01-15", priority: "high", status: "in-progress", completion: 75 },
   { id: "2", title: "Submit performance review", assignedTo: "Michael Torres", dueDate: "2026-01-12", priority: "high", status: "completed", completion: 100 },
@@ -59,8 +56,7 @@ const tasks = [
   { id: "4", title: "Conduct team training", assignedTo: "David Kim", dueDate: "2026-01-18", priority: "medium", status: "in-progress", completion: 45 },
   { id: "5", title: "Review salary adjustments", assignedTo: "Emma Johnson", dueDate: "2026-01-25", priority: "high", status: "pending", completion: 0 },
 ];
-
-// Expenses Data
+ 
 const expenses = [
   { id: "1", employee: "Sarah Williams", category: "Travel", description: "Client meeting in NYC", amount: 850, date: "2026-01-08", status: "approved" },
   { id: "2", employee: "Michael Torres", category: "Software", description: "Adobe Creative Suite subscription", amount: 299, date: "2026-01-09", status: "pending" },
@@ -76,8 +72,7 @@ const expensesByCategory = [
   { category: "Meals", amount: 2800 },
   { category: "Training", amount: 5600 },
 ];
-
-// Job Management Data
+ 
 const jobOpenings = [
   { id: "1", title: "Senior Software Engineer", department: "Engineering", location: "Remote", type: "Full-time", applicants: 45, status: "active", posted: "2025-12-15" },
   { id: "2", title: "Marketing Manager", department: "Marketing", location: "New York", type: "Full-time", applicants: 28, status: "active", posted: "2025-12-20" },
@@ -134,8 +129,7 @@ export function HumanResources() {
             Job Management
           </TabsTrigger>
         </TabsList>
-
-        {/* Attendance Tab */}
+ 
         <TabsContent value="attendance" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
@@ -241,8 +235,7 @@ export function HumanResources() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Employee Self Service Tab */}
+ 
         <TabsContent value="self-service" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="gradient-card border-[#937CB4]/30">
@@ -328,8 +321,7 @@ export function HumanResources() {
             </Card>
           </div>
         </TabsContent>
-
-        {/* Tasks Tab */}
+ 
         <TabsContent value="tasks" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
@@ -426,8 +418,7 @@ export function HumanResources() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Expenses Tab */}
+ 
         <TabsContent value="expenses" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
@@ -531,8 +522,7 @@ export function HumanResources() {
             </Card>
           </div>
         </TabsContent>
-
-        {/* Job Management Tab */}
+ 
         <TabsContent value="job-management" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">

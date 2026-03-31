@@ -12,7 +12,7 @@ export function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Demo credentials (no validation, just for reference)
+ 
   const demoCredentials = {
     user: { email: "user@oraddo.com", password: "user123" },
     admin: { email: "admin@oraddo.com", password: "admin123" },
@@ -21,7 +21,7 @@ export function Login({ onLogin }: LoginProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // No validation - accept any input and login
+ 
     onLogin(loginMode);
   };
 
@@ -34,7 +34,7 @@ export function Login({ onLogin }: LoginProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#F0E9FF] via-white to-[#F0E9FF]">
-      {/* AI-themed animated background elements */}
+ 
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#937CB4] rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-[#5A4079] rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style={{ animationDelay: '2s' }}></div>
@@ -44,7 +44,7 @@ export function Login({ onLogin }: LoginProps) {
 
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
-          {/* Logo and Header */}
+ 
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
               <div className="relative h-16 w-16 rounded-2xl overflow-hidden shadow-2xl">
@@ -62,8 +62,7 @@ export function Login({ onLogin }: LoginProps) {
             </div>
             <p className="text-[#5A4079] text-sm">Intelligent Business Management System</p>
           </div>
-
-          {/* Login Card */}
+ 
           <div className="relative overflow-hidden rounded-2xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-2xl p-8">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-2xl"></div>
             
@@ -84,7 +83,7 @@ export function Login({ onLogin }: LoginProps) {
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Email Input */}
+ 
                 <div>
                   <label className="block text-sm font-medium text-[#200B43] mb-2">
                     Email Address
@@ -100,8 +99,7 @@ export function Login({ onLogin }: LoginProps) {
                     />
                   </div>
                 </div>
-
-                {/* Password Input */}
+ 
                 <div>
                   <label className="block text-sm font-medium text-[#200B43] mb-2">
                     Password
@@ -128,8 +126,7 @@ export function Login({ onLogin }: LoginProps) {
                     </button>
                   </div>
                 </div>
-
-                {/* Remember Me & Forgot Password */}
+ 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -145,8 +142,7 @@ export function Login({ onLogin }: LoginProps) {
                     Forgot password?
                   </button>
                 </div>
-
-                {/* Submit Button */}
+ 
                 <Button
                   type="submit"
                   className={`w-full py-3 text-white shadow-lg transition-all ${
@@ -158,8 +154,7 @@ export function Login({ onLogin }: LoginProps) {
                   Sign In
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
-
-                {/* Demo Login Button */}
+ 
                 <Button
                   type="button"
                   onClick={handleDemoLogin}
@@ -172,8 +167,7 @@ export function Login({ onLogin }: LoginProps) {
               </form>
             </div>
           </div>
-
-          {/* Footer */}
+ 
           <div className="mt-6 text-center text-xs text-[#5A4079]">
             <p>© 2024 Oraddo AI. All rights reserved.</p>
             <p className="mt-1">Made in India 🇮🇳</p>
