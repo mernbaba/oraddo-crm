@@ -251,7 +251,7 @@ export function AdminUsers() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -270,7 +270,6 @@ export function AdminUsers() {
         ))}
       </div>
 
-      {/* Filters and Actions */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -331,7 +330,6 @@ export function AdminUsers() {
         </CardContent>
       </Card>
 
-      {/* Users List */}
       <div className="grid gap-4">
         {filteredUsers.map((user) => (
           <Card key={user.id} className="gradient-card gradient-card-hover border-[#937CB4]/30">
@@ -432,7 +430,6 @@ export function AdminUsers() {
         )}
       </div>
 
-      {/* Add/Edit User Modal */}
       {showUserModal && (
         <Modal
           isOpen={showUserModal}
@@ -545,7 +542,6 @@ export function AdminUsers() {
         </Modal>
       )}
 
-      {/* Change Plan Modal */}
       {showPlanModal && changingPlanUser && (
         <Modal
           isOpen={showPlanModal}

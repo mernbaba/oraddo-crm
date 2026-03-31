@@ -11,7 +11,6 @@ export function BizDevProposal() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<typeof proposals[0] | null>(null);
   
-  // AI Generation States
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState({
@@ -141,7 +140,6 @@ export function BizDevProposal() {
     { label: "Pending", value: "10", change: "-5%", gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
-  // AI Generate Proposal Function
   const handleGenerateProposal = () => {
     if (!aiPrompt.trim()) {
       alert("Please enter a prompt to generate the proposal!");
@@ -150,12 +148,10 @@ export function BizDevProposal() {
 
     setIsGenerating(true);
 
-    // Simulate AI generation with a timeout
     setTimeout(() => {
-      // Parse the prompt and generate intelligent content
+
       const promptLower = aiPrompt.toLowerCase();
-      
-      // Extract key information from prompt
+
       const extractedInfo = {
         companyName: "ProcessFlow Inc.",
         clientName: promptLower.includes("client") ? extractClientName(aiPrompt) : "Acme Corporation",
@@ -173,7 +169,6 @@ export function BizDevProposal() {
     }, 2000);
   };
 
-  // Helper functions for AI generation
   const extractClientName = (prompt: string): string => {
     const clientMatch = prompt.match(/for\s+([A-Z][a-zA-Z\s&]+)/i);
     return clientMatch ? clientMatch[1].trim() : "Acme Corporation";
@@ -320,7 +315,6 @@ export function BizDevProposal() {
     if (promptLower.includes("security")) basePrice += 45000;
     if (promptLower.includes("enterprise")) basePrice += 60000;
 
-    // Timeline multiplier
     const timelineMatch = prompt.match(/(\d+)\s*month/i);
     if (timelineMatch) {
       const months = parseInt(timelineMatch[1]);
@@ -359,7 +353,7 @@ export function BizDevProposal() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -377,7 +371,6 @@ export function BizDevProposal() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -401,7 +394,6 @@ export function BizDevProposal() {
         ))}
       </div>
 
-      {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
@@ -419,7 +411,6 @@ export function BizDevProposal() {
         </Button>
       </div>
 
-      {/* Proposals Table */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -473,7 +464,6 @@ export function BizDevProposal() {
         </div>
       </div>
 
-      {/* Create Proposal Modal */}
       <Modal isOpen={showCreateModal} onClose={() => { setShowCreateModal(false); resetAIForm(); }} title="Create New Proposal with AI" size="lg">
         <form onSubmit={handleSaveProposal} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           {/* AI Prompt Section */}
@@ -527,10 +517,8 @@ export function BizDevProposal() {
             </div>
           )}
 
-          {/* Generated Content - Editable Fields */}
           {isContentGenerated && (
             <div className="space-y-4">
-              {/* Success Banner */}
               <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-green-600" />
@@ -640,7 +628,6 @@ export function BizDevProposal() {
                 </div>
               </div>
 
-              {/* Regenerate Button */}
               <div className="flex justify-center pt-2">
                 <Button
                   type="button"
@@ -667,7 +654,6 @@ export function BizDevProposal() {
             </div>
           )}
 
-          {/* Action Buttons */}
           {isContentGenerated && (
             <div className="flex justify-end gap-3 pt-4 border-t border-[#937CB4]/20 sticky bottom-0 bg-white">
               <Button 
@@ -700,7 +686,6 @@ export function BizDevProposal() {
         </form>
       </Modal>
 
-      {/* View Proposal Modal */}
       {selectedProposal && (
         <Modal isOpen={showViewModal} onClose={() => setShowViewModal(false)} title={`Proposal: ${selectedProposal.id}`} size="lg">
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -766,7 +751,6 @@ export function BizDevProposal() {
         </Modal>
       )}
 
-      {/* Edit Proposal Modal */}
       {selectedProposal && (
         <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Proposal" size="lg">
           <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">

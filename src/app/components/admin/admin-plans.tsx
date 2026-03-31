@@ -148,7 +148,7 @@ export function AdminPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -167,7 +167,7 @@ export function AdminPlans() {
         ))}
       </div>
 
-      {/* Add Plan Button */}
+
       <div className="flex justify-end">
         <Button
           className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
@@ -178,7 +178,7 @@ export function AdminPlans() {
         </Button>
       </div>
 
-      {/* Plans Grid */}
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => (
           <Card
@@ -258,7 +258,6 @@ export function AdminPlans() {
         ))}
       </div>
 
-      {/* Add/Edit Plan Modal */}
       {showPlanModal && (
         <Modal
           isOpen={showPlanModal}

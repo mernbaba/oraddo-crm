@@ -7,7 +7,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 
-// Financial Data (INR)
 const revenueExpensesData = [
   { month: "Jan", revenue: 245000, expenses: 168000 },
   { month: "Feb", revenue: 268000, expenses: 172000 },
@@ -17,13 +16,11 @@ const revenueExpensesData = [
   { month: "Jun", revenue: 335000, expenses: 198000 },
 ];
 
-// Employee Gender Distribution
 const genderData = [
   { name: "Male", value: 28, color: "#422462" },
   { name: "Female", value: 20, color: "#937CB4" },
 ];
 
-// Lead Management Data
 const initialLeadData = [
   { status: "New", count: 145, color: "#5A4079" },
   { status: "Qualified", count: 189, color: "#422462" },
@@ -31,21 +28,18 @@ const initialLeadData = [
   { status: "Converted", count: 94, color: "#200B43" },
 ];
 
-// Project Status Data
 const initialProjectData = [
   { status: "On Track", count: 24, color: "#422462" },
   { status: "At Risk", count: 6, color: "#937CB4" },
   { status: "Delayed", count: 4, color: "#5A4079" },
 ];
 
-// Today's Birthdays
 const initialBirthdays = [
   { id: 1, name: "Sarah Johnson", department: "Marketing", age: 28, avatar: "SJ", email: "sarah.j@company.com", phone: "+91 98765 43210", wished: false },
   { id: 2, name: "Michael Chen", department: "Development", age: 32, avatar: "MC", email: "michael.c@company.com", phone: "+91 98765 43211", wished: false },
   { id: 3, name: "Priya Sharma", department: "HR", age: 29, avatar: "PS", email: "priya.s@company.com", phone: "+91 98765 43212", wished: false },
 ];
 
-// Upcoming Meetings & Events
 const initialEvents = [
   { id: 1, title: "Client Presentation", time: "10:00 AM", type: "meeting", attendees: 8, location: "Conference Room A", status: "upcoming" },
   { id: 2, title: "Team Sprint Planning", time: "02:30 PM", type: "meeting", attendees: 12, location: "Conference Room B", status: "upcoming" },
@@ -53,7 +47,6 @@ const initialEvents = [
   { id: 4, title: "Product Launch Event", time: "Tomorrow", type: "event", attendees: 45, location: "Main Hall", status: "upcoming" },
 ];
 
-// Recent Punch Activities
 const initialPunchActivity = [
   { id: 1, name: "Amit Kumar", type: "in", time: "09:15 AM", status: "on-time", department: "Sales" },
   { id: 2, name: "Neha Patel", type: "in", time: "09:45 AM", status: "late", department: "Marketing" },
@@ -61,7 +54,6 @@ const initialPunchActivity = [
   { id: 4, name: "Kavita Singh", type: "in", time: "09:05 AM", status: "on-time", department: "HR" },
 ];
 
-// Job Openings
 const initialJobOpenings = [
   { id: 1, title: "Senior React Developer", applications: 45, department: "Technology", status: "active", posted: "5 days ago" },
   { id: 2, title: "Marketing Manager", applications: 32, department: "Marketing", status: "active", posted: "3 days ago" },
@@ -70,7 +62,6 @@ const initialJobOpenings = [
 ];
 
 export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void }) {
-  // State Management
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -81,7 +72,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
   const [leadData, setLeadData] = useState(initialLeadData);
   const [projectData, setProjectData] = useState(initialProjectData);
   
-  // Employee stats with dynamic updates
   const [employeeStats, setEmployeeStats] = useState({
     total: 48,
     present: 42,
@@ -90,20 +80,17 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     female: 20
   });
 
-  // Modal states
   const [selectedBirthday, setSelectedBirthday] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showPunchInModal, setShowPunchInModal] = useState(false);
   const [showPunchOutModal, setShowPunchOutModal] = useState(false);
-  
-  // Filter states
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Punch In/Out System States
   const [isPunchedIn, setIsPunchedIn] = useState(false);
   const [punchInTime, setPunchInTime] = useState<Date | null>(null);
   const [punchOutTime, setPunchOutTime] = useState<Date | null>(null);
@@ -117,7 +104,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     phone: "+91 98765 43200"
   });
 
-  // Financial calculations
   const totalRevenue = 1710000;
   const totalExpenses = 1080000;
   const currentMonthRevenue = 335000;
@@ -129,7 +115,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
   const totalProjects = projectData.reduce((sum, item) => sum + item.count, 0);
   const totalApplications = jobOpenings.reduce((sum, item) => sum + item.applications, 0);
 
-  // Update time every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -137,7 +122,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate working hours
   useEffect(() => {
     if (isPunchedIn && punchInTime) {
       const interval = setInterval(() => {
@@ -152,7 +136,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     }
   }, [isPunchedIn, punchInTime]);
 
-  // Auto-refresh data every 30 seconds
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       handleRefresh();
@@ -160,17 +143,14 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     return () => clearInterval(refreshInterval);
   }, []);
 
-  // Handle birthday wish
   const handleWishBirthday = (id: number) => {
     setBirthdays(birthdays.map(b => 
       b.id === id ? { ...b, wished: true } : b
     ));
     setSelectedBirthday(null);
-    // Show success notification
     alert(`Birthday wish sent to ${birthdays.find(b => b.id === id)?.name}! 🎉`);
   };
 
-  // Handle event RSVP
   const handleEventAction = (id: number, action: string) => {
     setEvents(events.map(e => 
       e.id === id ? { ...e, status: action } : e
@@ -179,16 +159,13 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     alert(`You have ${action === 'accepted' ? 'accepted' : 'declined'} the event!`);
   };
 
-  // Handle job application view
   const handleViewApplications = (job: any) => {
     setSelectedJob(job);
   };
 
-  // Handle refresh
   const handleRefresh = () => {
     setIsRefreshing(true);
-    
-    // Simulate data refresh with slight random changes
+
     setTimeout(() => {
       setEmployeeStats(prev => ({
         ...prev,
@@ -199,7 +176,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     }, 1000);
   };
 
-  // Handle export
   const handleExport = () => {
     const data = {
       timestamp: currentTime.toISOString(),
@@ -222,14 +198,12 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     alert('Dashboard report exported successfully!');
   };
 
-  // Handle Punch In
   const handlePunchIn = () => {
     const now = new Date();
     setPunchInTime(now);
     setIsPunchedIn(true);
     setPunchOutTime(null);
-    
-    // Add to punch activity
+
     const newActivity = {
       id: punchActivity.length + 1,
       name: currentUser.name,
@@ -239,8 +213,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
       department: currentUser.department
     };
     setPunchActivity([newActivity, ...punchActivity]);
-    
-    // Update employee stats
+
     setEmployeeStats(prev => ({
       ...prev,
       present: Math.min(prev.total, prev.present + 1),
@@ -250,13 +223,11 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     setShowPunchInModal(true);
   };
 
-  // Handle Punch Out
   const handlePunchOut = () => {
     const now = new Date();
     setPunchOutTime(now);
     setIsPunchedIn(false);
-    
-    // Add to punch activity
+
     const newActivity = {
       id: punchActivity.length + 1,
       name: currentUser.name,
@@ -270,14 +241,12 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     setShowPunchOutModal(true);
   };
 
-  // Filter punch activity
   const filteredPunchActivity = punchActivity.filter(activity => {
     const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDepartment = filterDepartment === "all" || activity.department === filterDepartment;
     return matchesSearch && matchesDepartment;
   });
 
-  // Format time
   const formatTime = (date: Date | null | undefined) => {
   if (!date) return "N/A";
 
@@ -294,7 +263,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header with Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#200B43] via-[#422462] to-[#937CB4] bg-clip-text text-transparent">
@@ -316,7 +284,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* User Info & Working Hours */}
           <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gradient-to-r from-[#F0E9FF] to-transparent border border-[#937CB4]/30">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#422462] to-[#937CB4] flex items-center justify-center text-white text-sm font-bold shadow-lg">
               HS
@@ -333,7 +300,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
             )}
           </div>
 
-          {/* Refresh Button */}
           <Button 
             variant="outline" 
             className="border-[#937CB4] text-[#422462] hover:bg-[#F0E9FF]"
@@ -344,7 +310,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
             Refresh
           </Button>
 
-          {/* Punch In/Out Button */}
           {!isPunchedIn ? (
             <Button
               size="lg"
@@ -367,9 +332,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </div>
       </div>
 
-      {/* Key Metrics - Top 4 Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Employees - Clickable */}
         <Card 
           className="gradient-card gradient-card-hover border-[#937CB4]/30 cursor-pointer transform transition-all hover:scale-105"
           onClick={() => setShowAttendanceModal(true)}
@@ -398,7 +361,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </CardContent>
         </Card>
 
-        {/* Revenue */}
         <Card 
           className="gradient-card gradient-card-hover border-[#937CB4]/30 cursor-pointer transform transition-all hover:scale-105"
           onClick={() => onNavigate?.('finance-revenue')}
@@ -423,8 +385,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
             </div>
           </CardContent>
         </Card>
-
-        {/* Total Leads */}
         <Card 
           className="gradient-card gradient-card-hover border-[#937CB4]/30 cursor-pointer transform transition-all hover:scale-105"
           onClick={() => onNavigate?.('lead-generation')}
@@ -449,7 +409,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </CardContent>
         </Card>
 
-        {/* Active Projects */}
         <Card 
           className="gradient-card gradient-card-hover border-[#937CB4]/30 cursor-pointer transform transition-all hover:scale-105"
           onClick={() => onNavigate?.('project-kanban')}
@@ -475,9 +434,8 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </Card>
       </div>
 
-      {/* HR Section - Employee Details & Birthdays */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Gender Distribution */}
+
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -527,7 +485,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </CardContent>
         </Card>
 
-        {/* Today's Birthdays - Interactive */}
         <Card className="gradient-card border-[#937CB4]/30 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -575,7 +532,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </Card>
       </div>
 
-      {/* Attendance Section - Punch In/Out with Search & Filter */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -644,7 +600,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </CardContent>
       </Card>
 
-      {/* Financial Overview */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -693,9 +648,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </CardContent>
       </Card>
 
-      {/* Meetings, Events & Job Openings */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Upcoming Meetings & Events - Interactive */}
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -744,7 +697,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </CardContent>
         </Card>
 
-        {/* Job Openings & Applications - Interactive */}
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -792,9 +744,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </Card>
       </div>
 
-      {/* Lead Management & Project Overview */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Lead Management */}
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -836,7 +786,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           </CardContent>
         </Card>
 
-        {/* Project Overview */}
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -889,7 +838,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </Card>
       </div>
 
-      {/* Birthday Detail Modal */}
       <Dialog open={!!selectedBirthday} onOpenChange={() => setSelectedBirthday(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -940,7 +888,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </DialogContent>
       </Dialog>
 
-      {/* Event Detail Modal */}
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1000,7 +947,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </DialogContent>
       </Dialog>
 
-      {/* Job Applications Modal */}
       <Dialog open={!!selectedJob} onOpenChange={() => setSelectedJob(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1052,7 +998,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </DialogContent>
       </Dialog>
 
-      {/* Attendance Detail Modal */}
       <Dialog open={showAttendanceModal} onOpenChange={setShowAttendanceModal}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -1116,7 +1061,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </DialogContent>
       </Dialog>
 
-      {/* Punch In Confirmation Modal */}
       <Dialog open={showPunchInModal} onOpenChange={setShowPunchInModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1164,7 +1108,6 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </DialogContent>
       </Dialog>
 
-      {/* Punch Out Confirmation Modal */}
       <Dialog open={showPunchOutModal} onOpenChange={setShowPunchOutModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -178,7 +178,7 @@ export function AdminQueries() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -197,7 +197,6 @@ export function AdminQueries() {
         ))}
       </div>
 
-      {/* Filters */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -243,7 +242,6 @@ export function AdminQueries() {
         </CardContent>
       </Card>
 
-      {/* Queries List */}
       <div className="grid gap-4">
         {filteredQueries.map((query) => {
           const statusBadge = getStatusBadge(query.status);
@@ -328,7 +326,6 @@ export function AdminQueries() {
         )}
       </div>
 
-      {/* Query Detail Modal */}
       {showQueryModal && selectedQuery && (
         <Modal
           isOpen={showQueryModal}

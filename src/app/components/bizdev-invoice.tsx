@@ -11,7 +11,6 @@ export function BizDevInvoice() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<typeof invoices[0] | null>(null);
 
-  // AI Generation States
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState({
@@ -167,7 +166,6 @@ export function BizDevInvoice() {
     { label: "Pending", value: "32", change: "+9", gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
-  // AI Generate Invoice Function
   const handleGenerateInvoice = () => {
     if (!aiPrompt.trim()) {
       alert("Please enter a prompt to generate the invoice!");
@@ -176,11 +174,9 @@ export function BizDevInvoice() {
 
     setIsGenerating(true);
 
-    // Simulate AI generation with a timeout
     setTimeout(() => {
       const promptLower = aiPrompt.toLowerCase();
       
-      // Extract and generate invoice data
       const extractedInfo = {
         companyName: "ProcessFlow Inc.",
         companyBillingDetails: "123 Tech Park, Bangalore, Karnataka 560001 | GSTIN: 29ABCDE1234F1Z5 | Email: billing@processflow.in",
@@ -195,7 +191,6 @@ export function BizDevInvoice() {
         totalAmount: ""
       };
 
-      // Calculate amounts
       const baseAmount = calculateInvoiceAmount(aiPrompt);
       const gstAmount = Math.round(baseAmount * 0.18);
       const totalAmount = baseAmount + gstAmount;
@@ -210,12 +205,10 @@ export function BizDevInvoice() {
     }, 2000);
   };
 
-  // Helper functions for AI invoice generation
   const extractClientName = (prompt: string): string => {
     const clientMatch = prompt.match(/(?:for|to|client|company)\s+([A-Z][a-zA-Z\s&]+?)(?:\s+(?:requiring|needs|for|with|in)|,|\.|\s*$)/i);
     if (clientMatch) {
       const name = clientMatch[1].trim();
-      // Remove common trailing words
       return name.replace(/\s+(requiring|needs|for|with|in)$/i, '').trim();
     }
     return "Acme Corporation";
@@ -298,7 +291,6 @@ export function BizDevInvoice() {
 
     description += services.join(", ") + ".";
     
-    // Add timeline if mentioned
     const timelineMatch = prompt.match(/(\d+)\s*(month|months|week|weeks)/i);
     if (timelineMatch) {
       description += ` Project duration: ${timelineMatch[1]} ${timelineMatch[2]}.`;
@@ -326,14 +318,12 @@ export function BizDevInvoice() {
       return "PayPal";
     }
     
-    return "Bank Transfer"; // Default for Indian market
+    return "Bank Transfer";
   };
 
   const calculateInvoiceAmount = (prompt: string): number => {
     const promptLower = prompt.toLowerCase();
-    let baseAmount = 100000; // Base ₹1,00,000
-
-    // Service-based pricing
+    let baseAmount = 100000;
     if (promptLower.includes("ai") || promptLower.includes("ml")) baseAmount += 80000;
     if (promptLower.includes("cloud")) baseAmount += 50000;
     if (promptLower.includes("mobile")) baseAmount += 60000;
@@ -344,7 +334,6 @@ export function BizDevInvoice() {
     if (promptLower.includes("api")) baseAmount += 35000;
     if (promptLower.includes("database")) baseAmount += 30000;
 
-    // Check for explicit amount in prompt
     const amountMatch = prompt.match(/(?:₹|INR|Rs\.?)\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:lakh|lakhs|L)?/i);
     if (amountMatch) {
       const numStr = amountMatch[1].replace(/,/g, '');
@@ -355,7 +344,6 @@ export function BizDevInvoice() {
       return Math.round(amount);
     }
 
-    // Timeline multiplier
     const timelineMatch = prompt.match(/(\d+)\s*month/i);
     if (timelineMatch) {
       const months = parseInt(timelineMatch[1]);
@@ -398,7 +386,6 @@ export function BizDevInvoice() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -416,7 +403,6 @@ export function BizDevInvoice() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -440,7 +426,6 @@ export function BizDevInvoice() {
         ))}
       </div>
 
-      {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
@@ -458,7 +443,6 @@ export function BizDevInvoice() {
         </Button>
       </div>
 
-      {/* Invoices Table */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -512,10 +496,8 @@ export function BizDevInvoice() {
         </div>
       </div>
 
-      {/* Create Invoice Modal */}
       <Modal isOpen={showCreateModal} onClose={() => { setShowCreateModal(false); resetAIForm(); }} title="Create New Invoice with AI" size="lg">
         <form onSubmit={handleSaveInvoice} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-          {/* AI Prompt Section */}
           {!isContentGenerated && (
             <div className="space-y-4 p-6 rounded-xl bg-gradient-to-br from-[#F0E9FF] to-[#F0E9FF]/50 border-2 border-[#937CB4]/30">
               <div className="flex items-center gap-3 mb-4">
@@ -566,10 +548,8 @@ export function BizDevInvoice() {
             </div>
           )}
 
-          {/* Generated Content - Editable Fields */}
           {isContentGenerated && (
             <div className="space-y-4">
-              {/* Success Banner */}
               <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-green-600" />
@@ -596,8 +576,7 @@ export function BizDevInvoice() {
                     className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                   />
                 </div>
-                
-                {/* Company Details Section */}
+
                 <div className="col-span-2 border-t border-[#937CB4]/20 pt-4 mt-2">
                   <h3 className="text-sm font-semibold text-[#422462] mb-3">Company Details</h3>
                 </div>
@@ -620,7 +599,6 @@ export function BizDevInvoice() {
                   />
                 </div>
                 
-                {/* Client Details Section */}
                 <div className="col-span-2 border-t border-[#937CB4]/20 pt-4 mt-2">
                   <h3 className="text-sm font-semibold text-[#422462] mb-3">Client Details</h3>
                 </div>
@@ -642,8 +620,7 @@ export function BizDevInvoice() {
                     className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                   />
                 </div>
-                
-                {/* Service & Payment Section */}
+
                 <div className="col-span-2 border-t border-[#937CB4]/20 pt-4 mt-2">
                   <h3 className="text-sm font-semibold text-[#422462] mb-3">Service & Payment Details</h3>
                 </div>
@@ -687,8 +664,7 @@ export function BizDevInvoice() {
                     className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                   />
                 </div>
-                
-                {/* Amount & Tax Section */}
+
                 <div className="col-span-2 border-t border-[#937CB4]/20 pt-4 mt-2">
                   <h3 className="text-sm font-semibold text-[#422462] mb-3">Amount Details</h3>
                 </div>
@@ -739,7 +715,6 @@ export function BizDevInvoice() {
                 </div>
               </div>
 
-              {/* Regenerate Button */}
               <div className="flex justify-center pt-2">
                 <Button
                   type="button"
@@ -769,7 +744,6 @@ export function BizDevInvoice() {
             </div>
           )}
 
-          {/* Action Buttons */}
           {isContentGenerated && (
             <div className="flex justify-end gap-3 pt-4 border-t border-[#937CB4]/20 sticky bottom-0 bg-white">
               <Button 
@@ -802,7 +776,6 @@ export function BizDevInvoice() {
         </form>
       </Modal>
 
-      {/* View Invoice Modal */}
       {selectedInvoice && (
         <Modal isOpen={showViewModal} onClose={() => setShowViewModal(false)} title={`Invoice: ${selectedInvoice.id}`} size="lg">
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -826,7 +799,6 @@ export function BizDevInvoice() {
               </div>
             </div>
 
-            {/* Company Details */}
             <div className="pb-4 border-b border-[#937CB4]/20">
               <h3 className="text-sm font-semibold text-[#422462] mb-3">From (Company Details)</h3>
               <div>
@@ -839,7 +811,6 @@ export function BizDevInvoice() {
               </div>
             </div>
 
-            {/* Client Details */}
             <div className="pb-4 border-b border-[#937CB4]/20">
               <h3 className="text-sm font-semibold text-[#422462] mb-3">To (Client Details)</h3>
               <div>
@@ -852,7 +823,6 @@ export function BizDevInvoice() {
               </div>
             </div>
 
-            {/* Service Details */}
             <div className="pb-4 border-b border-[#937CB4]/20">
               <h3 className="text-sm font-semibold text-[#422462] mb-3">Service Details</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -871,7 +841,6 @@ export function BizDevInvoice() {
               </div>
             </div>
 
-            {/* Amount Breakdown */}
             <div className="bg-gradient-to-br from-[#F0E9FF]/50 to-[#F0E9FF]/20 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-[#422462] mb-3">Amount Breakdown</h3>
               <div className="space-y-2">
@@ -905,7 +874,6 @@ export function BizDevInvoice() {
         </Modal>
       )}
 
-      {/* Edit Invoice Modal */}
       {selectedInvoice && (
         <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Invoice" size="lg">
           <form className="space-y-4">

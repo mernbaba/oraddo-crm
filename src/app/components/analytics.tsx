@@ -70,7 +70,6 @@ export function Analytics() {
         </Select>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -128,8 +127,7 @@ export function Analytics() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Charts Grid */}
+      
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>

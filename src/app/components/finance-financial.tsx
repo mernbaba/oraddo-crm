@@ -32,7 +32,6 @@ export function FinanceFinancial() {
 
   const years = ["2026", "2025", "2024"];
 
-  // Financial data for each year
   const financialData: Record<string, any[]> = {
     "2026": [
       { month: "January", revenue: 125000, expense: 78000, profit: 47000 },
@@ -80,13 +79,11 @@ export function FinanceFinancial() {
 
   const currentYearData = financialData[selectedYear];
 
-  // Calculate yearly totals
   const yearlyRevenue = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
   const yearlyExpense = currentYearData.reduce((sum, m) => sum + m.expense, 0);
   const yearlyProfit = yearlyRevenue - yearlyExpense;
   const profitMargin = yearlyRevenue > 0 ? ((yearlyProfit / yearlyRevenue) * 100).toFixed(1) : "0.0";
 
-  // Calculate growth from previous year
   const previousYear = (parseInt(selectedYear) - 1).toString();
   const previousYearData = financialData[previousYear];
   let yearOverYearGrowth = 0;
@@ -97,7 +94,6 @@ export function FinanceFinancial() {
     }
   }
 
-  // Calculate monthly growth percentages
   const monthlyGrowthData = currentYearData.map((month, index) => {
     if (index === 0 || month.profit === 0) {
       return { ...month, growth: 0 };
@@ -110,12 +106,10 @@ export function FinanceFinancial() {
     return { ...month, growth: parseFloat(growth.toFixed(1)) };
   });
 
-  // Get months with data (non-zero)
   const monthsWithData = currentYearData.filter((m) => m.revenue > 0 || m.expense > 0);
   const profitableMonths = monthsWithData.filter((m) => m.profit > 0).length;
   const lossMonths = monthsWithData.filter((m) => m.profit < 0).length;
 
-  // Custom tooltip for charts
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -156,7 +150,6 @@ export function FinanceFinancial() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -178,7 +171,6 @@ export function FinanceFinancial() {
         </Button>
       </div>
 
-      {/* Year Selector */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-[#422462]" />
@@ -218,9 +210,8 @@ export function FinanceFinancial() {
         </div>
       </div>
 
-      {/* Summary Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Revenue */}
+
         <div className="relative overflow-hidden rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -236,7 +227,6 @@ export function FinanceFinancial() {
           <p className="text-xs text-green-600">Yearly {selectedYear}</p>
         </div>
 
-        {/* Total Expenses */}
         <div className="relative overflow-hidden rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -252,7 +242,6 @@ export function FinanceFinancial() {
           <p className="text-xs text-red-600">Yearly {selectedYear}</p>
         </div>
 
-        {/* Net Profit/Loss */}
         <div
           className={`relative overflow-hidden rounded-xl border p-5 shadow-md hover:shadow-lg transition-all ${
             yearlyProfit >= 0
@@ -294,7 +283,6 @@ export function FinanceFinancial() {
           </p>
         </div>
 
-        {/* Profit Margin */}
         <div className="relative overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -313,7 +301,6 @@ export function FinanceFinancial() {
         </div>
       </div>
 
-      {/* Main Chart: Revenue vs Expense Comparison */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 p-6 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -380,8 +367,7 @@ export function FinanceFinancial() {
           </ResponsiveContainer>
         </div>
       </div>
-
-      {/* Monthly Breakdown Table */}
+      
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10 overflow-x-auto">

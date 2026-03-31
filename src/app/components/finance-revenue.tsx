@@ -9,7 +9,6 @@ export function FinanceRevenue() {
 
   const years = ["2026", "2025", "2024"];
 
-  // Revenue data for each year (all 12 months)
   const revenueData: Record<string, any[]> = {
     "2026": [
       { 
@@ -71,7 +70,6 @@ export function FinanceRevenue() {
 
   const currentYearData = revenueData[selectedYear];
 
-  // Calculate yearly totals and averages
   const yearlyRevenue = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
   const monthsWithData = currentYearData.filter((m) => m.revenue > 0);
   const avgMonthlyRevenue = monthsWithData.length > 0 ? yearlyRevenue / monthsWithData.length : 0;
@@ -80,7 +78,6 @@ export function FinanceRevenue() {
   const totalSubscriptions = currentYearData.reduce((sum, m) => sum + m.subscriptions, 0);
   const totalConsulting = currentYearData.reduce((sum, m) => sum + m.consulting, 0);
 
-  // Calculate growth from previous year
   const previousYear = (parseInt(selectedYear) - 1).toString();
   const previousYearData = revenueData[previousYear];
   let yearOverYearGrowth = 0;
@@ -91,7 +88,6 @@ export function FinanceRevenue() {
     }
   }
 
-  // Calculate monthly growth percentages
   const monthlyGrowthData = currentYearData.map((month, index) => {
     if (index === 0 || month.revenue === 0) {
       return { ...month, growth: 0 };
@@ -104,7 +100,6 @@ export function FinanceRevenue() {
     return { ...month, growth: parseFloat(growth.toFixed(1)) };
   });
 
-  // Revenue streams summary
   const revenueStreams = [
     { 
       source: "Product Sales", 
@@ -134,7 +129,6 @@ export function FinanceRevenue() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -162,7 +156,6 @@ export function FinanceRevenue() {
         </div>
       </div>
 
-      {/* Year Selector */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-[#422462]" />
@@ -202,9 +195,7 @@ export function FinanceRevenue() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Revenue */}
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -220,7 +211,6 @@ export function FinanceRevenue() {
           <p className="text-xs text-[#5A4079]">Yearly {selectedYear}</p>
         </div>
 
-        {/* Average Monthly */}
         <div className="relative overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -236,7 +226,6 @@ export function FinanceRevenue() {
           <p className="text-xs text-blue-600">{monthsWithData.length} months tracked</p>
         </div>
 
-        {/* Peak Month Revenue */}
         <div className="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -256,7 +245,6 @@ export function FinanceRevenue() {
           </p>
         </div>
 
-        {/* Revenue Target */}
         <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -275,7 +263,6 @@ export function FinanceRevenue() {
         </div>
       </div>
 
-      {/* Main Revenue Chart - Monthly Growth on Yearly Basis */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 p-6 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -342,7 +329,6 @@ export function FinanceRevenue() {
         </div>
       </div>
 
-      {/* Monthly Revenue Table */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -426,7 +412,6 @@ export function FinanceRevenue() {
                     </tr>
                   );
                 })}
-                {/* Yearly Total Row */}
                 <tr className="bg-gradient-to-r from-[#422462]/10 to-[#937CB4]/10 border-t-2 border-[#422462]/30 font-bold">
                   <td className="py-4 px-4">
                     <p className="text-sm font-bold text-[#200B43]">TOTAL {selectedYear}</p>

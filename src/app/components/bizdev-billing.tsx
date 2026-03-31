@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 export function BizDevBilling() {
-  // Proposal Tracking Data
+
   const proposalConversionData = [
     { month: "Jul", proposed: 12, converted: 8, rejected: 3, pending: 1 },
     { month: "Aug", proposed: 15, converted: 10, rejected: 4, pending: 1 },
@@ -14,7 +14,6 @@ export function BizDevBilling() {
     { month: "Jan", proposed: 16, converted: 12, rejected: 2, pending: 2 },
   ];
 
-  // Detailed Proposal to Billing Tracking
   const proposalToBilling = [
     { 
       proposalId: "PRO-001", 
@@ -95,7 +94,6 @@ export function BizDevBilling() {
     },
   ];
 
-  // Calculate stats
   const totalProposed = proposalConversionData.reduce((sum, item) => sum + item.proposed, 0);
   const totalConverted = proposalConversionData.reduce((sum, item) => sum + item.converted, 0);
   const totalRejected = proposalConversionData.reduce((sum, item) => sum + item.rejected, 0);
@@ -135,7 +133,6 @@ export function BizDevBilling() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -153,7 +150,6 @@ export function BizDevBilling() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -180,7 +176,6 @@ export function BizDevBilling() {
         })}
       </div>
 
-      {/* Proposal Conversion Tracking Section */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF]/30 to-white/90 backdrop-blur-xl p-6 shadow-lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="relative">
@@ -189,8 +184,7 @@ export function BizDevBilling() {
           </div>
           <h3 className="text-xl font-bold gradient-text">Proposal to Billing Conversion Tracking</h3>
         </div>
-
-        {/* Conversion Stats */}
+ 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="relative overflow-hidden rounded-lg border border-[#937CB4]/30 bg-white/80 p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -228,8 +222,7 @@ export function BizDevBilling() {
             <p className="text-2xl font-bold gradient-text">{conversionRate}%</p>
           </div>
         </div>
-
-        {/* Conversion Trend Chart */}
+ 
         <div className="bg-white/60 rounded-lg p-4 mb-6">
           <h4 className="text-sm font-semibold text-[#200B43] mb-4">Monthly Proposal Conversion Trend</h4>
           <ResponsiveContainer width="100%" height={200}>
@@ -251,8 +244,7 @@ export function BizDevBilling() {
           </ResponsiveContainer>
         </div>
       </div>
-
-      {/* Detailed Proposal to Billing Tracking Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="p-6 border-b border-[#937CB4]/20">
           <div className="flex items-center justify-between">

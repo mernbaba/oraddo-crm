@@ -52,7 +52,6 @@ const recentActivity = [
 export function AdminDashboard() {
   return (
     <div className="space-y-6">
-      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-2xl"></div>
@@ -131,7 +130,6 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Charts Row 1 */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
@@ -212,7 +210,6 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
@@ -278,7 +275,6 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

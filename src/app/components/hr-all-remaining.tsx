@@ -1,6 +1,4 @@
-// This file contains all remaining HR component exports
-// Import these individually in App.tsx as needed
-
+ 
 import { useState } from "react";
 import { FileText, Calendar, Clock, Sparkles, Plus, Users, TrendingUp, DollarSign, Award, Target, Download, CreditCard, Wallet, Receipt, LogOut, X, Send, Upload, Check, AlertCircle, ClipboardList, Info, MessageSquare, Code2, Copy } from "lucide-react";
 import { Button } from "./ui/button";
@@ -9,8 +7,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-// HR Attendance - Apply Leave
+ 
 export function HRApplyLeave() {
   const [applyModalOpen, setApplyModalOpen] = useState(false);
 
@@ -39,7 +36,7 @@ export function HRApplyLeave() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -59,8 +56,7 @@ export function HRApplyLeave() {
           Apply Now
         </Button>
       </div>
-
-      {/* Leave Balance Cards */}
+ 
       <div>
         <h3 className="text-lg font-semibold text-[#200B43] mb-4">Leave Balance</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -84,8 +80,7 @@ export function HRApplyLeave() {
           ))}
         </div>
       </div>
-
-      {/* Recent Leave History */}
+ 
       <div>
         <h3 className="text-lg font-semibold text-[#200B43] mb-4">Recent Leave History</h3>
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
@@ -119,8 +114,7 @@ export function HRApplyLeave() {
           </table>
         </div>
       </div>
-
-      {/* Apply Leave Modal */}
+ 
       <Modal isOpen={applyModalOpen} onClose={() => setApplyModalOpen(false)} title="Apply for Leave" size="lg">
         <form className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,8 +162,7 @@ export function HRApplyLeave() {
     </div>
   );
 }
-
-// HR Attendance - My Login Details (Apply Leave Form)
+ 
 export function HRLoginDetails() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDate, setHoveredDate] = useState<number | null>(null);
@@ -183,8 +176,7 @@ export function HRLoginDetails() {
     reason: '',
     contactNumber: '',
   });
-
-  // Mock attendance data
+ 
   const attendanceData: Record<number, {
     status: 'present' | 'halfday' | 'absent' | 'holiday' | 'weekoff';
     loginTime?: string;
@@ -330,7 +322,7 @@ export function HRLoginDetails() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Clock className="h-8 w-8 text-[#422462] animate-pulse-glow" />
@@ -367,9 +359,9 @@ export function HRLoginDetails() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left Side - Calendar & Stats */}
+ 
         <div className="lg:col-span-2 space-y-4">
-          {/* Attendance Statistics */}
+ 
           <div className="grid grid-cols-5 gap-2">
             <div className="relative overflow-hidden rounded-lg border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-3 shadow-lg">
               <div className="flex flex-col items-center">
@@ -416,10 +408,9 @@ export function HRLoginDetails() {
               </div>
             </div>
           </div>
-
-          {/* Calendar */}
+ 
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg p-4">
-            {/* Month Navigation */}
+ 
             <div className="flex items-center justify-between mb-3">
               <Button
                 onClick={previousMonth}
@@ -443,8 +434,7 @@ export function HRLoginDetails() {
                 <Calendar className="h-4 w-4 ml-1" />
               </Button>
             </div>
-
-            {/* Day Names */}
+ 
             <div className="grid grid-cols-7 gap-1 mb-2">
               {dayNames.map((day) => (
                 <div key={day} className="text-center py-1 text-xs font-semibold text-[#422462]">
@@ -452,8 +442,7 @@ export function HRLoginDetails() {
                 </div>
               ))}
             </div>
-
-            {/* Calendar Grid */}
+ 
             <div className="grid grid-cols-7 gap-1">
               {Array.from({ length: startingDayOfWeek }).map((_, index) => (
                 <div key={`empty-${index}`} className="aspect-square" />
@@ -513,8 +502,7 @@ export function HRLoginDetails() {
                 );
               })}
             </div>
-
-            {/* Legend */}
+ 
             <div className="mt-3 pt-3 border-t border-[#937CB4]/20">
               <div className="flex flex-wrap gap-3 justify-center">
                 {[
@@ -533,8 +521,7 @@ export function HRLoginDetails() {
             </div>
           </div>
         </div>
-
-        {/* Right Side - Leave Balance */}
+ 
         <div className="space-y-4">
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg p-4">
             <h3 className="text-lg font-semibold text-[#200B43] mb-4 flex items-center gap-2">
@@ -580,8 +567,7 @@ export function HRLoginDetails() {
               </div>
             </div>
           </div>
-
-          {/* Quick Stats */}
+ 
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF] to-white shadow-lg p-4">
             <h3 className="text-sm font-semibold text-[#200B43] mb-3">Quick Summary</h3>
             <div className="space-y-2 text-sm">
@@ -601,8 +587,7 @@ export function HRLoginDetails() {
           </div>
         </div>
       </div>
-
-      {/* Apply Leave Modal */}
+ 
       <Modal isOpen={showApplyLeave} onClose={() => setShowApplyLeave(false)} title="Apply for Leave" size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -693,8 +678,7 @@ export function HRLoginDetails() {
           </div>
         </form>
       </Modal>
-
-      {/* Leave History Modal */}
+ 
       <Modal isOpen={showLeaveHistory} onClose={() => setShowLeaveHistory(false)} title="Leave History" size="xl">
         <div className="space-y-4">
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white shadow-lg">
@@ -729,8 +713,7 @@ export function HRLoginDetails() {
           </div>
         </div>
       </Modal>
-
-      {/* Holidays Modal */}
+ 
       <Modal isOpen={showHolidays} onClose={() => setShowHolidays(false)} title="Company Holidays 2026" size="xl">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {holidays.map((holiday, i) => (
@@ -755,8 +738,7 @@ export function HRLoginDetails() {
     </div>
   );
 }
-
-// HR Attendance - Company Calendar
+ 
 export function HRCompanyCalendar() {
   const holidays = [
     { name: "New Year's Day", date: "January 1, 2024", type: "Public Holiday" },
@@ -791,8 +773,7 @@ export function HRCompanyCalendar() {
     </div>
   );
 }
-
-// HR Self Service - Holiday List
+ 
 export function HRHolidayList() {
   return (
     <div className="space-y-6">
@@ -811,8 +792,7 @@ export function HRHolidayList() {
     </div>
   );
 }
-
-// HR Self Service - My Performance Metrics  
+  
 export function HRPerformanceMetrics() {
   const [selectedMonth, setSelectedMonth] = useState("February 2026");
   
@@ -820,8 +800,7 @@ export function HRPerformanceMetrics() {
     "February 2026", "January 2026", "December 2025", "November 2025", 
     "October 2025", "September 2025"
   ];
-
-  // Performance metrics data
+ 
   const performanceMetrics = [
     {
       category: "Attendance & Punctuality",
@@ -884,8 +863,7 @@ export function HRPerformanceMetrics() {
       ]
     },
   ];
-
-  // Monthly performance history
+ 
   const monthlyHistory = {
     "February 2026": { overall: 90, trend: "up" },
     "January 2026": { overall: 88, trend: "up" },
@@ -914,7 +892,7 @@ export function HRPerformanceMetrics() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -927,7 +905,7 @@ export function HRPerformanceMetrics() {
           </div>
         </div>
 
-        {/* Month Selector */}
+ 
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-[#422462]">Period:</label>
           <select
@@ -941,8 +919,7 @@ export function HRPerformanceMetrics() {
           </select>
         </div>
       </div>
-
-      {/* Overall Performance Card */}
+ 
       <div className="relative overflow-hidden rounded-2xl border border-[#937CB4]/30 bg-gradient-to-br from-white via-[#F0E9FF]/20 to-white backdrop-blur-xl shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5"></div>
         <div className="relative p-6">
@@ -1007,8 +984,7 @@ export function HRPerformanceMetrics() {
           </div>
         </div>
       </div>
-
-      {/* Performance Metrics - 5x1 Horizontal Layout */}
+ 
       <div className="grid grid-cols-3 gap-6">
         {performanceMetrics.map((metric, index) => {
           const Icon = metric.icon;
@@ -1025,7 +1001,7 @@ export function HRPerformanceMetrics() {
               <div className="absolute inset-0 bg-gradient-to-br from-[#F0E9FF]/30 via-transparent to-[#F0E9FF]/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               
               <div className="relative p-8">
-                {/* Header */}
+ 
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${metric.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
@@ -1043,8 +1019,7 @@ export function HRPerformanceMetrics() {
                     <div className="text-sm text-[#5A4079]">/ 100</div>
                   </div>
                 </div>
-
-                {/* Monthly Trend Indicator - NEW PARAMETER */}
+ 
                 <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-[#F0E9FF]/50 to-transparent border border-[#937CB4]/10">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-[#5A4079]">Monthly Trend</span>
@@ -1063,8 +1038,7 @@ export function HRPerformanceMetrics() {
                     </div>
                   </div>
                 </div>
-
-                {/* Progress Bar */}
+ 
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-medium text-[#5A4079]">Performance</span>
@@ -1086,8 +1060,7 @@ export function HRPerformanceMetrics() {
           );
         })}
       </div>
-
-      {/* Performance Summary */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-white to-[#F0E9FF]/30 backdrop-blur-xl p-6 shadow-lg">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#937CB4]/10 rounded-full blur-3xl"></div>
         <div className="relative">
@@ -1132,8 +1105,7 @@ export function HRPerformanceMetrics() {
     </div>
   );
 }
-
-// HR Self Service - Learning & Development
+ 
 export function HRLearningDevelopment() {
   return (
     <div className="space-y-6">
@@ -1152,8 +1124,7 @@ export function HRLearningDevelopment() {
     </div>
   );
 }
-
-// HR Self Service - Benefits and Compensation
+ 
 export function HRBenefitsCompensation() {
   return (
     <div className="space-y-6">
@@ -1172,8 +1143,7 @@ export function HRBenefitsCompensation() {
     </div>
   );
 }
-
-// HR Self Service - Salary Advance
+ 
 export function HRSalaryAdvance() {
   return (
     <div className="space-y-6">
@@ -1193,7 +1163,7 @@ export function HRSalaryAdvance() {
   );
 }
 
-// HR Self Service - Salary Structure (Combined with Salary Advance)
+
 export function HRSalaryStructure() {
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -1203,8 +1173,7 @@ export function HRSalaryStructure() {
     repaymentMonths: '3',
     urgency: 'normal'
   });
-
-  // Monthly salary data for the entire year
+ 
   const salaryData = [
     { month: 'Jan', salary: 75000, netPay: 68500, deductions: 6500 },
     { month: 'Feb', salary: 75000, netPay: 68500, deductions: 6500 },
@@ -1239,17 +1208,16 @@ export function HRSalaryStructure() {
 
   const downloadPayslip = (month: string) => {
     console.log(`Downloading payslip for ${month}`);
-    // Simulate download
+ 
   };
-
-  // Calculate totals
+ 
   const totalEarnings = salaryData.reduce((sum, item) => sum + item.salary, 0);
   const totalNetPay = salaryData.reduce((sum, item) => sum + item.netPay, 0);
   const totalDeductions = salaryData.reduce((sum, item) => sum + item.deductions, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <DollarSign className="h-8 w-8 text-[#422462] animate-pulse-glow" />
@@ -1266,8 +1234,7 @@ export function HRSalaryStructure() {
           Salary Advance
         </Button>
       </div>
-
-      {/* Monthly Salary Bar Chart */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-xl font-bold text-[#200B43] mb-2">Monthly Salary Overview - 2026</h3>
@@ -1322,8 +1289,7 @@ export function HRSalaryStructure() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* PDF Download Icons Row */}
+ 
         <div className="mt-2 flex justify-between items-center" style={{ paddingLeft: '48px', paddingRight: '48px' }}>
           {salaryData.map((monthData, index) => (
             <button
@@ -1336,8 +1302,7 @@ export function HRSalaryStructure() {
             </button>
           ))}
         </div>
-
-        {/* Custom Legend */}
+ 
         <div className="mt-4 flex items-center justify-center gap-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-4 rounded" style={{
@@ -1353,8 +1318,7 @@ export function HRSalaryStructure() {
           </div>
         </div>
       </div>
-
-      {/* Salary Advance Application Modal */}
+ 
       <Modal isOpen={showAdvanceModal} onClose={() => setShowAdvanceModal(false)} title="Apply for Salary Advance / Loan" size="lg">
         <form onSubmit={handleAdvanceSubmit} className="space-y-4">
           <div className="bg-[#F0E9FF] p-4 rounded-lg mb-4">
@@ -1453,8 +1417,7 @@ export function HRSalaryStructure() {
     </div>
   );
 }
-
-// HR Self Service - My Profile
+ 
 export function HRMyProfile() {
   return (
     <div className="space-y-6">
@@ -1474,7 +1437,7 @@ export function HRMyProfile() {
   );
 }
 
-// HR Self Service - Resignation
+ 
 export function HRResignation() {
   const [showForm, setShowForm] = useState(false);
   const [hasResignation, setHasResignation] = useState(false); // Set to false to show application form first
@@ -1487,7 +1450,7 @@ export function HRResignation() {
     exitInterviewPreference: "yes"
   });
 
-  // Mock resignation data
+ 
   const resignationData = {
     submittedDate: "2024-01-15",
     status: "approved",
@@ -1501,7 +1464,7 @@ export function HRResignation() {
     approvedDate: "2024-01-17"
   };
 
-  // Exit checklist items
+ 
   const exitChecklist = [
     { id: 1, task: "Return Company Laptop", status: "pending", dueDate: "2024-03-10" },
     { id: 2, task: "Return ID Card & Access Cards", status: "pending", dueDate: "2024-03-10" },
@@ -1545,7 +1508,7 @@ export function HRResignation() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <LogOut className="h-8 w-8 text-[#422462] animate-pulse-glow" />
@@ -1564,8 +1527,7 @@ export function HRResignation() {
           </Button>
         )}
       </div>
-
-      {/* No Resignation State */}
+ 
       {!hasResignation && !showForm && (
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 shadow-lg text-center">
           <div className="flex flex-col items-center gap-4">
@@ -1586,8 +1548,7 @@ export function HRResignation() {
           </div>
         </div>
       )}
-
-      {/* Resignation Form */}
+ 
       {showForm && (
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between mb-6">
@@ -1621,8 +1582,7 @@ export function HRResignation() {
                   <option value="other">Other</option>
                 </select>
               </div>
-
-              {/* Notice Period */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">
                   Notice Period (Days)
@@ -1636,8 +1596,7 @@ export function HRResignation() {
                 />
                 <p className="text-xs text-[#5A4079] mt-1">Standard notice period: 60 days</p>
               </div>
-
-              {/* Last Working Date */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">
                   Intended Last Working Date
@@ -1649,8 +1608,7 @@ export function HRResignation() {
                   className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none transition-all"
                 />
               </div>
-
-              {/* Exit Interview */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">
                   Exit Interview Preference
@@ -1665,8 +1623,7 @@ export function HRResignation() {
                 </select>
               </div>
             </div>
-
-            {/* Reason */}
+ 
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">
                 Primary Reason for Resignation
@@ -1687,8 +1644,7 @@ export function HRResignation() {
                 <option value="other">Other</option>
               </select>
             </div>
-
-            {/* Comments */}
+ 
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">
                 Additional Comments (Optional)
@@ -1701,8 +1657,7 @@ export function HRResignation() {
                 placeholder="Share any additional thoughts or feedback..."
               />
             </div>
-
-            {/* Upload Resignation Letter */}
+ 
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">
                 Upload Resignation Letter (Optional)
@@ -1713,8 +1668,7 @@ export function HRResignation() {
                 <p className="text-xs text-[#958CA7] mt-1">PDF, DOC, DOCX (Max 5MB)</p>
               </div>
             </div>
-
-            {/* Form Actions */}
+ 
             <div className="flex gap-3 justify-end pt-4">
               <Button
                 type="button"
@@ -1735,11 +1689,10 @@ export function HRResignation() {
           </form>
         </div>
       )}
-
-      {/* Existing Resignation Details */}
+ 
       {hasResignation && !showForm && (
         <>
-          {/* Resignation Status Card */}
+ 
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-[#937CB4]/10 to-transparent blur-2xl"></div>
             
@@ -1784,8 +1737,7 @@ export function HRResignation() {
                   <p className="font-semibold text-[#200B43]">{new Date(resignationData.lastWorkingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
               </div>
-
-              {/* Timeline */}
+ 
               <div className="mb-6">
                 <h4 className="font-semibold text-[#200B43] mb-4">Resignation Timeline</h4>
                 <div className="space-y-4">
@@ -1847,8 +1799,7 @@ export function HRResignation() {
                   )}
                 </div>
               </div>
-
-              {/* Comments */}
+ 
               {(resignationData.managerComments || resignationData.hrComments) && (
                 <div className="space-y-3">
                   <h4 className="font-semibold text-[#200B43]">Comments</h4>
@@ -1868,8 +1819,7 @@ export function HRResignation() {
               )}
             </div>
           </div>
-
-          {/* Exit Formalities Checklist */}
+ 
           {resignationData.status === "approved" && (
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
               <div className="flex items-center gap-3 mb-6">
@@ -1906,8 +1856,7 @@ export function HRResignation() {
               </div>
             </div>
           )}
-
-          {/* Documents Section */}
+ 
           <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-6">
               <FileText className="h-6 w-6 text-[#422462]" />
@@ -1935,8 +1884,7 @@ export function HRResignation() {
                   Download
                 </Button>
               </div>
-
-              {/* Relieving Letter */}
+ 
               {resignationData.status === "approved" && (
                 <div className="p-4 rounded-lg border border-[#937CB4]/20 hover:border-[#422462] transition-all cursor-pointer group">
                   <div className="flex items-center gap-3 mb-2">
@@ -1959,8 +1907,7 @@ export function HRResignation() {
                   </Button>
                 </div>
               )}
-
-              {/* Experience Letter */}
+ 
               {resignationData.status === "approved" && (
                 <div className="p-4 rounded-lg border border-[#937CB4]/20 hover:border-[#422462] transition-all cursor-pointer group">
                   <div className="flex items-center gap-3 mb-2">
@@ -1981,8 +1928,7 @@ export function HRResignation() {
                   </Button>
                 </div>
               )}
-
-              {/* Full & Final Settlement */}
+ 
               {resignationData.status === "approved" && (
                 <div className="p-4 rounded-lg border border-[#937CB4]/20 hover:border-[#422462] transition-all cursor-pointer group">
                   <div className="flex items-center gap-3 mb-2">
@@ -2007,8 +1953,7 @@ export function HRResignation() {
               )}
             </div>
           </div>
-
-          {/* Notice Period Buyout */}
+ 
           {resignationData.status === "approved" && (
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF] to-white p-6 shadow-lg">
               <div className="flex items-start justify-between">
@@ -2038,7 +1983,7 @@ export function HRResignation() {
   );
 }
 
-// HR Job Management - Manage Jobs
+ 
 export function HRManageJobs() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewJobModal, setViewJobModal] = useState<number | null>(null);
@@ -2159,7 +2104,7 @@ export function HRManageJobs() {
     }
   ];
 
-  // Mock applications data
+ 
   const mockApplications = [
     { id: 1, name: "John Smith", email: "john.smith@email.com", phone: "+1 (555) 123-4567", appliedDate: "2026-02-15", status: "Under Review", experience: "6 years", education: "B.S. Computer Science", location: "San Francisco, CA", resume: "resume_john_smith.pdf" },
     { id: 2, name: "Sarah Johnson", email: "sarah.j@email.com", phone: "+1 (555) 234-5678", appliedDate: "2026-02-14", status: "Interview Scheduled", experience: "5 years", education: "M.S. Software Engineering", location: "New York, NY", resume: "resume_sarah_johnson.pdf" },
@@ -2195,7 +2140,7 @@ export function HRManageJobs() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -2225,8 +2170,7 @@ export function HRManageJobs() {
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid gap-4 md:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
@@ -2265,8 +2209,7 @@ export function HRManageJobs() {
           </div>
         </div>
       </div>
-
-      {/* Jobs Grid */}
+ 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {jobs.map((job) => (
           <div 
@@ -2274,7 +2217,7 @@ export function HRManageJobs() {
             className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all group"
           >
             <div className="p-6 space-y-4">
-              {/* Job Header */}
+ 
               <div>
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-[#200B43] text-lg leading-tight">{job.title}</h3>
@@ -2284,8 +2227,7 @@ export function HRManageJobs() {
                 </div>
                 <p className="text-sm text-[#5A4079]">{job.department}</p>
               </div>
-
-              {/* Job Details */}
+ 
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-[#5A4079]">
                   <span className="font-medium text-[#200B43] w-24">Location:</span>
@@ -2304,8 +2246,7 @@ export function HRManageJobs() {
                   <span>{new Date(job.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
               </div>
-
-              {/* Applications Badge */}
+ 
               <div className="pt-4 border-t border-[#937CB4]/20">
                 <button 
                   onClick={() => setViewApplicationsModal(job.id)}
@@ -2316,8 +2257,7 @@ export function HRManageJobs() {
                   <span className="text-sm text-[#5A4079]">Applications</span>
                 </button>
               </div>
-
-              {/* Action Buttons */}
+ 
               <div className="grid grid-cols-2 gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -2342,8 +2282,7 @@ export function HRManageJobs() {
           </div>
         ))}
       </div>
-
-      {/* Create Job Modal */}
+ 
       {showCreateModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -2449,8 +2388,7 @@ export function HRManageJobs() {
           </div>
         </div>
       )}
-
-      {/* View Job Modal */}
+ 
       {viewJobModal && selectedJob && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -2469,7 +2407,7 @@ export function HRManageJobs() {
               </Button>
             </div>
             <div className="p-6 space-y-6">
-              {/* Job Overview */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-[#F0E9FF]/50 border border-[#937CB4]/20">
                   <p className="text-sm text-[#5A4079] mb-1">Employment Type</p>
@@ -2488,14 +2426,12 @@ export function HRManageJobs() {
                   <p className="font-semibold text-[#200B43]">{selectedJob.applications} candidates</p>
                 </div>
               </div>
-
-              {/* Job Description */}
+ 
               <div>
                 <h4 className="font-semibold text-[#200B43] mb-3">Job Description</h4>
                 <p className="text-[#5A4079] leading-relaxed">{selectedJob.description}</p>
               </div>
-
-              {/* Requirements */}
+ 
               <div>
                 <h4 className="font-semibold text-[#200B43] mb-3">Requirements</h4>
                 <ul className="space-y-2">
@@ -2507,8 +2443,7 @@ export function HRManageJobs() {
                   ))}
                 </ul>
               </div>
-
-              {/* Action Buttons */}
+ 
               <div className="flex gap-3 pt-4 border-t border-[#937CB4]/20">
                 <Button
                   onClick={() => {
@@ -2536,8 +2471,7 @@ export function HRManageJobs() {
           </div>
         </div>
       )}
-
-      {/* Edit Job Modal */}
+ 
       {editJobModal && editingJob && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -2653,8 +2587,7 @@ export function HRManageJobs() {
           </div>
         </div>
       )}
-
-      {/* View Applications Modal */}
+ 
       {viewApplicationsModal && applicationsJob && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -2776,8 +2709,7 @@ export function HRManageJobs() {
           </div>
         </div>
       )}
-
-      {/* Add Comment Modal */}
+ 
       {commentModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full relative z-[60]">
@@ -2796,7 +2728,7 @@ export function HRManageJobs() {
               </Button>
             </div>
             <div className="p-6">
-              {/* Previous Comments */}
+
               {comments[commentModal] && comments[commentModal].length > 0 && (
                 <div className="mb-4 space-y-3">
                   <h4 className="text-sm font-semibold text-[#200B43]">Previous Comments:</h4>
@@ -2815,8 +2747,7 @@ export function HRManageJobs() {
                   </div>
                 </div>
               )}
-
-              {/* Add New Comment */}
+ 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Add New Comment</label>
@@ -2854,11 +2785,10 @@ export function HRManageJobs() {
           </div>
         </div>
       )}
-
-      {/* Integration Modal */}
+ 
       <Modal isOpen={integrateModalOpen} onClose={() => setIntegrateModalOpen(false)} title="Integrate Job Widget" size="lg">
         <div className="space-y-6">
-          {/* Instructions */}
+ 
           <div className="p-4 rounded-lg bg-[#F0E9FF]/30 border border-[#937CB4]/20">
             <h3 className="text-sm font-semibold text-[#422462] mb-3">Integration Instructions</h3>
             <ul className="space-y-2 text-sm text-[#5A4079]">
@@ -2880,8 +2810,7 @@ export function HRManageJobs() {
               </li>
             </ul>
           </div>
-
-          {/* Code Block */}
+ 
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-[#422462]">Integration Code</h3>
@@ -2910,8 +2839,7 @@ export function HRManageJobs() {
               </pre>
             </div>
           </div>
-
-          {/* Additional Info */}
+ 
           <div className="p-4 rounded-lg bg-white border border-[#937CB4]/20">
             <h3 className="text-sm font-semibold text-[#422462] mb-2">Need Help?</h3>
             <p className="text-sm text-[#5A4079]">
@@ -2924,8 +2852,7 @@ export function HRManageJobs() {
     </div>
   );
 }
-
-// HR Organization Management - Leave Management
+ 
 export function HROrgLeaveManagement() {
   return (
     <div className="space-y-6">
@@ -2945,7 +2872,7 @@ export function HROrgLeaveManagement() {
   );
 }
 
-// HR Organization Management - Attendance Management
+ 
 export function HROrgAttendanceManagement() {
   return (
     <div className="space-y-6">
@@ -2965,7 +2892,7 @@ export function HROrgAttendanceManagement() {
   );
 }
 
-// HR Organization Management - Onboarding
+ 
 export function HROrgOnboarding() {
   return (
     <div className="space-y-6">
@@ -2984,8 +2911,7 @@ export function HROrgOnboarding() {
     </div>
   );
 }
-
-// HR Organization Management - Salaries Management
+ 
 export function HROrgSalariesManagement() {
   return (
     <div className="space-y-6">
@@ -3004,8 +2930,7 @@ export function HROrgSalariesManagement() {
     </div>
   );
 }
-
-// HR Organization Management - Team Performance
+ 
 export function HROrgTeamPerformance() {
   return (
     <div className="space-y-6">
@@ -3025,7 +2950,7 @@ export function HROrgTeamPerformance() {
   );
 }
 
-// HR Organization Management - Salary Advance Requests
+ 
 export function HROrgSalaryAdvanceRequests() {
   return (
     <div className="space-y-6">

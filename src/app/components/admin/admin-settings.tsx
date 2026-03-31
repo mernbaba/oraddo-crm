@@ -16,19 +16,16 @@ import {
 
 export function AdminSettings() {
   const [settings, setSettings] = useState({
-    // General Settings
     siteName: "BPM Platform",
     siteUrl: "https://bpmplatform.com",
     supportEmail: "support@bpmplatform.com",
     timezone: "UTC",
     
-    // Email Settings
     emailProvider: "smtp",
     smtpHost: "smtp.gmail.com",
     smtpPort: "587",
     smtpUser: "noreply@bpmplatform.com",
     
-    // Notification Settings
     emailNotifications: true,
     smsNotifications: false,
     pushNotifications: true,
@@ -36,19 +33,16 @@ export function AdminSettings() {
     notifyNewQuery: true,
     notifyPayment: true,
     
-    // Security Settings
     twoFactorAuth: true,
     sessionTimeout: "30",
     passwordExpiry: "90",
     maxLoginAttempts: "5",
     
-    // Payment Settings
     currency: "USD",
     taxRate: "0",
     stripePublicKey: "pk_test_...",
     stripeSecretKey: "sk_test_...",
     
-    // User Settings
     autoApproveUsers: false,
     defaultPlan: "Free",
     trialPeriod: "14",
@@ -58,7 +52,6 @@ export function AdminSettings() {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    // In a real app, this would save to backend
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -69,7 +62,6 @@ export function AdminSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Save Button - Sticky at top */}
       <div className="flex justify-end sticky top-0 z-10 bg-gradient-to-br from-[#F0E9FF] via-white to-[#F0E9FF] py-4 -mt-6 -mx-6 px-6">
         <Button
           className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462] shadow-lg"
@@ -80,7 +72,6 @@ export function AdminSettings() {
         </Button>
       </div>
 
-      {/* General Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -148,7 +139,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Email Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -213,7 +203,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -286,7 +275,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Security Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -345,7 +333,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Payment Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -413,7 +400,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* User Settings */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -475,7 +461,6 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Save Button - Bottom */}
       <div className="flex justify-end pt-4">
         <Button
           className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462] shadow-lg"

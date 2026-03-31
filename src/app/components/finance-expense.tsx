@@ -32,7 +32,6 @@ export function FinanceExpense() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
 
-  // Form state for creating new expense
   const [newExpense, setNewExpense] = useState({
     category: "",
     description: "",
@@ -71,7 +70,6 @@ export function FinanceExpense() {
     "Other",
   ];
 
-  // Sample expenses data with monthly breakdown
   const [expenses] = useState([
     {
       id: "EXP-2026-001",
@@ -229,7 +227,6 @@ export function FinanceExpense() {
       receiptUrl: "receipt-010.pdf",
       hasReceipt: true,
     },
-    // January expenses
     {
       id: "EXP-2026-011",
       submittedBy: "John Anderson",
@@ -264,7 +261,6 @@ export function FinanceExpense() {
     },
   ]);
 
-  // Filter expenses
   const filteredExpenses = expenses.filter((exp) => {
     const matchesMonth = exp.month === selectedMonth;
     const matchesYear = exp.year === selectedYear;
@@ -279,7 +275,6 @@ export function FinanceExpense() {
     return matchesMonth && matchesYear && matchesSearch && matchesStatus && matchesCategory;
   });
 
-  // Calculate statistics
   const monthlyTotal = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
   const approvedTotal = filteredExpenses
     .filter((exp) => exp.status === "approved")
@@ -295,7 +290,6 @@ export function FinanceExpense() {
   const pendingCount = filteredExpenses.filter((exp) => exp.status === "pending").length;
   const declinedCount = filteredExpenses.filter((exp) => exp.status === "declined").length;
 
-  // Calculate yearly total
   const yearlyTotal = expenses
     .filter((exp) => exp.year === selectedYear)
     .reduce((sum, exp) => sum + exp.amount, 0);
@@ -329,10 +323,9 @@ export function FinanceExpense() {
   };
 
   const handleCreateExpense = () => {
-    // Handle expense creation logic here
     console.log("Creating expense:", newExpense);
     setShowCreateModal(false);
-    // Reset form
+
     setNewExpense({
       category: "",
       description: "",
@@ -350,14 +343,12 @@ export function FinanceExpense() {
   };
 
   const handleViewReceipt = (expense: any) => {
-    // In a real app, this would open the actual receipt
     console.log("Viewing receipt for:", expense.id);
     alert(`Viewing receipt: ${expense.receiptUrl}`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -382,7 +373,6 @@ export function FinanceExpense() {
         </Button>
       </div>
 
-      {/* Year and Month Selector */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-[#422462]" />
@@ -419,7 +409,6 @@ export function FinanceExpense() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-4 gap-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/40 p-4 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-2">
@@ -482,7 +471,6 @@ export function FinanceExpense() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]/50" />
@@ -526,7 +514,6 @@ export function FinanceExpense() {
         </Button>
       </div>
 
-      {/* Expenses Table */}
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10 overflow-x-auto">
@@ -624,7 +611,6 @@ export function FinanceExpense() {
         </div>
       </div>
 
-      {/* Create Expense Modal */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => {
@@ -780,7 +766,6 @@ export function FinanceExpense() {
         </div>
       </Modal>
 
-      {/* Expense Details Modal */}
       {selectedExpense && (
         <Modal
           isOpen={showDetailsModal}
@@ -792,7 +777,6 @@ export function FinanceExpense() {
           size="lg"
         >
           <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-start justify-between pb-4 border-b border-[#937CB4]/20">
               <div>
                 <h3 className="text-xl font-bold text-[#200B43]">{selectedExpense.id}</h3>
@@ -807,7 +791,6 @@ export function FinanceExpense() {
               </div>
             </div>
 
-            {/* Details Grid */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <p className="text-xs text-[#5A4079] font-medium">Category</p>
@@ -826,7 +809,6 @@ export function FinanceExpense() {
               <p className="text-sm text-[#200B43]">{selectedExpense.description}</p>
             </div>
 
-            {/* Status Information */}
             {selectedExpense.status === "approved" && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -884,7 +866,6 @@ export function FinanceExpense() {
               </div>
             )}
 
-            {/* Receipt Section */}
             <div className="space-y-2">
               <p className="text-xs text-[#5A4079] font-medium">Receipt/Invoice</p>
               {selectedExpense.hasReceipt ? (
@@ -914,7 +895,6 @@ export function FinanceExpense() {
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 onClick={() => {

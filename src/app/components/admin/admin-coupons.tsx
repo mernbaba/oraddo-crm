@@ -206,7 +206,6 @@ export function AdminCoupons() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -225,7 +224,6 @@ export function AdminCoupons() {
         ))}
       </div>
 
-      {/* Add Coupon Button */}
       <div className="flex justify-end">
         <Button
           className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
@@ -236,7 +234,6 @@ export function AdminCoupons() {
         </Button>
       </div>
 
-      {/* Coupons List */}
       <div className="grid gap-4">
         {coupons.map((coupon) => (
           <Card key={coupon.id} className={`gradient-card gradient-card-hover border-[#937CB4]/30 ${!coupon.active && "opacity-60"}`}>
@@ -323,7 +320,6 @@ export function AdminCoupons() {
         ))}
       </div>
 
-      {/* Add/Edit Coupon Modal */}
       {showCouponModal && (
         <Modal
           isOpen={showCouponModal}

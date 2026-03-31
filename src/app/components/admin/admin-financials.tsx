@@ -78,7 +78,6 @@ export function AdminFinancials() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -106,8 +105,6 @@ export function AdminFinancials() {
           </div>
         ))}
       </div>
-
-      {/* Date Range Filter */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
@@ -135,7 +132,6 @@ export function AdminFinancials() {
         </CardContent>
       </Card>
 
-      {/* Revenue Chart */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -175,7 +171,6 @@ export function AdminFinancials() {
         </CardContent>
       </Card>
 
-      {/* Recent Transactions */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
@@ -226,7 +221,6 @@ export function AdminFinancials() {
         </CardContent>
       </Card>
 
-      {/* Refunds */}
       <Card className="gradient-card border-[#937CB4]/30">
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">

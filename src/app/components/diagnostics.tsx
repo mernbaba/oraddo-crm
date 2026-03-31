@@ -4,7 +4,6 @@ import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 export function Diagnostics() {
   const components = [
-    // Main Modules
     { name: "Dashboard", path: "dashboard", status: "active" },
     { name: "Business Development", path: "business-development", status: "active" },
     { name: "Marketing", path: "marketing", status: "active" },
@@ -13,22 +12,18 @@ export function Diagnostics() {
     { name: "Project Management", path: "project-management", status: "active" },
     { name: "Lead Generation", path: "lead-generation", status: "active" },
     
-    // BizDev Sub-modules
     { name: "Proposal Quotation", path: "bizdev-proposal", status: "active" },
     { name: "Invoice Generation", path: "bizdev-invoice", status: "active" },
     { name: "Billing Management", path: "bizdev-billing", status: "active" },
-    
-    // Marketing Sub-modules
+
     { name: "Marketing Calendar", path: "marketing-calendar", status: "active" },
     { name: "Marketing Strategies", path: "marketing-strategies", status: "active" },
     { name: "Blogs", path: "marketing-blogs", status: "active" },
-    
-    // Finance Sub-modules
+
     { name: "Expense Management", path: "finance-expense", status: "active" },
     { name: "Financial Management", path: "finance-financial", status: "active" },
     { name: "Monthly Revenue", path: "finance-revenue", status: "active" },
     
-    // HR Sub-modules
     { name: "Attendance", path: "hr-attendance", status: "active" },
     { name: "My Performance Metrics", path: "hr-self-service-performance", status: "active" },
     { name: "My Salary Structure", path: "hr-self-service-salary-structure", status: "active" },
@@ -43,13 +38,11 @@ export function Diagnostics() {
     { name: "Salaries Management", path: "hr-org-salaries", status: "active" },
     { name: "Team Performance", path: "hr-org-team-performance", status: "active" },
     { name: "Salary Advance", path: "hr-org-salary-advance", status: "active" },
-    
-    // Project Sub-modules
+
     { name: "Kanban Board", path: "project-kanban", status: "active" },
     { name: "Completed Projects", path: "project-completed", status: "active" },
     { name: "Tasks", path: "project-tasks", status: "active" },
-    
-    // Utilities
+
     { name: "Notes", path: "notes", status: "active" },
     { name: "Chat", path: "chat", status: "active" },
     { name: "Notifications", path: "notifications", status: "active" },
