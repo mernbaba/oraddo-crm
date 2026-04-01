@@ -123,13 +123,12 @@ export function MarketingCalendar() {
     { label: "Events This Month", value: "6", gradient: "from-[#937CB4] to-[#5A4079]" },
     { label: "Team Members", value: "12", gradient: "from-[#422462] to-[#937CB4]" },
   ];
-
-  // Simple calendar grid (7x5 = 35 days)
+ 
   const calendarDays = Array.from({ length: 35 }, (_, i) => i + 1);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -146,8 +145,7 @@ export function MarketingCalendar() {
           New Event
         </Button>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -165,10 +163,9 @@ export function MarketingCalendar() {
           </div>
         ))}
       </div>
-
-      {/* Calendar and Events Grid */}
+ 
       <div className="grid grid-cols-1 gap-6">
-        {/* Calendar */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-[#200B43]">{currentMonth}</h3>
@@ -182,7 +179,7 @@ export function MarketingCalendar() {
             </div>
           </div>
 
-          {/* Calendar Grid */}
+  
           <div className="grid grid-cols-7 gap-2">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div key={day} className="text-center text-xs font-semibold text-[#5A4079] p-2">
@@ -207,8 +204,7 @@ export function MarketingCalendar() {
             })}
           </div>
         </div>
-
-        {/* Campaign List */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
           <div className="p-6 border-b border-[#937CB4]/20">
             <div className="flex items-center justify-between">
@@ -299,8 +295,7 @@ export function MarketingCalendar() {
           </div>
         </div>
       </div>
-
-      {/* Create Event/Meeting Modal */}
+ 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create New Event/Meeting" size="lg">
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -396,8 +391,7 @@ export function MarketingCalendar() {
           </div>
         </form>
       </Modal>
-
-      {/* View Event/Meeting Modal */}
+ 
       {selectedEvent && (
         <Modal isOpen={showViewModal} onClose={() => setShowViewModal(false)} title={`${selectedEvent.type}: ${selectedEvent.title}`} size="lg">
           <div className="space-y-4">
@@ -479,8 +473,7 @@ export function MarketingCalendar() {
           </div>
         </Modal>
       )}
-
-      {/* Edit Event/Meeting Modal */}
+ 
       {selectedEvent && (
         <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Event/Meeting" size="lg">
           <form className="space-y-4">

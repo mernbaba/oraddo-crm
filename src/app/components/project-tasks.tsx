@@ -48,8 +48,7 @@ export function ProjectTasks() {
   const [activeTab, setActiveTab] = useState<"pending" | "ongoing" | "completed">("pending");
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-
-  // Filter tasks based on active tab
+ 
   const getFilteredTasks = () => {
     switch (activeTab) {
       case "pending":
@@ -113,7 +112,7 @@ export function ProjectTasks() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -135,8 +134,7 @@ export function ProjectTasks() {
           New Task
         </Button>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -182,8 +180,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Tabs */}
+ 
       <div className="flex gap-2 border-b border-[#937CB4]/20">
         <button
           onClick={() => setActiveTab("pending")}
@@ -225,8 +222,7 @@ export function ProjectTasks() {
           </div>
         </button>
       </div>
-
-      {/* Tasks List */}
+ 
       <div className="space-y-4">
         {getFilteredTasks().length === 0 ? (
           <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 shadow-lg text-center">
@@ -288,8 +284,7 @@ export function ProjectTasks() {
                   {task.status === "in-progress" ? "In Progress" : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                 </Badge>
               </div>
-
-              {/* Progress Bar */}
+ 
               {task.status !== "completed" && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
@@ -304,8 +299,7 @@ export function ProjectTasks() {
                   </div>
                 </div>
               )}
-
-              {/* Detailed Task Information */}
+ 
               <div className="w-full space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -341,8 +335,7 @@ export function ProjectTasks() {
                       <li>Update progress status regularly</li>
                       <li>Notify team members upon completion</li>
                     </ul>
-                    
-                    {/* Start Task Button for Pending Tasks */}
+ 
                     {task.status === "pending" && (
                       <div className="mt-4">
                         <Button 
@@ -355,8 +348,7 @@ export function ProjectTasks() {
                         </Button>
                       </div>
                     )}
-
-                    {/* Complete Button for Ongoing Tasks */}
+ 
                     {task.status === "in-progress" && (
                       <div className="mt-4">
                         <Button 
@@ -378,8 +370,7 @@ export function ProjectTasks() {
                       <CheckCircle2 className="h-4 w-4" />
                       <span className="font-medium">Task completed successfully on {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    
-                    {/* Submit Button for Completed Tasks */}
+
                     <Button 
                       size="sm" 
                       onClick={() => handleSubmitTask(task.id)}
@@ -395,8 +386,7 @@ export function ProjectTasks() {
           ))
         )}
       </div>
-
-      {/* New Task Modal */}
+ 
       {showNewTaskModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">

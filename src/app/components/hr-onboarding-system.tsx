@@ -26,8 +26,7 @@ export function HROrgOnboarding() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-
-  // Mock onboarded employees data
+ 
   const [employees, setEmployees] = useState([
     {
       id: 1,
@@ -102,7 +101,7 @@ export function HROrgOnboarding() {
   ]);
 
   const [formData, setFormData] = useState({
-    // Personal Information
+ 
     name: "",
     phone: "",
     alternatePhone: "",
@@ -110,46 +109,45 @@ export function HROrgOnboarding() {
     gender: "",
     religion: "",
     educationQualification: "",
-    
-    // Family Information
+ 
     fatherHusbandName: "",
     fatherHusbandNumber: "",
     motherWifeName: "",
     motherWifeNumber: "",
     
-    // Address Information
+ 
     currentAddress: "",
     permanentAddress: "",
     city: "",
     
-    // ID Proofs
+ 
     panNumber: "",
     aadharNumber: "",
     
-    // Employment Information
+ 
     position: "",
     joiningDate: "",
     empType: "",
     workFromHome: "No",
     leaveBalance: "",
     
-    // Account Information
-    email: "", // Username/Email
+ 
+    email: "",  
     password: "",
     businessEmail: "",
     personalEmail: "",
     
-    // Banking Information
+ 
     bankAccountNumber: "",
     bankName: "",
     ifscCode: "",
     pfUanNumber: "",
     
-    // Salary (existing)
+
     salary: "",
   });
 
-  // Filtered employees
+
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,7 +158,7 @@ export function HROrgOnboarding() {
     return matchesSearch;
   });
 
-  // Statistics
+
   const stats = {
     total: employees.length,
     fullTime: employees.filter((e) => e.empType === "Full-Time").length,
@@ -220,7 +218,7 @@ export function HROrgOnboarding() {
   };
 
   const handleExport = () => {
-    // Create CSV content
+
     const headers = [
       "Employee ID",
       "Name",
@@ -270,7 +268,7 @@ export function HROrgOnboarding() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -310,8 +308,7 @@ export function HROrgOnboarding() {
           </Button>
         </div>
       </div>
-
-      {/* Statistics Cards */}
+ 
       <div className="grid grid-cols-4 gap-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/40 p-4 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-center justify-between">
@@ -358,8 +355,7 @@ export function HROrgOnboarding() {
           </div>
         </div>
       </div>
-
-      {/* Filters and Search */}
+ 
       <div className="flex items-center gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]/50" />
@@ -371,8 +367,7 @@ export function HROrgOnboarding() {
           />
         </div>
       </div>
-
-      {/* Employees Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10">
@@ -486,8 +481,7 @@ export function HROrgOnboarding() {
           </table>
         </div>
       </div>
-
-      {/* Create Employee Modal */}
+ 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Add New Employee - Comprehensive Details" size="xl">
         <HROnboardingForm
           formData={formData}
@@ -496,8 +490,7 @@ export function HROrgOnboarding() {
           onCancel={() => setShowCreateModal(false)}
         />
       </Modal>
-
-      {/* Import Modal */}
+ 
       <Modal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
@@ -561,8 +554,7 @@ export function HROrgOnboarding() {
           </div>
         </div>
       </Modal>
-
-      {/* View Employee Details Modal */}
+ 
       {selectedEmployee && (
         <Modal
           isOpen={showViewModal}
@@ -574,7 +566,7 @@ export function HROrgOnboarding() {
           size="xl"
         >
           <div className="space-y-6">
-            {/* Employee Header */}
+ 
             <div className="flex items-center gap-4 pb-6 border-b border-[#937CB4]/20">
               <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-2xl shadow-xl relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
@@ -601,8 +593,7 @@ export function HROrgOnboarding() {
                 {selectedEmployee.onboardingStatus}
               </span>
             </div>
-
-            {/* Progress Overview */}
+ 
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#200B43] to-[#422462] p-6 shadow-xl">
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
               <div className="relative z-10 space-y-4">
@@ -621,8 +612,7 @@ export function HROrgOnboarding() {
                 </p>
               </div>
             </div>
-
-            {/* Employee Information */}
+ 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4 shadow-md">
                 <h4 className="text-xs font-semibold text-[#5A4079] mb-1">Email</h4>
@@ -651,8 +641,7 @@ export function HROrgOnboarding() {
                 <p className="text-sm font-medium text-[#200B43]">{selectedEmployee.assignedBuddy}</p>
               </div>
             </div>
-
-            {/* Documents Submitted */}
+ 
             <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/30 p-5 shadow-md">
               <h4 className="font-bold text-[#200B43] mb-3 flex items-center gap-2">
                 <FileText className="h-5 w-5 text-[#422462]" />
@@ -674,8 +663,7 @@ export function HROrgOnboarding() {
                 <p className="text-sm text-[#5A4079]">No documents submitted yet</p>
               )}
             </div>
-
-            {/* Close Button */}
+ 
             <div className="flex justify-end pt-2">
               <Button
                 variant="outline"

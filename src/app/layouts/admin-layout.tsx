@@ -52,7 +52,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0E9FF] via-white to-[#F0E9FF]">
-      {/* Top Navigation Bar */}
+   
       <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-[#937CB4]/20 z-50 shadow-lg shadow-[#937CB4]/10">
         <div className="flex items-center justify-between h-full px-4">
           <div className="flex items-center gap-4">
@@ -111,8 +111,7 @@ export default function AdminLayout() {
           </div>
         </div>
       </div>
-
-      {/* Sidebar */}
+ 
       <div className={`fixed left-0 top-16 bottom-0 w-64 bg-white/90 backdrop-blur-xl border-r border-[#937CB4]/20 transition-all duration-300 z-40 overflow-y-auto shadow-xl shadow-[#937CB4]/10 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 space-y-2">
           {menuItems.map((item) => (
@@ -132,11 +131,10 @@ export default function AdminLayout() {
           ))}
         </div>
       </div>
-
-      {/* Main Content Area */}
+ 
       <div className={`transition-all duration-300 pt-16 ${sidebarOpen ? 'pl-64' : 'pl-0'}`}>
         <div className="p-6">
-          {/* Page Header */}
+    
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="relative">
@@ -147,8 +145,7 @@ export default function AdminLayout() {
             </div>
             <p className="text-[#5A4079] ml-9">{viewInfo.subtitle}</p>
           </div>
-
-          {/* Content */}
+ 
           <div className="relative">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-gradient-to-tl from-[#422462]/10 to-transparent rounded-full blur-3xl"></div>

@@ -210,8 +210,7 @@ export function Processes() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Filters */}
+ 
       <div className="flex gap-2">
         <Button 
           variant={filter === "all" ? "default" : "outline"} 
@@ -249,8 +248,7 @@ export function Processes() {
           Completed
         </Button>
       </div>
-
-      {/* Process List */}
+ 
       <div className="grid gap-4">
         {filteredProcesses.map((process) => {
           const StatusIcon = statusConfig[process.status].icon;

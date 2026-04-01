@@ -31,12 +31,12 @@ import { useState } from "react";
 export function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    // Basic Info
+ 
     name: "Haritha Sree",
     initials: "HS",
     employeeId: "EMP-2024-001",
     
-    // Personal Information
+ 
     phone: "+91 98765 43210",
     alternatePhone: "+91 87654 32109",
     dateOfBirth: "1995-05-15",
@@ -44,22 +44,20 @@ export function Profile() {
     religion: "Hindu",
     educationQualification: "B.Tech in Computer Science",
     
-    // Family Information
+ 
     fatherHusbandName: "Rajesh Kumar",
     fatherHusbandNumber: "+91 98765 11111",
     motherWifeName: "Lakshmi Devi",
     motherWifeNumber: "+91 98765 22222",
     
-    // Address Information
+ 
     currentAddress: "Flat 204, Green Valley Apartments, Bandra West",
     permanentAddress: "Plot 45, MG Road, Secunderabad",
     city: "Mumbai",
-    
-    // ID Proofs
+ 
     panNumber: "ABCDE1234F",
     aadharNumber: "1234 5678 9012",
-    
-    // Employment Information
+ 
     position: "System Administrator",
     department: "IT & Operations",
     joiningDate: "2023-01-15",
@@ -69,13 +67,12 @@ export function Profile() {
     salary: "₹95,000",
     reportingTo: "CEO",
     workHours: "09:00 AM - 06:00 PM",
-    
-    // Account Information
+ 
     email: "haritha.sree@tridizi.com",
     businessEmail: "haritha.sree@company.com",
     personalEmail: "haritha95@gmail.com",
     
-    // Banking Information
+ 
     bankAccountNumber: "1234567890123456",
     bankName: "HDFC Bank",
     ifscCode: "HDFC0001234",
@@ -111,7 +108,7 @@ export function Profile() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#200B43] via-[#422462] to-[#937CB4] bg-clip-text text-transparent">
@@ -149,12 +146,11 @@ export function Profile() {
           )}
         </div>
       </div>
-
-      {/* Profile Header Card */}
+ 
       <Card className="gradient-card border-[#937CB4]/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-6 flex-wrap">
-            {/* Avatar Section */}
+ 
             <div className="relative">
               <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-4xl font-bold shadow-xl ring-4 ring-[#F0E9FF]">
                 {profileData.initials}
@@ -168,8 +164,7 @@ export function Profile() {
                 </Button>
               )}
             </div>
-
-            {/* Basic Profile Info */}
+ 
             <div className="flex-1 space-y-4">
               <div>
                 {isEditing ? (
@@ -186,8 +181,7 @@ export function Profile() {
                   <span>{profileData.position}</span>
                 </p>
               </div>
-
-              {/* Quick Info Grid */}
+ 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-[#F0E9FF]/30">
                   <Shield className="h-5 w-5 text-[#422462]" />
@@ -223,8 +217,7 @@ export function Profile() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Stats Grid */}
+ 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <Card key={index} className="gradient-card border-[#937CB4]/30">
@@ -242,10 +235,9 @@ export function Profile() {
           </Card>
         ))}
       </div>
-
-      {/* Detailed Information Sections */}
+ 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Personal Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -352,8 +344,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Family Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -419,8 +410,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Address Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -473,8 +463,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* ID Proofs */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -514,8 +503,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Employment Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -640,8 +628,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Account Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -697,8 +684,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Banking Information */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -765,10 +751,9 @@ export function Profile() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity & Achievements */}
+ 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Activity */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">
@@ -795,8 +780,7 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Achievements */}
+ 
         <Card className="gradient-card border-[#937CB4]/30">
           <CardHeader>
             <CardTitle className="text-lg text-[#200B43] flex items-center gap-2">

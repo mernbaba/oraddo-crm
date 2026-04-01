@@ -1,7 +1,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Color Palette */
+ 
   --primary-dark: #200B43;
   --primary-light: #F0E9FF;
   --accent-purple: #937CB4;
@@ -11,7 +11,7 @@
   --muted-purple: #958CA7;
   --white: #FFFFFF;
   
-  /* Theme Variables */
+ 
   --font-size: 16px;
   --background: #F0E9FF;
   --foreground: #200B43;
@@ -52,7 +52,7 @@
   --sidebar-ring: #937CB4;
 }
 
-/* Custom Scrollbar */
+ 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -169,8 +169,7 @@
     line-height: 1.5;
   }
 }
-
-/* AI-themed animations and effects */
+ 
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -228,8 +227,7 @@
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
 }
-
-/* AI Grid Background */
+ 
 .ai-grid-bg {
   background-image: 
     linear-gradient(rgba(147, 124, 180, 0.05) 1px, transparent 1px),
@@ -237,7 +235,7 @@
   background-size: 50px 50px;
 }
 
-/* Radial Gradient Overlays */
+ 
 .radial-gradient-overlay {
   position: relative;
 }

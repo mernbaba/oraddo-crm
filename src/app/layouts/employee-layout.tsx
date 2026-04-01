@@ -130,8 +130,7 @@ export default function EmployeeLayout() {
           </div>
         </div>
       </div>
-
-      {/* Sidebar - NO FINANCE, NO ORG MANAGEMENT */}
+ 
       <div className={`fixed left-0 top-16 bottom-0 w-64 bg-white/90 backdrop-blur-xl border-r border-[#937CB4]/20 transition-all duration-300 z-40 overflow-y-auto shadow-xl shadow-[#937CB4]/10 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-4 space-y-2">
           {/* Dashboard */}
@@ -148,8 +147,7 @@ export default function EmployeeLayout() {
               <span className="relative z-10">Dashboard</span>
             </Button>
           </Link>
-
-          {/* Business Development */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -187,8 +185,7 @@ export default function EmployeeLayout() {
               </div>
             </div>
           </div>
-
-          {/* Marketing */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -225,8 +222,7 @@ export default function EmployeeLayout() {
               </div>
             </div>
           </div>
-
-          {/* Human Resources - NO Organization Management */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -273,8 +269,7 @@ export default function EmployeeLayout() {
               </div>
             </div>
           </div>
-
-          {/* Project Management */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -306,18 +301,15 @@ export default function EmployeeLayout() {
               </div>
             </div>
           </div>
-
-          {/* Lead Generation */}
+ 
           <Link to="/employee/lead-generation" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
             <Button variant="ghost" className={`w-full justify-start transition-all duration-300 ${isActive("/employee/lead-generation") ? 'bg-gradient-to-r from-[#422462] to-[#5A4079] text-white' : 'text-[#200B43] hover:bg-[#F0E9FF]/70'}`}>
               <UserPlus className="mr-3 h-5 w-5" /><span className="relative z-10">Lead Generation</span>
             </Button>
           </Link>
-
-          {/* Divider */}
+ 
           <div className="border-t border-[#937CB4]/20 my-2"></div>
-
-          {/* Utilities */}
+ 
           <Link to="/employee/notes" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
             <Button variant="ghost" size="sm" className={`w-full justify-start ${isActive("/employee/notes") ? 'bg-[#F0E9FF] text-[#422462]' : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'}`}>
               <StickyNote className="mr-2 h-4 w-4" /><span className="text-sm">Notes</span>
@@ -335,11 +327,10 @@ export default function EmployeeLayout() {
           </Link>
         </div>
       </div>
-
-      {/* Main Content Area */}
+ 
       <div className={`transition-all duration-300 pt-16 ${sidebarOpen ? 'lg:pl-64' : 'pl-0'}`}>
         <div className="p-6">
-          {/* Content */}
+ 
           <div className="relative">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-gradient-to-tl from-[#422462]/10 to-transparent rounded-full blur-3xl"></div>

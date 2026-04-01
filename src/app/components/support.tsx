@@ -175,7 +175,7 @@ export function Support() {
       browserInfo: ""
     });
 
-    // Auto-select the new ticket
+ 
     setTimeout(() => setSelectedTicket(newTicket), 300);
   };
 
@@ -229,7 +229,7 @@ export function Support() {
     closed: "bg-gray-100 text-gray-800",
   };
 
-  // Ticket List View
+ 
   if (!selectedTicket) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
@@ -248,7 +248,7 @@ export function Support() {
           </p>
         </div>
 
-        {/* Info Cards */}
+ 
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="border-[#937CB4]/20 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
@@ -296,7 +296,7 @@ export function Support() {
           </Card>
         </div>
 
-        {/* Create New Ticket Button */}
+ 
         <div className="text-center py-4">
           <Button 
             onClick={() => setShowCreateModal(true)}
@@ -306,8 +306,7 @@ export function Support() {
             Create New Support Ticket
           </Button>
         </div>
-
-        {/* My Tickets */}
+ 
         <div>
           <h3 className="text-xl font-bold text-[#200B43] mb-4">My Support Tickets</h3>
           <div className="space-y-3">
@@ -363,8 +362,7 @@ export function Support() {
             )}
           </div>
         </div>
-
-        {/* Common Issues */}
+ 
         <Card className="border-[#937CB4]/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -395,8 +393,7 @@ export function Support() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Create Ticket Modal */}
+ 
         <Modal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -565,11 +562,11 @@ export function Support() {
     );
   }
 
-  // Ticket Conversation View
+ 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex flex-col h-[calc(100vh-200px)]">
-        {/* Header */}
+ 
         <div className="mb-4">
           <Button
             variant="ghost"
@@ -617,8 +614,7 @@ export function Support() {
             </CardHeader>
           </Card>
         </div>
-
-        {/* Messages Area */}
+ 
         <Card className="border-[#937CB4]/20 flex-1 flex flex-col">
           <CardHeader className="border-b border-[#937CB4]/20">
             <CardTitle className="flex items-center gap-2">
@@ -660,8 +656,7 @@ export function Support() {
               </div>
             ))}
           </CardContent>
-
-          {/* Message Input */}
+ 
           <div className="border-t border-[#937CB4]/20 p-4">
             <form onSubmit={handleSendMessage} className="flex gap-3">
               <input
@@ -689,8 +684,7 @@ export function Support() {
             </form>
           </div>
         </Card>
-
-        {/* Ticket Details Sidebar */}
+ 
         <Card className="border-[#937CB4]/20 mt-4">
           <CardHeader>
             <CardTitle className="text-base">Ticket Details</CardTitle>

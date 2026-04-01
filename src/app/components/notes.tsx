@@ -145,7 +145,7 @@ export function Notes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -162,8 +162,7 @@ export function Notes() {
           New Note
         </Button>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -181,8 +180,7 @@ export function Notes() {
           </div>
         ))}
       </div>
-
-      {/* Search */}
+ 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
         <input
@@ -193,8 +191,7 @@ export function Notes() {
           className="w-full pl-10 pr-4 py-2 rounded-lg border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[#937CB4] text-[#200B43]"
         />
       </div>
-
-      {/* Pinned Notes */}
+ 
       {pinnedNotes.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -277,8 +274,7 @@ export function Notes() {
           </div>
         </div>
       )}
-
-      {/* All Notes */}
+ 
       <div>
         <h3 className="text-lg font-semibold text-[#200B43] mb-4">All Notes</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -331,8 +327,7 @@ export function Notes() {
           ))}
         </div>
       </div>
-
-      {/* Note Modal */}
+ 
       <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">

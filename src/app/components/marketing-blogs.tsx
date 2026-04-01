@@ -106,7 +106,7 @@ export function MarketingBlogs() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -133,8 +133,7 @@ export function MarketingBlogs() {
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -155,8 +154,7 @@ export function MarketingBlogs() {
           </div>
         ))}
       </div>
-
-      {/* Filters and Search */}
+ 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
@@ -171,15 +169,14 @@ export function MarketingBlogs() {
           Filter
         </Button>
       </div>
-
-      {/* Blog Posts Grid */}
+ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {blogs.map((blog) => (
           <div
             key={blog.id}
             className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
           >
-            {/* Blog Image */}
+ 
             <div className="relative h-48 overflow-hidden">
               <img
                 src={blog.image}
@@ -193,8 +190,7 @@ export function MarketingBlogs() {
                 </span>
               </div>
             </div>
-
-            {/* Blog Content */}
+ 
             <div className="p-6">
               <div className="mb-3">
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#F0E9FF] to-[#F0E9FF]/50 text-[#422462] border border-[#937CB4]/30">
@@ -212,8 +208,7 @@ export function MarketingBlogs() {
                 <span>•</span>
                 <span>{blog.date}</span>
               </div>
-
-              {/* Engagement Metrics */}
+ 
               {blog.status === "Published" && (
                 <div className="flex items-center gap-4 mb-4 pt-4 border-t border-[#937CB4]/20">
                   <div className="flex items-center gap-1 text-sm text-[#5A4079]">
@@ -230,8 +225,7 @@ export function MarketingBlogs() {
                   </div>
                 </div>
               )}
-
-              {/* Action Buttons */}
+ 
               <div className="flex items-center gap-2">
                 <Button size="sm" className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]" onClick={() => { setSelectedBlog(blog); setViewPostModalOpen(true); }}>
                   {blog.status === "Draft" ? "Continue Writing" : "View Post"}
@@ -244,11 +238,10 @@ export function MarketingBlogs() {
           </div>
         ))}
       </div>
-
-      {/* Integration Modal */}
+ 
       <Modal isOpen={integrateModalOpen} onClose={() => setIntegrateModalOpen(false)} title="Integrate Blog Widget" size="lg">
         <div className="space-y-6">
-          {/* Instructions */}
+   
           <div className="p-4 rounded-lg bg-[#F0E9FF]/30 border border-[#937CB4]/20">
             <h3 className="text-sm font-semibold text-[#422462] mb-3">Integration Instructions</h3>
             <ul className="space-y-2 text-sm text-[#5A4079]">
@@ -270,8 +263,7 @@ export function MarketingBlogs() {
               </li>
             </ul>
           </div>
-
-          {/* Code Block */}
+ 
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-[#422462]">Integration Code</h3>
@@ -300,8 +292,7 @@ export function MarketingBlogs() {
               </pre>
             </div>
           </div>
-
-          {/* Additional Info */}
+ 
           <div className="p-4 rounded-lg bg-white border border-[#937CB4]/20">
             <h3 className="text-sm font-semibold text-[#422462] mb-2">Need Help?</h3>
             <p className="text-sm text-[#5A4079]">
@@ -311,8 +302,7 @@ export function MarketingBlogs() {
           </div>
         </div>
       </Modal>
-
-      {/* Create Modal */}
+ 
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Create New Blog Post" size="lg">
         <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
@@ -444,12 +434,11 @@ export function MarketingBlogs() {
           </div>
         </form>
       </Modal>
-
-      {/* View Post Modal */}
+ 
       <Modal isOpen={viewPostModalOpen} onClose={() => setViewPostModalOpen(false)} title="Blog Post" size="lg">
         {selectedBlog && (
           <div className="space-y-6">
-            {/* Featured Image */}
+ 
             <div className="relative h-64 -mt-4 -mx-6 mb-6 overflow-hidden">
               <img
                 src={selectedBlog.image}
@@ -458,8 +447,7 @@ export function MarketingBlogs() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#200B43]/80 to-transparent"></div>
             </div>
-
-            {/* Post Header */}
+ 
             <div className="-mt-20 relative z-10 px-6">
               <div className="flex items-center gap-3 mb-4">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedBlog.status)}`}>
@@ -486,8 +474,7 @@ export function MarketingBlogs() {
                 </div>
               </div>
             </div>
-
-            {/* Engagement Metrics */}
+ 
             {selectedBlog.status === "Published" && (
               <div className="flex items-center gap-6 px-6 py-4 bg-[#F0E9FF]/30 rounded-lg">
                 <div className="flex items-center gap-2 text-sm text-[#5A4079]">
@@ -513,8 +500,7 @@ export function MarketingBlogs() {
                 </div>
               </div>
             )}
-
-            {/* Post Content */}
+ 
             <div className="prose prose-purple max-w-none px-6">
               <p className="text-lg text-[#5A4079] mb-6 leading-relaxed">
                 {selectedBlog.excerpt}
@@ -559,8 +545,7 @@ export function MarketingBlogs() {
                 </p>
               </div>
             </div>
-
-            {/* Action Buttons */}
+ 
             <div className="flex items-center gap-3 px-6 pt-6 border-t border-[#937CB4]/20">
               <Button 
                 size="sm" 

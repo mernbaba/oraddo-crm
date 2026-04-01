@@ -130,7 +130,7 @@ export function MarketingStrategies() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -150,8 +150,7 @@ export function MarketingStrategies() {
           New Strategy
         </Button>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -175,8 +174,7 @@ export function MarketingStrategies() {
           );
         })}
       </div>
-
-      {/* Strategies Grid */}
+ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {strategies.map((strategy) => (
           <div
@@ -195,8 +193,7 @@ export function MarketingStrategies() {
                   {strategy.status}
                 </span>
               </div>
-
-              {/* Progress Bar */}
+ 
               <div className="mb-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-[#5A4079]">Progress</span>
@@ -209,8 +206,7 @@ export function MarketingStrategies() {
                   ></div>
                 </div>
               </div>
-
-              {/* Metrics */}
+ 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-[#5A4079] mb-1">Budget</p>
@@ -221,8 +217,7 @@ export function MarketingStrategies() {
                   <p className="text-lg font-semibold text-green-600">{strategy.roi}</p>
                 </div>
               </div>
-
-              {/* Channels */}
+ 
               <div>
                 <p className="text-xs text-[#5A4079] mb-2">Channels</p>
                 <div className="flex flex-wrap gap-2">
@@ -236,8 +231,7 @@ export function MarketingStrategies() {
                   ))}
                 </div>
               </div>
-
-              {/* Action Buttons */}
+ 
               <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#937CB4]/20">
                 <Button 
                   size="sm" 
@@ -259,8 +253,7 @@ export function MarketingStrategies() {
           </div>
         ))}
       </div>
-
-      {/* View Strategy Modal */}
+ 
       {selectedStrategy && (
         <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title={`Strategy: ${selectedStrategy.title}`} size="lg">
           <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
@@ -270,13 +263,11 @@ export function MarketingStrategies() {
                 {selectedStrategy.status}
               </span>
             </div>
-
-            {/* Description */}
+ 
             <div className="p-4 rounded-lg bg-[#F0E9FF]/30 border border-[#937CB4]/20">
               <p className="text-[#5A4079]">{selectedStrategy.description}</p>
             </div>
-
-            {/* Progress Bar */}
+ 
             <div>
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="font-medium text-[#5A4079]">Progress</span>
@@ -289,8 +280,7 @@ export function MarketingStrategies() {
                 ></div>
               </div>
             </div>
-
-            {/* Metrics Grid */}
+ 
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-lg border border-[#937CB4]/20 bg-white">
                 <p className="text-sm text-[#5A4079] mb-1">Budget</p>
@@ -301,8 +291,7 @@ export function MarketingStrategies() {
                 <p className="text-2xl font-bold text-green-600">{selectedStrategy.roi}</p>
               </div>
             </div>
-
-            {/* Channels */}
+ 
             <div>
               <Label className="text-sm font-medium text-[#422462] mb-2 block">Marketing Channels</Label>
               <div className="flex flex-wrap gap-2">
@@ -316,8 +305,7 @@ export function MarketingStrategies() {
                 ))}
               </div>
             </div>
-
-            {/* Additional Details */}
+ 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -356,8 +344,7 @@ export function MarketingStrategies() {
           </div>
         </Modal>
       )}
-
-      {/* Edit Strategy Modal */}
+ 
       {selectedStrategy && (
         <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Strategy" size="lg">
           <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -520,8 +507,7 @@ export function MarketingStrategies() {
           </form>
         </Modal>
       )}
-
-      {/* Create Strategy Modal */}
+ 
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Create New Strategy" size="lg">
         <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">

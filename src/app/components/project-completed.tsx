@@ -107,8 +107,7 @@ export function ProjectCompleted() {
     description: "",
     status: "Completed"
   });
-
-  // Calculate stats
+ 
   const totalRevenue = projects.reduce((sum, p) => {
     const budget = parseFloat(p.budget.replace(/[$,]/g, ''));
     return sum + budget;
@@ -124,16 +123,14 @@ export function ProjectCompleted() {
     { label: "Avg Rating", value: avgRating, change: "+0.3", gradient: "from-[#937CB4] to-[#5A4079]", icon: Award },
     { label: "This Quarter", value: "42", change: "+18%", gradient: "from-[#422462] to-[#937CB4]", icon: Calendar },
   ];
-
-  // Filter projects
+ 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           project.client.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRating = filterRating === "all" || Math.floor(project.rating) === parseInt(filterRating);
     return matchesSearch && matchesRating;
   });
-
-  // Reset form
+ 
   const resetForm = () => {
     setFormData({
       name: "",
@@ -148,8 +145,7 @@ export function ProjectCompleted() {
       status: "Completed"
     });
   };
-
-  // Add project
+ 
   const handleAddProject = () => {
     if (!formData.name.trim() || !formData.client.trim()) {
       alert("Please fill in required fields");
@@ -175,7 +171,7 @@ export function ProjectCompleted() {
     setShowAddModal(false);
   };
 
-  // Update project
+
   const handleUpdateProject = () => {
     if (!editingProject || !formData.name.trim() || !formData.client.trim()) {
       alert("Please fill in required fields");
@@ -204,16 +200,14 @@ export function ProjectCompleted() {
     setEditingProject(null);
     setShowAddModal(false);
   };
-
-  // Delete project
+ 
   const handleDeleteProject = (projectId: number) => {
     if (confirm("Are you sure you want to delete this project?")) {
       setProjects(projects.filter(project => project.id !== projectId));
       setShowDetailModal(false);
     }
   };
-
-  // Open edit modal
+ 
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
     setFormData({
@@ -230,14 +224,12 @@ export function ProjectCompleted() {
     });
     setShowAddModal(true);
   };
-
-  // Open detail modal
+ 
   const handleViewProject = (project: Project) => {
     setSelectedProject(project);
     setShowDetailModal(true);
   };
-
-  // Export report
+ 
   const handleExportReport = () => {
     const csvContent = [
       ["Project Name", "Client", "Completed Date", "Duration", "Budget", "Team Size", "Rating", "Deliverables"],
@@ -271,7 +263,7 @@ export function ProjectCompleted() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -305,8 +297,7 @@ export function ProjectCompleted() {
           </Button>
         </div>
       </div>
-
-      {/* Search and Filter */}
+ 
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
@@ -331,8 +322,7 @@ export function ProjectCompleted() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -356,8 +346,7 @@ export function ProjectCompleted() {
           );
         })}
       </div>
-
-      {/* Completed Projects List */}
+ 
       <div className="space-y-4">
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12 bg-white/90 backdrop-blur-xl rounded-xl border border-[#937CB4]/20">
@@ -390,8 +379,7 @@ export function ProjectCompleted() {
                     <p className="text-xs text-[#5A4079] mt-1">Client Rating</p>
                   </div>
                 </div>
-
-                {/* Project Metrics */}
+ 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-[#5A4079] mb-1">Completed</p>
@@ -420,8 +408,7 @@ export function ProjectCompleted() {
                     <p className="text-sm font-semibold text-[#200B43]">{project.deliverables}</p>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
+ 
                 <div className="flex items-center gap-2 pt-4 border-t border-[#937CB4]/20">
                   <Button 
                     size="sm" 
@@ -459,8 +446,7 @@ export function ProjectCompleted() {
           ))
         )}
       </div>
-
-      {/* Add/Edit Project Modal */}
+ 
       {showAddModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -485,7 +471,7 @@ export function ProjectCompleted() {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Project Name */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Project Name *</label>
                 <Input 
@@ -495,8 +481,7 @@ export function ProjectCompleted() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Client Name */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Client Name *</label>
                 <Input 
@@ -506,8 +491,7 @@ export function ProjectCompleted() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Description */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Description</label>
                 <Textarea 
@@ -517,8 +501,7 @@ export function ProjectCompleted() {
                   className="border-[#937CB4]/30 min-h-[100px]"
                 />
               </div>
-
-              {/* Row 1: Completed Date & Duration */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Completed Date</label>
@@ -539,8 +522,7 @@ export function ProjectCompleted() {
                   />
                 </div>
               </div>
-
-              {/* Row 2: Budget & Team Size */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Budget</label>
@@ -562,8 +544,7 @@ export function ProjectCompleted() {
                   />
                 </div>
               </div>
-
-              {/* Row 3: Rating & Deliverables */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Client Rating</label>
@@ -598,8 +579,7 @@ export function ProjectCompleted() {
                   />
                 </div>
               </div>
-
-              {/* Actions */}
+ 
               <div className="flex justify-end gap-3 pt-4">
                 <Button 
                   variant="outline" 
@@ -623,8 +603,7 @@ export function ProjectCompleted() {
           </div>
         </div>
       )}
-
-      {/* Project Detail Modal */}
+ 
       {showDetailModal && selectedProject && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -649,7 +628,7 @@ export function ProjectCompleted() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Quick Stats */}
+ 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 rounded-xl bg-gradient-to-br from-[#F0E9FF] to-white border border-[#937CB4]/20">
                   <Calendar className="h-5 w-5 text-[#422462] mx-auto mb-2" />
@@ -672,8 +651,7 @@ export function ProjectCompleted() {
                   <p className="text-sm font-bold text-[#422462]">{selectedProject.deliverables}</p>
                 </div>
               </div>
-
-              {/* Rating */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-3">Client Rating</h4>
                 <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-yellow-50 to-white rounded-xl border border-yellow-200">
@@ -681,16 +659,14 @@ export function ProjectCompleted() {
                   <span className="text-2xl font-bold text-yellow-600">{selectedProject.rating}</span>
                 </div>
               </div>
-
-              {/* Description */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-3">Project Description</h4>
                 <p className="text-sm text-[#5A4079] bg-[#F0E9FF]/30 p-4 rounded-xl border border-[#937CB4]/20">
                   {selectedProject.description || "No description provided"}
                 </p>
               </div>
-
-              {/* Project Details */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-3">Project Details</h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -706,8 +682,7 @@ export function ProjectCompleted() {
                   </div>
                 </div>
               </div>
-
-              {/* Actions */}
+ 
               <div className="flex justify-between gap-3 pt-4 border-t border-[#937CB4]/20">
                 <Button 
                   variant="outline"

@@ -102,7 +102,7 @@ export function ProjectMyTasks() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -119,8 +119,7 @@ export function ProjectMyTasks() {
           New Task
         </Button>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -143,8 +142,7 @@ export function ProjectMyTasks() {
           </div>
         ))}
       </div>
-
-      {/* Filters and Search */}
+ 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A4079]" />
@@ -159,8 +157,7 @@ export function ProjectMyTasks() {
           Filter
         </Button>
       </div>
-
-      {/* Tasks List */}
+ 
       <div className="space-y-4">
         {myTasks.map((task) => (
           <div
@@ -179,8 +176,7 @@ export function ProjectMyTasks() {
                     )}
                   </div>
                   <p className="text-sm text-[#5A4079] mb-3">{task.project}</p>
-                  
-                  {/* Badges */}
+ 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
                       {task.priority} Priority
@@ -191,8 +187,7 @@ export function ProjectMyTasks() {
                   </div>
                 </div>
               </div>
-
-              {/* Progress Bar */}
+ 
               <div className="mb-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-[#5A4079]">Progress</span>
@@ -209,8 +204,7 @@ export function ProjectMyTasks() {
                   ></div>
                 </div>
               </div>
-
-              {/* Task Metrics */}
+ 
               <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-[#937CB4]/20">
                 <div>
                   <div className="flex items-center gap-1 text-xs text-[#5A4079] mb-1">
@@ -236,8 +230,7 @@ export function ProjectMyTasks() {
                   <p className="text-sm font-medium text-[#200B43]">{task.estimatedTime}</p>
                 </div>
               </div>
-
-              {/* Action Buttons */}
+ 
               <div className="flex items-center gap-2">
                 {task.status !== "Completed" && (
                   <Button size="sm" className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]">

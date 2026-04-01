@@ -112,8 +112,7 @@ export function MarketingMeetings() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterType, setFilterType] = useState<string>("All");
-  
-  // Attend Meeting States
+ 
   const showAttendScreen = searchParams.get("view") === "attend";
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -289,7 +288,7 @@ export function MarketingMeetings() {
     <div className="space-y-6">
       {!showAttendScreen ? (
         <>
-          {/* Header */}
+    
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold text-[#200B43]">Meetings Management</h2>
@@ -306,8 +305,7 @@ export function MarketingMeetings() {
               Schedule Meeting
             </Button>
           </div>
-
-      {/* Filters and Search */}
+ 
       <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-[#937CB4]/20 shadow-xl shadow-[#937CB4]/10 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
@@ -351,8 +349,7 @@ export function MarketingMeetings() {
           </div>
         </div>
       </div>
-
-      {/* Meetings Grid */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMeetings.map((meeting) => (
           <div
@@ -445,7 +442,7 @@ export function MarketingMeetings() {
       )}
         </>
       ) : (
-        /* Attend Meeting Screen - Fits Main Screen */
+         
         <div className="bg-[#202124] rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-12rem)]">
           {/* Top Bar */}
           <div className="h-16 bg-[#202124] border-b border-gray-700 flex items-center justify-between px-6 flex-shrink-0">
@@ -466,13 +463,12 @@ export function MarketingMeetings() {
               </button>
             </div>
           </div>
-
-          {/* Main Video Area */}
+ 
           <div className="flex-1 flex relative overflow-hidden">
-            {/* Video Grid */}
+ 
             <div className={`flex-1 p-6 ${showChat || showParticipants ? 'pr-0' : ''}`}>
               <div className="h-full grid grid-cols-2 gap-4">
-                {/* Self Video */}
+ 
                 <div className="relative bg-gradient-to-br from-[#422462] to-[#5A4079] rounded-xl overflow-hidden flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
@@ -503,8 +499,7 @@ export function MarketingMeetings() {
                     </span>
                   </div>
                 </div>
-
-                {/* Participant Videos */}
+ 
                 {formData.participants.slice(0, 3).map((participant, index) => (
                   <div key={index} className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -526,8 +521,7 @@ export function MarketingMeetings() {
                 ))}
               </div>
             </div>
-
-            {/* Chat Sidebar */}
+ 
             {showChat && (
               <div className="w-80 bg-white border-l border-gray-300 flex flex-col flex-shrink-0">
                 <div className="h-14 border-b border-gray-300 flex items-center justify-between px-4">
@@ -557,8 +551,7 @@ export function MarketingMeetings() {
                 </div>
               </div>
             )}
-
-            {/* Participants Sidebar */}
+ 
             {showParticipants && (
               <div className="w-80 bg-white border-l border-gray-300 flex flex-col flex-shrink-0">
                 <div className="h-14 border-b border-gray-300 flex items-center justify-between px-4">
@@ -598,16 +591,14 @@ export function MarketingMeetings() {
               </div>
             )}
           </div>
-
-          {/* Bottom Control Bar */}
+ 
           <div className="h-24 bg-[#202124] border-t border-gray-700 flex items-center justify-between px-8 flex-shrink-0">
             <div className="flex items-center gap-2 text-white text-sm">
               <span>{new Date(formData.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
               <span className="text-gray-500">•</span>
               <span>{formData.duration}</span>
             </div>
-
-            {/* Center Controls */}
+ 
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsMuted(!isMuted)}
@@ -638,8 +629,7 @@ export function MarketingMeetings() {
                 <PhoneOff className="h-6 w-6 text-white" />
               </button>
             </div>
-
-            {/* Right Controls */}
+ 
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
@@ -672,8 +662,7 @@ export function MarketingMeetings() {
           </div>
         </div>
       )}
-
-      {/* Modal */}
+ 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
@@ -690,7 +679,7 @@ export function MarketingMeetings() {
 
             <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {viewMode === "view" ? (
-                // View Mode
+ 
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xl font-bold text-[#200B43] mb-2">{formData.title}</h3>
@@ -819,7 +808,7 @@ export function MarketingMeetings() {
                   </div>
                 </div>
               ) : (
-                // Create/Edit Mode
+ 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">

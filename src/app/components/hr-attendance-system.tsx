@@ -30,8 +30,7 @@ export function HROrgAttendanceManagement() {
   const [selectedMonth, setSelectedMonth] = useState(new Date(2024, 1, 1)); // February 2024
   const [viewDetailsModal, setViewDetailsModal] = useState<ModalData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Generate monthly attendance data for all employees
+ 
   const generateMonthlyAttendanceData = (): EmployeeMonthlyAttendance[] => {
     const employees = [
       { id: 1, name: "Alice Johnson", empId: "EMP-001", dept: "Engineering" },
@@ -53,7 +52,7 @@ export function HROrgAttendanceManagement() {
         const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
         const dayOfWeek = currentDate.getDay();
         
-        // Weekend check (Saturday = 6, Sunday = 0)
+ 
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           attendance.push({
             day,
@@ -65,14 +64,14 @@ export function HROrgAttendanceManagement() {
           continue;
         }
 
-        // Generate varied attendance patterns
+ 
         let status: "Present" | "Absent" | "Late" | "On Leave" | "Half Day" = "Present";
         let loginTime = "09:00 AM";
         let logoutTime = "06:00 PM";
         let workHours = "9.0 hrs";
         let remarks = "";
 
-        // Create realistic patterns
+    
         const rand = (emp.id * day) % 20;
         
         if (rand === 0) {
@@ -100,7 +99,7 @@ export function HROrgAttendanceManagement() {
           workHours = "4.5 hrs";
           remarks = "Medical appointment";
         } else {
-          // Vary the login times for present days
+           
           const variation = day % 4;
           if (variation === 0) {
             loginTime = "08:45 AM";
@@ -143,14 +142,14 @@ export function HROrgAttendanceManagement() {
 
   const monthlyAttendance = generateMonthlyAttendanceData();
 
-  // Filter employees based on search
+ 
   const filteredEmployees = monthlyAttendance.filter(emp => 
     emp.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.department.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Calculate monthly statistics
+ 
   const calculateMonthlyStats = () => {
     let totalPresent = 0;
     let totalAbsent = 0;
@@ -222,8 +221,7 @@ export function HROrgAttendanceManagement() {
     };
     return colors[status] || "bg-gray-100 text-gray-500";
   };
-
-  // Calculate individual employee stats for summary
+ 
   const getEmployeeStats = (attendance: DayAttendance[]) => {
     const present = attendance.filter(d => d.status === "Present").length;
     const absent = attendance.filter(d => d.status === "Absent").length;
@@ -238,7 +236,7 @@ export function HROrgAttendanceManagement() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -253,8 +251,7 @@ export function HROrgAttendanceManagement() {
           </div>
         </div>
       </div>
-
-      {/* Month Navigation & Actions - Compact */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
@@ -284,8 +281,7 @@ export function HROrgAttendanceManagement() {
           Export
         </Button>
       </div>
-
-      {/* Inline Legend & Search */}
+ 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-semibold text-[#5A4079]">Legend:</span>
@@ -324,8 +320,7 @@ export function HROrgAttendanceManagement() {
           />
         </div>
       </div>
-
-      {/* Monthly Attendance Calendar Grid - Compact & Fits Screen */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10 p-3">
@@ -412,8 +407,7 @@ export function HROrgAttendanceManagement() {
           </div>
         </div>
       </div>
-
-      {/* View Details Modal */}
+ 
       {viewDetailsModal !== null && (() => {
         const employee = monthlyAttendance.find(e => e.id === viewDetailsModal.employeeId);
         const dayData = employee?.attendance.find(a => a.day === viewDetailsModal.day);
@@ -431,7 +425,7 @@ export function HROrgAttendanceManagement() {
             size="lg"
           >
             <div className="space-y-5">
-              {/* Employee Information */}
+ 
               <div className="flex items-center gap-4 pb-5 border-b border-[#937CB4]/20">
                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-xl shadow-xl relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
@@ -457,8 +451,7 @@ export function HROrgAttendanceManagement() {
                   {dayData.status}
                 </span>
               </div>
-
-              {/* Attendance Details */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/50 to-white p-4 shadow-md">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 to-transparent"></div>
@@ -487,8 +480,7 @@ export function HROrgAttendanceManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Time Details */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -513,8 +505,7 @@ export function HROrgAttendanceManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Remarks */}
+ 
               {dayData.remarks && (
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/30 p-4 shadow-md">
                   <div className="flex items-start gap-3">
@@ -530,8 +521,7 @@ export function HROrgAttendanceManagement() {
                   </div>
                 </div>
               )}
-
-              {/* Employee Monthly Summary */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#200B43] to-[#422462] p-5 shadow-xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
                 <div className="relative z-10">
@@ -559,8 +549,7 @@ export function HROrgAttendanceManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Close Button */}
+ 
               <div className="flex justify-end pt-2">
                 <Button 
                   variant="outline" 

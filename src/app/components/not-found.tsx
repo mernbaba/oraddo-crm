@@ -7,7 +7,7 @@ export function NotFound() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0E9FF] via-white to-[#F0E9FF] flex items-center justify-center p-4">
-      {/* AI-themed animated background */}
+ 
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#937CB4] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-[#5A4079] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
@@ -16,7 +16,7 @@ export function NotFound() {
 
       <div className="relative z-10 max-w-2xl w-full">
         <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-[#937CB4]/20 shadow-2xl p-12 text-center">
-          {/* Icon */}
+ 
           <div className="flex justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 bg-[#422462] blur-2xl opacity-40 animate-pulse"></div>
@@ -25,8 +25,7 @@ export function NotFound() {
               </div>
             </div>
           </div>
-
-          {/* 404 Text */}
+ 
           <div className="mb-4">
             <div className="flex items-center justify-center gap-3 mb-2">
               <Sparkles className="h-8 w-8 text-[#937CB4] animate-pulse-glow" />
@@ -42,11 +41,9 @@ export function NotFound() {
               The page you're looking for doesn't exist or has been moved.
             </p>
           </div>
-
-          {/* Decorative gradient bar */}
+ 
           <div className="h-1 w-32 mx-auto mb-8 bg-gradient-to-r from-[#422462] via-[#5A4079] to-[#937CB4] rounded-full"></div>
-
-          {/* Action Buttons */}
+ 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => navigate(-1)}
@@ -63,8 +60,7 @@ export function NotFound() {
               Go to Dashboard
             </Button>
           </div>
-
-          {/* Additional Help Text */}
+ 
           <p className="mt-8 text-sm text-[#5A4079]">
             If you believe this is an error, please contact support.
           </p>

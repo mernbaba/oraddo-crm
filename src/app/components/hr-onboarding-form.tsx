@@ -13,7 +13,7 @@ interface HROnboardingFormProps {
 export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: HROnboardingFormProps) {
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-      {/* Personal Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -94,8 +94,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Family Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -142,8 +141,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Address Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -181,8 +179,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* ID Proofs Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -211,8 +208,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Employment Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -291,8 +287,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Account Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -343,8 +338,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Banking Information Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -391,8 +385,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Documents Upload Section */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-[#F0E9FF]/30 to-white p-4">
         <h3 className="font-bold text-[#200B43] mb-4 flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
@@ -422,8 +415,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           </div>
         </div>
       </div>
-
-      {/* Action Buttons */}
+ 
       <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-white/95 backdrop-blur-sm pb-2">
         <Button
           variant="outline"

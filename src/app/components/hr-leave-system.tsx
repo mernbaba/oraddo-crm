@@ -119,7 +119,7 @@ export function HROrgLeaveManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+  
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -132,8 +132,7 @@ export function HROrgLeaveManagement() {
           </div>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid gap-4 md:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
@@ -178,8 +177,7 @@ export function HROrgLeaveManagement() {
           </div>
         </div>
       </div>
-
-      {/* Search and Filter */}
+ 
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079]" />
@@ -193,8 +191,7 @@ export function HROrgLeaveManagement() {
           Filter
         </Button>
       </div>
-
-      {/* Leave Requests Table */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-[#200B43] mb-4">Leave Requests</h3>
@@ -288,8 +285,7 @@ export function HROrgLeaveManagement() {
           </div>
         </div>
       </div>
-
-      {/* View Details Modal */}
+ 
       {viewDetailsModal !== null && (() => {
         const request = leaveRequests.find(r => r.id === viewDetailsModal);
         if (!request) return null;
@@ -302,7 +298,7 @@ export function HROrgLeaveManagement() {
             size="lg"
           >
             <div className="space-y-6">
-              {/* Employee Information */}
+ 
               <div className="flex items-center gap-4 pb-4 border-b border-[#937CB4]/20">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-xl shadow-lg">
                   {request.employeeName.split(' ').map(n => n[0]).join('')}
@@ -321,8 +317,7 @@ export function HROrgLeaveManagement() {
                   {request.status}
                 </span>
               </div>
-
-              {/* Leave Details */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF] to-white p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -347,8 +342,7 @@ export function HROrgLeaveManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Date Range */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-white to-[#F0E9FF] p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -373,8 +367,7 @@ export function HROrgLeaveManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Manager & Application Info */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white p-4 shadow-md">
                   <div className="flex items-center gap-3">
@@ -395,8 +388,7 @@ export function HROrgLeaveManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Reason */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white p-5 shadow-md">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center shadow-sm">
@@ -413,8 +405,7 @@ export function HROrgLeaveManagement() {
                   </p>
                 </div>
               </div>
-
-              {/* Rejection Reason (if rejected) */}
+ 
               {request.status === "Rejected" && request.rejectionReason && (
                 <div className="relative overflow-hidden rounded-xl border border-red-200 bg-red-50 p-5 shadow-md">
                   <div className="flex items-start gap-3 mb-3">
@@ -433,8 +424,7 @@ export function HROrgLeaveManagement() {
                   </div>
                 </div>
               )}
-
-              {/* Action Buttons */}
+ 
               {request.status === "Pending" && (
                 <div className="flex gap-3 pt-4 border-t border-[#937CB4]/20">
                   <Button 
@@ -452,8 +442,7 @@ export function HROrgLeaveManagement() {
                   </Button>
                 </div>
               )}
-
-              {/* Close Button */}
+ 
               <div className="flex justify-end pt-2">
                 <Button 
                   variant="outline" 
@@ -467,8 +456,7 @@ export function HROrgLeaveManagement() {
           </Modal>
         );
       })()}
-
-      {/* View Leave Bucket Modal */}
+ 
       {viewBucketModal !== null && (() => {
         const request = leaveRequests.find(r => r.id === viewBucketModal);
         if (!request) return null;
@@ -499,8 +487,7 @@ export function HROrgLeaveManagement() {
                   <p className="text-sm text-[#5A4079]">{request.employeeId} • {request.department}</p>
                 </div>
               </div>
-
-              {/* Leave Bucket Cards */}
+ 
               <div className="space-y-4">
                 {bucketData.map((bucket, index) => (
                   bucket.total > 0 && (
@@ -520,8 +507,7 @@ export function HROrgLeaveManagement() {
                           <p className="text-xs text-[#5A4079]">days remaining</p>
                         </div>
                       </div>
-                      
-                      {/* Progress Bar */}
+ 
                       <div className="space-y-2">
                         <div className="w-full bg-gray-200 rounded-full h-2.5">
                           <div 
@@ -538,8 +524,7 @@ export function HROrgLeaveManagement() {
                   )
                 ))}
               </div>
-
-              {/* Summary Card */}
+ 
               <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-[#F0E9FF] to-white p-5 shadow-md">
                 <h4 className="font-semibold text-[#200B43] mb-3">Leave Summary</h4>
                 <div className="grid grid-cols-3 gap-4">
@@ -563,8 +548,7 @@ export function HROrgLeaveManagement() {
                   </div>
                 </div>
               </div>
-
-              {/* Close Button */}
+ 
               <div className="flex justify-end pt-2">
                 <Button 
                   variant="outline" 

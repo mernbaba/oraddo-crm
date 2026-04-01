@@ -48,7 +48,7 @@ export default function AppLayout() {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
   const isSectionActive = (prefix: string) => location.pathname.includes(prefix);
   
-  // Check if we're on meeting attend screen
+ 
   const isMeetingAttendScreen = location.pathname.includes('/marketing/meetings') && new URLSearchParams(location.search).get('view') === 'attend';
 
   const getViewTitle = () => {
@@ -96,7 +96,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0E9FF] via-white to-[#F0E9FF]">
-      {/* Top Navigation Bar */}
+ 
       <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-[#937CB4]/20 z-50 shadow-lg shadow-[#937CB4]/10">
         <div className="flex items-center justify-between h-full px-4">
           <div className="flex items-center gap-4">
@@ -174,8 +174,7 @@ export default function AppLayout() {
           </div>
         </div>
       </div>
-
-      {/* Sidebar */}
+ 
       <div className={`fixed left-0 top-16 bottom-0 w-64 bg-white/90 backdrop-blur-xl border-r border-[#937CB4]/20 transition-all duration-300 z-40 overflow-y-auto shadow-xl shadow-[#937CB4]/10 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-4 space-y-2">
           {/* Dashboard */}
@@ -192,8 +191,7 @@ export default function AppLayout() {
               <span className="relative z-10">Dashboard</span>
             </Button>
           </Link>
-
-          {/* Business Development */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -270,8 +268,7 @@ export default function AppLayout() {
               </div>
             </div>
           </div>
-
-          {/* Marketing */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -365,8 +362,7 @@ export default function AppLayout() {
               </div>
             </div>
           </div>
-
-          {/* Human Resources */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -408,8 +404,7 @@ export default function AppLayout() {
                     <span className="text-sm">Attendance</span>
                   </Button>
                 </Link>
-
-                {/* My Performance Metrics */}
+ 
                 <Link to="/app/hr/performance-metrics" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button
                     variant="ghost"
@@ -426,8 +421,7 @@ export default function AppLayout() {
                     <span className="text-sm">My Performance Metrics</span>
                   </Button>
                 </Link>
-
-                {/* My Salary Structure */}
+ 
                 <Link to="/app/hr/salary-structure" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button
                     variant="ghost"
@@ -444,8 +438,7 @@ export default function AppLayout() {
                     <span className="text-sm">My Salary Structure</span>
                   </Button>
                 </Link>
-
-                {/* Resignation Process */}
+ 
                 <Link to="/app/hr/resignation" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button
                     variant="ghost"
@@ -496,8 +489,7 @@ export default function AppLayout() {
                     <span className="text-sm">Expenses</span>
                   </Button>
                 </Link>
-
-                {/* Organization Management */}
+ 
                 <div className="mt-2">
                   <Button
                     variant="ghost"
@@ -655,8 +647,7 @@ export default function AppLayout() {
               </div>
             </div>
           </div>
-
-          {/* Finance */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -733,8 +724,7 @@ export default function AppLayout() {
               </div>
             </div>
           </div>
-
-          {/* Project Management */}
+ 
           <div>
             <Button
               variant="ghost"
@@ -811,8 +801,7 @@ export default function AppLayout() {
               </div>
             </div>
           </div>
-
-          {/* Lead Generation */}
+ 
           <Link to="/app/lead-generation" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
             <Button
               variant="ghost"
@@ -828,8 +817,7 @@ export default function AppLayout() {
           </Link>
         </div>
       </div>
-
-      {/* Main Content Area */}
+ 
       <div className={`transition-all duration-300 pt-16 ${sidebarOpen ? 'lg:pl-64' : 'pl-0'}`}>
         <div className={isMeetingAttendScreen ? '' : 'p-6'}>
           {/* Content */}

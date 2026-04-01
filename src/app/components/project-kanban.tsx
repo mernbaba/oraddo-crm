@@ -44,8 +44,7 @@ export function ProjectKanban() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
-
-  // Sprints data
+ 
   const [sprints, setSprints] = useState<Sprint[]>([
     {
       id: "sprint-3",
@@ -90,8 +89,7 @@ export function ProjectKanban() {
       status: "completed"
     },
   ]);
-
-  // Tasks state
+ 
   const [tasks, setTasks] = useState<Task[]>([
     { 
       id: 1, 
@@ -220,8 +218,7 @@ export function ProjectKanban() {
       description: "Create initial wireframes for all pages"
     },
   ]);
-
-  // Form state
+ 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -233,8 +230,7 @@ export function ProjectKanban() {
     storyPoints: 5,
     columnId: "todo"
   });
-
-  // Sprint form state
+ 
   const [sprintFormData, setSprintFormData] = useState({
     name: "",
     startDate: "",
@@ -251,8 +247,7 @@ export function ProjectKanban() {
     { id: "review", title: "In Review", color: "#422462", gradient: "from-[#422462]/20 to-[#422462]/5" },
     { id: "done", title: "Done", color: "#10b981", gradient: "from-emerald-500/20 to-emerald-500/5" }
   ];
-
-  // Filter tasks
+ 
   const getFilteredTasks = (columnId: string) => {
     return tasks.filter(task => {
       const matchesColumn = task.columnId === columnId;
@@ -261,8 +256,7 @@ export function ProjectKanban() {
       return matchesColumn && matchesSearch && matchesPriority;
     });
   };
-
-  // Add new task
+ 
   const handleAddTask = () => {
     if (!formData.title.trim()) return;
 
@@ -285,8 +279,7 @@ export function ProjectKanban() {
     resetForm();
     setShowTaskModal(false);
   };
-
-  // Update task
+ 
   const handleUpdateTask = () => {
     if (!editingTask || !formData.title.trim()) return;
 
@@ -312,22 +305,20 @@ export function ProjectKanban() {
     setShowTaskModal(false);
   };
 
-  // Delete task
+ 
   const handleDeleteTask = (taskId: number) => {
     if (confirm("Are you sure you want to delete this task?")) {
       setTasks(tasks.filter(task => task.id !== taskId));
       setShowTaskDetailModal(false);
     }
   };
-
-  // Move task to column
+ 
   const handleMoveTask = (taskId: number, newColumnId: string) => {
     setTasks(tasks.map(task => 
       task.id === taskId ? { ...task, columnId: newColumnId } : task
     ));
   };
-
-  // Open edit modal
+ 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setFormData({
@@ -343,21 +334,18 @@ export function ProjectKanban() {
     });
     setShowTaskModal(true);
   };
-
-  // Open task details
+ 
   const handleViewTask = (task: Task) => {
     setSelectedTask(task);
     setShowTaskDetailModal(true);
   };
-
-  // Update subtasks
+ 
   const handleUpdateSubtasks = (taskId: number, completed: number, total: number) => {
     setTasks(tasks.map(task => 
       task.id === taskId ? { ...task, subtasks: { completed, total } } : task
     ));
   };
-
-  // Reset form
+ 
   const resetForm = () => {
     setFormData({
       title: "",
@@ -371,8 +359,7 @@ export function ProjectKanban() {
       columnId: "todo"
     });
   };
-
-  // Reset sprint form
+ 
   const resetSprintForm = () => {
     setSprintFormData({
       name: "",
@@ -382,8 +369,7 @@ export function ProjectKanban() {
       status: "planned"
     });
   };
-
-  // Add new sprint
+ 
   const handleAddSprint = () => {
     if (!sprintFormData.name.trim() || !sprintFormData.startDate || !sprintFormData.endDate) {
       alert("Please fill in all required fields");
@@ -448,7 +434,7 @@ export function ProjectKanban() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -486,8 +472,7 @@ export function ProjectKanban() {
           </Button>
         </div>
       </div>
-
-      {/* Search and Filter */}
+ 
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input 
@@ -509,13 +494,12 @@ export function ProjectKanban() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* Sprint Selector & Info */}
+ 
       <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 shadow-lg">
         <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5 pointer-events-none"></div>
         <div className="relative z-10 p-6">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            {/* Sprint Selector */}
+ 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-[#422462]" />
@@ -539,8 +523,7 @@ export function ProjectKanban() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Sprint Duration */}
+ 
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-white border border-blue-200">
                 <Calendar className="h-4 w-4 text-blue-600" />
@@ -559,8 +542,7 @@ export function ProjectKanban() {
               )}
             </div>
           </div>
-
-          {/* Sprint Progress */}
+ 
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#5A4079] font-medium">Sprint Progress</span>
@@ -581,10 +563,9 @@ export function ProjectKanban() {
           </div>
         </div>
       </div>
-
-      {/* Sprint Metrics */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Tasks */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-gradient-to-br from-white to-[#F0E9FF]/20 p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -597,8 +578,7 @@ export function ProjectKanban() {
           </div>
           <p className="text-xs text-[#5A4079]">Across all columns</p>
         </div>
-
-        {/* Completed */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -611,8 +591,7 @@ export function ProjectKanban() {
           </div>
           <p className="text-xs text-emerald-600">{tasks.length > 0 ? ((tasks.filter(t => t.columnId === "done").length / tasks.length * 100).toFixed(0)) : 0}% of sprint goal</p>
         </div>
-
-        {/* Velocity */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -627,8 +606,7 @@ export function ProjectKanban() {
           </div>
           <p className="text-xs text-purple-600">Story points delivered</p>
         </div>
-
-        {/* Team Capacity */}
+ 
         <div className="relative overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -644,8 +622,7 @@ export function ProjectKanban() {
           <p className="text-xs text-blue-600">Total story points</p>
         </div>
       </div>
-
-      {/* Kanban Board */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((column) => {
           const columnTasks = getFilteredTasks(column.id);
@@ -656,7 +633,7 @@ export function ProjectKanban() {
               key={column.id}
               className="relative overflow-hidden rounded-xl border border-[#937CB4]/30 bg-white shadow-lg"
             >
-              {/* Column Header */}
+ 
               <div className={`p-4 border-b border-[#937CB4]/20 bg-gradient-to-br ${column.gradient}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -670,7 +647,7 @@ export function ProjectKanban() {
                     {columnCount}
                   </span>
                 </div>
-                {/* Column Progress */}
+ 
                 <div className="h-1.5 bg-white/50 rounded-full overflow-hidden">
                   <div 
                     className="h-full rounded-full transition-all duration-500"
@@ -681,8 +658,7 @@ export function ProjectKanban() {
                   ></div>
                 </div>
               </div>
-
-              {/* Tasks */}
+ 
               <div className="p-3 space-y-3 min-h-[500px] max-h-[600px] overflow-y-auto">
                 {columnTasks.map((task) => {
                   const priorityConfig = getPriorityConfig(task.priority);
@@ -694,11 +670,11 @@ export function ProjectKanban() {
                       className="group relative p-4 rounded-xl bg-gradient-to-br from-white to-[#F0E9FF]/30 border border-[#937CB4]/20 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                       onClick={() => handleViewTask(task)}
                     >
-                      {/* Gradient overlay on hover */}
+ 
                       <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/0 to-[#422462]/0 group-hover:from-[#937CB4]/5 group-hover:to-[#422462]/5 rounded-xl transition-all duration-200 pointer-events-none"></div>
                       
                       <div className="relative z-10">
-                        {/* Header: Priority & Menu */}
+ 
                         <div className="flex items-start justify-between mb-3">
                           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${priorityConfig.border} ${priorityConfig.bg} ${priorityConfig.text}`}>
                             {priorityConfig.icon}
@@ -729,13 +705,11 @@ export function ProjectKanban() {
                             </Button>
                           </div>
                         </div>
-
-                        {/* Task Title */}
+ 
                         <h4 className="font-semibold text-[#200B43] mb-3 leading-snug group-hover:text-[#422462] transition-colors">
                           {task.title}
                         </h4>
-
-                        {/* Subtasks Progress */}
+ 
                         {task.subtasks.total > 0 && (
                           <div className="mb-3 space-y-1">
                             <div className="flex items-center justify-between text-xs">
@@ -755,8 +729,7 @@ export function ProjectKanban() {
                             </div>
                           </div>
                         )}
-
-                        {/* Tags */}
+ 
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {task.tags.slice(0, 2).map((tag, idx) => (
                             <span
@@ -772,8 +745,7 @@ export function ProjectKanban() {
                             </span>
                           )}
                         </div>
-
-                        {/* Footer */}
+ 
                         <div className="flex items-center justify-between pt-3 border-t border-[#937CB4]/10">
                           <div className="flex items-center gap-3">
                             {/* Assignee Avatar */}
@@ -785,20 +757,18 @@ export function ProjectKanban() {
                           </div>
                           
                           <div className="flex items-center gap-3">
-                            {/* Comments */}
+ 
                             <div className="flex items-center gap-1 text-xs text-[#5A4079]">
                               <MessageSquare className="h-3.5 w-3.5" />
                               <span className="font-medium">{task.comments}</span>
                             </div>
-
-                            {/* Story Points */}
+ 
                             <div className="px-2 py-1 rounded-md bg-gradient-to-r from-[#422462] to-[#5A4079] text-white text-xs font-bold shadow-sm">
                               {task.storyPoints}
                             </div>
                           </div>
                         </div>
-
-                        {/* Due Date Badge */}
+ 
                         <div className="flex items-center gap-1.5 mt-2 text-xs text-[#5A4079]">
                           <Clock className="h-3 w-3" />
                           <span>Due {task.dueDate}</span>
@@ -813,8 +783,7 @@ export function ProjectKanban() {
                     No tasks found
                   </div>
                 )}
-
-                {/* Add Task Button */}
+ 
                 <button 
                   className="w-full p-4 rounded-xl border-2 border-dashed border-[#937CB4]/30 text-[#5A4079] hover:bg-gradient-to-br hover:from-[#F0E9FF]/50 hover:to-white hover:border-[#937CB4]/50 transition-all duration-200 flex items-center justify-center gap-2 group"
                   onClick={() => {
@@ -832,8 +801,7 @@ export function ProjectKanban() {
           );
         })}
       </div>
-
-      {/* Create/Edit Task Modal */}
+ 
       {showTaskModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -856,7 +824,7 @@ export function ProjectKanban() {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Title */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Task Title *</label>
                 <Input 
@@ -866,8 +834,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Description */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Description</label>
                 <Textarea 
@@ -877,8 +844,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30 min-h-[100px]"
                 />
               </div>
-
-              {/* Row 1: Priority & Column */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Priority</label>
@@ -908,8 +874,7 @@ export function ProjectKanban() {
                   </Select>
                 </div>
               </div>
-
-              {/* Row 2: Assignee & Avatar */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Assignee</label>
@@ -932,8 +897,7 @@ export function ProjectKanban() {
                   />
                 </div>
               </div>
-
-              {/* Row 3: Due Date & Story Points */}
+ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#422462] mb-2">Due Date</label>
@@ -957,8 +921,7 @@ export function ProjectKanban() {
                   />
                 </div>
               </div>
-
-              {/* Tags */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Tags (comma-separated)</label>
                 <Input 
@@ -968,8 +931,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Actions */}
+ 
               <div className="flex justify-end gap-3 pt-4">
                 <Button 
                   variant="outline" 
@@ -993,8 +955,7 @@ export function ProjectKanban() {
           </div>
         </div>
       )}
-
-      {/* Task Detail Modal */}
+ 
       {showTaskDetailModal && selectedTask && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -1016,7 +977,7 @@ export function ProjectKanban() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Quick Info */}
+ 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 rounded-xl bg-gradient-to-br from-[#F0E9FF] to-white border border-[#937CB4]/20">
                   <p className="text-xs text-[#5A4079] mb-1">Priority</p>
@@ -1035,16 +996,14 @@ export function ProjectKanban() {
                   <p className="text-sm font-bold text-[#422462]">{selectedTask.comments}</p>
                 </div>
               </div>
-
-              {/* Description */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-2">Description</h4>
                 <p className="text-sm text-[#5A4079] bg-[#F0E9FF]/30 p-4 rounded-xl border border-[#937CB4]/20">
                   {selectedTask.description || "No description provided"}
                 </p>
               </div>
-
-              {/* Assignee */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-2">Assignee</h4>
                 <div className="flex items-center gap-3 p-3 bg-[#F0E9FF]/30 rounded-xl border border-[#937CB4]/20">
@@ -1054,8 +1013,7 @@ export function ProjectKanban() {
                   <span className="text-sm font-medium text-[#200B43]">{selectedTask.assignee}</span>
                 </div>
               </div>
-
-              {/* Tags */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-2">Tags</h4>
                 <div className="flex flex-wrap gap-2">
@@ -1069,8 +1027,7 @@ export function ProjectKanban() {
                   ))}
                 </div>
               </div>
-
-              {/* Subtasks */}
+ 
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-[#422462]">Subtasks</h4>
@@ -1125,8 +1082,7 @@ export function ProjectKanban() {
                   </div>
                 </div>
               </div>
-
-              {/* Move Task */}
+ 
               <div>
                 <h4 className="text-sm font-semibold text-[#422462] mb-2">Move Task</h4>
                 <div className="flex gap-2">
@@ -1149,8 +1105,7 @@ export function ProjectKanban() {
                   ))}
                 </div>
               </div>
-
-              {/* Actions */}
+ 
               <div className="flex justify-between gap-3 pt-4 border-t border-[#937CB4]/20">
                 <Button 
                   variant="outline"
@@ -1184,8 +1139,7 @@ export function ProjectKanban() {
           </div>
         </div>
       )}
-
-      {/* Create/Edit Sprint Modal */}
+ 
       {showSprintModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -1207,7 +1161,7 @@ export function ProjectKanban() {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Name */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Sprint Name *</label>
                 <Input 
@@ -1217,8 +1171,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Start Date */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Start Date *</label>
                 <Input 
@@ -1228,8 +1181,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* End Date */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">End Date *</label>
                 <Input 
@@ -1239,8 +1191,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Capacity */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Capacity (Story Points)</label>
                 <Input 
@@ -1252,8 +1203,7 @@ export function ProjectKanban() {
                   className="border-[#937CB4]/30"
                 />
               </div>
-
-              {/* Status */}
+ 
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Status</label>
                 <Select value={sprintFormData.status} onValueChange={(value) => setSprintFormData({...sprintFormData, status: value})}>
@@ -1267,8 +1217,7 @@ export function ProjectKanban() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Actions */}
+ 
               <div className="flex justify-end gap-3 pt-4">
                 <Button 
                   variant="outline" 

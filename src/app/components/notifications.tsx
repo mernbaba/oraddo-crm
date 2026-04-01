@@ -103,7 +103,7 @@ export function Notifications() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -133,8 +133,7 @@ export function Notifications() {
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -152,8 +151,7 @@ export function Notifications() {
           </div>
         ))}
       </div>
-
-      {/* Filters */}
+ 
       <div className="flex items-center gap-2">
         <Button
           size="sm"
@@ -180,8 +178,7 @@ export function Notifications() {
           Unread ({unreadCount})
         </Button>
       </div>
-
-      {/* Notifications List */}
+ 
       <div className="space-y-3">
         {filteredNotifications.map((notification) => {
           const Icon = notification.icon;
@@ -203,8 +200,7 @@ export function Notifications() {
                 >
                   <Icon className="h-6 w-6" style={{ color: notification.color }} />
                 </div>
-
-                {/* Content */}
+ 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-1">
                     <h4 className={`font-semibold ${notification.read ? 'text-[#5A4079]' : 'text-[#200B43]'}`}>
@@ -241,8 +237,7 @@ export function Notifications() {
           );
         })}
       </div>
-
-      {/* Empty State */}
+ 
       {filteredNotifications.length === 0 && (
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 text-center shadow-lg">
           <div className="flex flex-col items-center gap-4">
