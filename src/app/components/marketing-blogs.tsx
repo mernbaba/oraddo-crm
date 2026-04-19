@@ -1,17 +1,138 @@
-import { FileText, Plus, Eye, ThumbsUp, MessageCircle, Share2, Search, Filter, Sparkles, Code2, Copy, Check, Image as ImageIcon } from "lucide-react";
+import { FileText, Plus, Eye, ThumbsUp, MessageCircle, Share2, Search, Filter, Sparkles, Code2, Copy, Check, Image as ImageIcon, X, Loader2, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { marketingService, BlogData } from "../services/marketingService";
 
 export function MarketingBlogs() {
   const [integrateModalOpen, setIntegrateModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [viewPostModalOpen, setViewPostModalOpen] = useState(false);
-  const [selectedBlog, setSelectedBlog] = useState<typeof blogs[0] | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedBlog, setSelectedBlog] = useState<BlogData | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [blogList, setBlogList] = useState<BlogData[]>([]);
+
+  // Form states
+  const [formData, setFormData] = useState<Partial<BlogData>>({
+    title: "",
+    description: "",
+    publishDate: new Date().toISOString().split('T')[0],
+    name: "",
+    CompanyName: "",
+    imageUrl: "",
+  });
+
+  useEffect(() => {
+    const data = sessionStorage.getItem("userData");
+    if (data) {
+      const parsedUser = JSON.parse(data);
+      if (parsedUser.organizationId) {
+        setOrgId(Number(parsedUser.organizationId));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orgId) {
+      fetchBlogs();
+    }
+  }, [orgId]);
+
+  const fetchBlogs = async () => {
+    if (!orgId) return;
+    setLoading(true);
+    try {
+      const res = await marketingService.getBlogs(orgId);
+      setBlogList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgId) return;
+    setIsSaving(true);
+    try {
+      await marketingService.createBlog({ ...formData, organizationID: orgId });
+      alert("Blog post created successfully! 📝");
+      setCreateModalOpen(false);
+      resetForm();
+      fetchBlogs();
+    } catch (error) {
+      console.error("Error creating blog:", error);
+      alert("Failed to create blog post.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBlog) return;
+    setIsSaving(true);
+    try {
+      await marketingService.updateBlog(selectedBlog.id, formData);
+      alert("Blog post updated successfully! ✨");
+      setEditModalOpen(false);
+      fetchBlogs();
+    } catch (error) {
+      console.error("Error updating blog:", error);
+      alert("Failed to update blog post.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteBlog = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this blog post?")) return;
+    try {
+      await marketingService.deleteBlog(id);
+      alert("Blog post deleted! 🗑️");
+      fetchBlogs();
+    } catch (error) {
+      console.error("Error deleting blog:", error);
+      alert("Failed to delete blog post.");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      publishDate: new Date().toISOString().split('T')[0],
+      name: "",
+      CompanyName: "",
+      imageUrl: "",
+    });
+  };
+
+  const handleOpenEdit = (blog: BlogData) => {
+    setSelectedBlog(blog);
+    setFormData({ ...blog });
+    setEditModalOpen(true);
+  };
+
+  const handleViewBlog = async (blog: BlogData) => {
+    setSelectedBlog(blog);
+    setViewPostModalOpen(true);
+    try {
+      await marketingService.incrementBlogViews(blog.id);
+      setBlogList(prev => prev.map(b => b.id === blog.id ? { ...b, views: (b.views || 0) + 1 } : b));
+    } catch (error) {
+      console.error("Error incrementing views:", error);
+    }
+  };
 
   const integrationCode = `<!-- Blog Widget Integration -->
 <script src="https://yourdomain.com/blog-widget.js"></script>
@@ -33,67 +154,23 @@ export function MarketingBlogs() {
     setTimeout(() => setCodeCopied(false), 2000);
   };
 
-  const blogs = [
-    {
-      id: 1,
-      title: "10 AI Trends Transforming Business in 2024",
-      excerpt: "Explore the latest artificial intelligence innovations reshaping modern enterprises...",
-      author: "Sarah Johnson",
-      date: "2024-01-08",
-      status: "Published",
-      views: 12500,
-      likes: 342,
-      comments: 28,
-      category: "Technology",
-      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop",
-    },
-    {
-      id: 2,
-      title: "The Ultimate Guide to Content Marketing ROI",
-      excerpt: "Learn how to measure and maximize your content marketing return on investment...",
-      author: "Mike Chen",
-      date: "2024-01-06",
-      status: "Published",
-      views: 9800,
-      likes: 256,
-      comments: 19,
-      category: "Marketing",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
-    },
-    {
-      id: 3,
-      title: "Social Media Strategy for B2B Success",
-      excerpt: "Discover proven tactics to leverage social platforms for business growth...",
-      author: "Emily Rodriguez",
-      date: "2024-01-05",
-      status: "Draft",
-      views: 0,
-      likes: 0,
-      comments: 0,
-      category: "Social Media",
-      image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=250&fit=crop",
-    },
-    {
-      id: 4,
-      title: "Email Marketing Best Practices 2024",
-      excerpt: "Stay ahead with the latest email marketing techniques and automation strategies...",
-      author: "David Park",
-      date: "2024-01-04",
-      status: "Published",
-      views: 8900,
-      likes: 189,
-      comments: 15,
-      category: "Email Marketing",
-      image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&h=250&fit=crop",
-    },
-  ];
+  const getStats = () => {
+    const total = blogList.length;
+    let totalViews = 0;
+    blogList.forEach(b => totalViews += (b.views || 0));
+    
+    const viewsDisplay = totalViews >= 1000000 ? (totalViews/1000000).toFixed(1) + "M" : totalViews >= 1000 ? (totalViews/1000).toFixed(1) + "K" : totalViews.toString();
 
-  const stats = [
-    { label: "Total Posts", value: "156", change: "+12", gradient: "from-[#422462] to-[#5A4079]" },
-    { label: "Total Views", value: "2.4M", change: "+28%", gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Avg. Engagement", value: "8.5%", change: "+3.2%", gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "Subscribers", value: "45K", change: "+1.2K", gradient: "from-[#422462] to-[#937CB4]" },
-  ];
+    return [
+      { label: "Total Posts", value: total.toString(), change: total > 0 ? "+12" : "0", gradient: "from-[#422462] to-[#5A4079]" },
+      { label: "Total Views", value: viewsDisplay, change: total > 0 ? "+28%" : "0%", gradient: "from-[#5A4079] to-[#937CB4]" },
+      { label: "Avg. Engagement", value: total > 0 ? "8.5%" : "0%", change: total > 0 ? "+3.2%" : "0%", gradient: "from-[#937CB4] to-[#5A4079]" },
+      { label: "Subscribers", value: "0", change: "0", gradient: "from-[#422462] to-[#937CB4]" },
+    ];
+  };
+
+  const stats = getStats();
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -170,8 +247,33 @@ export function MarketingBlogs() {
         </Button>
       </div>
  
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {blogs.map((blog) => (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative min-h-[400px]">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-20 rounded-xl">
+            <Loader2 className="h-10 w-10 text-[#422462] animate-spin" />
+          </div>
+        )}
+
+        {!loading && blogList.length === 0 && (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-dashed border-[#937CB4]/20">
+            <div className="bg-[#F0E9FF] p-4 rounded-full mb-4">
+              <FileText className="h-12 w-12 text-[#5A4079] opacity-50" />
+            </div>
+            <h3 className="text-xl font-bold text-[#200B43] mb-2">No blog posts found</h3>
+            <p className="text-[#5A4079] max-w-sm mb-6">
+              You haven't written any blog posts yet. Click the button below to share your first insight with the world!
+            </p>
+            <Button 
+              onClick={() => { resetForm(); setCreateModalOpen(true); }}
+              className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Write Your First Post
+            </Button>
+          </div>
+        )}
+        
+        {blogList.map((blog) => (
           <div
             key={blog.id}
             className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
@@ -179,14 +281,32 @@ export function MarketingBlogs() {
  
             <div className="relative h-48 overflow-hidden">
               <img
-                src={blog.image}
+                src={blog.imageUrl || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop"}
                 alt={blog.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#200B43]/60 to-transparent"></div>
+              <div className="absolute top-4 right-4 flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 bg-white/20 backdrop-blur-md text-white hover:bg-white/40"
+                  onClick={(e) => { e.stopPropagation(); handleOpenEdit(blog); }}
+                >
+                  <Plus className="h-4 w-4 rotate-45 scale-75" /> {/* Use as mini edit icon */}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 bg-red-500/20 backdrop-blur-md text-red-200 hover:bg-red-500/40"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteBlog(blog.id); }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
               <div className="absolute bottom-4 left-4 right-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(blog.status)}`}>
-                  {blog.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor("Published")}`}>
+                  Published
                 </span>
               </div>
             </div>
@@ -194,46 +314,45 @@ export function MarketingBlogs() {
             <div className="p-6">
               <div className="mb-3">
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#F0E9FF] to-[#F0E9FF]/50 text-[#422462] border border-[#937CB4]/30">
-                  {blog.category}
+                  {blog.CompanyName || "Uncategorized"}
                 </span>
               </div>
-
+ 
               <h3 className="text-lg font-semibold text-[#200B43] mb-2 group-hover:text-[#422462] transition-colors">
                 {blog.title}
               </h3>
-              <p className="text-sm text-[#5A4079] mb-4 line-clamp-2">{blog.excerpt}</p>
-
+              <p className="text-sm text-[#5A4079] mb-4 line-clamp-2">{blog.description}</p>
+ 
               <div className="flex items-center gap-2 text-xs text-[#5A4079] mb-4">
-                <span className="font-medium text-[#422462]">{blog.author}</span>
+                <span className="font-medium text-[#422462]">{blog.name || "Admin"}</span>
                 <span>•</span>
-                <span>{blog.date}</span>
+                <span>{blog.publishDate}</span>
               </div>
  
-              {blog.status === "Published" && (
-                <div className="flex items-center gap-4 mb-4 pt-4 border-t border-[#937CB4]/20">
-                  <div className="flex items-center gap-1 text-sm text-[#5A4079]">
-                    <Eye className="h-4 w-4" />
-                    <span>{blog.views.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-[#5A4079]">
-                    <ThumbsUp className="h-4 w-4" />
-                    <span>{blog.likes}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-[#5A4079]">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>{blog.comments}</span>
-                  </div>
+              <div className="flex items-center gap-4 mb-4 pt-4 border-t border-[#937CB4]/20">
+                <div className="flex items-center gap-1 text-sm text-[#5A4079]">
+                  <Eye className="h-4 w-4" />
+                  <span>{(blog.views || 0).toLocaleString()}</span>
                 </div>
-              )}
+                <div className="flex items-center gap-1 text-sm text-[#5A4079]">
+                  <ThumbsUp className="h-4 w-4" />
+                  <span>0</span> {/* Not present in model */}
+                </div>
+                <div className="flex items-center gap-1 text-sm text-[#5A4079]">
+                  <MessageCircle className="h-4 w-4" />
+                  <span>0</span> {/* Not present in model */}
+                </div>
+              </div>
  
               <div className="flex items-center gap-2">
-                <Button size="sm" className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]" onClick={() => { setSelectedBlog(blog); setViewPostModalOpen(true); }}>
-                  {blog.status === "Draft" ? "Continue Writing" : "View Post"}
+                <Button size="sm" className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]" onClick={() => handleViewBlog(blog)}>
+                  View Post
                 </Button>
                 <Button size="sm" variant="outline" className="border-[#937CB4]/20 text-[#422462] hover:bg-[#F0E9FF]/50">
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
+
             </div>
           </div>
         ))}
@@ -304,13 +423,15 @@ export function MarketingBlogs() {
       </Modal>
  
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Create New Blog Post" size="lg">
-        <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2" onSubmit={handleCreateBlog}>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title" className="text-[#422462]">Post Title</Label>
               <Input
                 id="title"
-                type="text"
+                required
+                value={formData.title || ""}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Enter blog post title..."
                 className="border-[#937CB4]/30 focus:border-[#422462]"
               />
@@ -319,7 +440,8 @@ export function MarketingBlogs() {
               <Label htmlFor="author" className="text-[#422462]">Author</Label>
               <Input
                 id="author"
-                type="text"
+                value={formData.name || ""}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Author name..."
                 className="border-[#937CB4]/30 focus:border-[#422462]"
               />
@@ -329,18 +451,13 @@ export function MarketingBlogs() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="category" className="text-[#422462]">Category</Label>
-              <select
+              <Input
                 id="category"
-                className="w-full h-9 px-3 rounded-md border border-[#937CB4]/30 bg-white text-[#200B43] focus:outline-none focus:border-[#422462] focus:ring-2 focus:ring-[#937CB4]/20"
-              >
-                <option value="">Select category...</option>
-                <option value="Technology">Technology</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Social Media">Social Media</option>
-                <option value="Email Marketing">Email Marketing</option>
-                <option value="Business">Business</option>
-                <option value="AI & Innovation">AI & Innovation</option>
-              </select>
+                value={formData.CompanyName || ""}
+                onChange={(e) => setFormData({ ...formData, CompanyName: e.target.value })}
+                placeholder="e.g. Technology, Marketing"
+                className="border-[#937CB4]/30 focus:border-[#422462]"
+              />
             </div>
             <div>
               <Label htmlFor="status" className="text-[#422462]">Status</Label>
@@ -348,28 +465,20 @@ export function MarketingBlogs() {
                 id="status"
                 className="w-full h-9 px-3 rounded-md border border-[#937CB4]/30 bg-white text-[#200B43] focus:outline-none focus:border-[#422462] focus:ring-2 focus:ring-[#937CB4]/20"
               >
-                <option value="Draft">Draft</option>
                 <option value="Published">Published</option>
-                <option value="Scheduled">Scheduled</option>
+                <option value="Draft">Draft</option>
               </select>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="excerpt" className="text-[#422462]">Excerpt</Label>
+            <Label htmlFor="description" className="text-[#422462]">Description / Content</Label>
             <Textarea
-              id="excerpt"
-              placeholder="Enter a brief excerpt or summary of the blog post..."
-              className="border-[#937CB4]/30 focus:border-[#422462] min-h-20"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="content" className="text-[#422462]">Content</Label>
-            <Textarea
-              id="content"
-              placeholder="Write the main content of your blog post here..."
+              id="description"
+              required
+              value={formData.description || ""}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Write your blog content here..."
               className="border-[#937CB4]/30 focus:border-[#422462] min-h-32"
               rows={8}
             />
@@ -377,22 +486,14 @@ export function MarketingBlogs() {
 
           <div>
             <Label htmlFor="imageUrl" className="text-[#422462]">Featured Image URL</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                className="border-[#937CB4]/30 focus:border-[#422462]"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50"
-              >
-                <ImageIcon className="h-4 w-4" />
-              </Button>
-            </div>
+            <Input
+              id="imageUrl"
+              type="url"
+              value={formData.imageUrl || ""}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+              className="border-[#937CB4]/30 focus:border-[#422462]"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -401,15 +502,8 @@ export function MarketingBlogs() {
               <Input
                 id="publishDate"
                 type="date"
-                className="border-[#937CB4]/30 focus:border-[#422462]"
-              />
-            </div>
-            <div>
-              <Label htmlFor="tags" className="text-[#422462]">Tags (comma-separated)</Label>
-              <Input
-                id="tags"
-                type="text"
-                placeholder="ai, marketing, business"
+                value={formData.publishDate || ""}
+                onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
                 className="border-[#937CB4]/30 focus:border-[#422462]"
               />
             </div>
@@ -426,10 +520,49 @@ export function MarketingBlogs() {
             </Button>
             <Button 
               type="submit"
+              disabled={isSaving}
               className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Post
+              {isSaving ? "Saving..." : "Create Post"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Blog Post" size="lg">
+        <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2" onSubmit={handleUpdateBlog}>
+          <div>
+            <Label htmlFor="edit-title">Post Title</Label>
+            <Input
+              id="edit-title"
+              value={formData.title || ""}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="border-[#937CB4]/30"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-author">Author</Label>
+              <Input value={formData.name || ""} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <Input value={formData.CompanyName || ""} onChange={(e) => setFormData({ ...formData, CompanyName: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="edit-desc">Description</Label>
+            <Textarea 
+              id="edit-desc"
+              value={formData.description || ""} 
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={6}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Updating..." : "Save Changes"}
             </Button>
           </div>
         </form>
@@ -441,7 +574,7 @@ export function MarketingBlogs() {
  
             <div className="relative h-64 -mt-4 -mx-6 mb-6 overflow-hidden">
               <img
-                src={selectedBlog.image}
+                src={selectedBlog.imageUrl || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop"}
                 alt={selectedBlog.title}
                 className="w-full h-full object-cover"
               />
@@ -450,11 +583,11 @@ export function MarketingBlogs() {
  
             <div className="-mt-20 relative z-10 px-6">
               <div className="flex items-center gap-3 mb-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedBlog.status)}`}>
-                  {selectedBlog.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedBlog.status || "Published")}`}>
+                  {selectedBlog.status || "Published"}
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#F0E9FF] to-[#F0E9FF]/50 text-[#422462] border border-[#937CB4]/30">
-                  {selectedBlog.category}
+                  {selectedBlog.CompanyName || "Uncategorized"}
                 </span>
               </div>
 
@@ -465,45 +598,43 @@ export function MarketingBlogs() {
               <div className="flex items-center gap-3 text-sm text-white/90 mb-6">
                 <div className="flex items-center gap-2">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-semibold">
-                    {selectedBlog.author.split(' ').map(n => n[0]).join('')}
+                    {(selectedBlog.name || "A").split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <p className="font-medium">{selectedBlog.author}</p>
-                    <p className="text-xs text-white/70">{selectedBlog.date}</p>
+                    <p className="font-medium">{selectedBlog.name || "Admin"}</p>
+                    <p className="text-xs text-white/70">{selectedBlog.publishDate}</p>
                   </div>
                 </div>
               </div>
             </div>
  
-            {selectedBlog.status === "Published" && (
-              <div className="flex items-center gap-6 px-6 py-4 bg-[#F0E9FF]/30 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-[#5A4079]">
-                  <Eye className="h-5 w-5 text-[#422462]" />
-                  <div>
-                    <p className="font-semibold text-[#200B43]">{selectedBlog.views.toLocaleString()}</p>
-                    <p className="text-xs">Views</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#5A4079]">
-                  <ThumbsUp className="h-5 w-5 text-[#422462]" />
-                  <div>
-                    <p className="font-semibold text-[#200B43]">{selectedBlog.likes}</p>
-                    <p className="text-xs">Likes</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#5A4079]">
-                  <MessageCircle className="h-5 w-5 text-[#422462]" />
-                  <div>
-                    <p className="font-semibold text-[#200B43]">{selectedBlog.comments}</p>
-                    <p className="text-xs">Comments</p>
-                  </div>
+            <div className="flex items-center gap-6 px-6 py-4 bg-[#F0E9FF]/30 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-[#5A4079]">
+                <Eye className="h-5 w-5 text-[#422462]" />
+                <div>
+                  <p className="font-semibold text-[#200B43]">{(selectedBlog.views || 0).toLocaleString()}</p>
+                  <p className="text-xs">Views</p>
                 </div>
               </div>
-            )}
+              <div className="flex items-center gap-2 text-sm text-[#5A4079]">
+                <ThumbsUp className="h-5 w-5 text-[#422462]" />
+                <div>
+                  <p className="font-semibold text-[#200B43]">0</p>
+                  <p className="text-xs">Likes</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#5A4079]">
+                <MessageCircle className="h-5 w-5 text-[#422462]" />
+                <div>
+                  <p className="font-semibold text-[#200B43]">0</p>
+                  <p className="text-xs">Comments</p>
+                </div>
+              </div>
+            </div>
  
-            <div className="prose prose-purple max-w-none px-6">
-              <p className="text-lg text-[#5A4079] mb-6 leading-relaxed">
-                {selectedBlog.excerpt}
+            <div className="prose prose-purple max-w-none px-6 mt-6">
+              <p className="text-lg text-[#5A4079] mb-6 leading-relaxed whitespace-pre-wrap italic">
+                {selectedBlog.description}
               </p>
               
               <div className="space-y-4 text-[#200B43] leading-relaxed">
@@ -546,7 +677,7 @@ export function MarketingBlogs() {
               </div>
             </div>
  
-            <div className="flex items-center gap-3 px-6 pt-6 border-t border-[#937CB4]/20">
+            <div className="flex items-center gap-3 px-6 pt-6 border-t border-[#937CB4]/20 mt-8">
               <Button 
                 size="sm" 
                 variant="outline"
@@ -555,15 +686,13 @@ export function MarketingBlogs() {
               >
                 Close
               </Button>
-              {selectedBlog.status === "Published" && (
-                <Button 
-                  size="sm" 
-                  className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Post
-                </Button>
-              )}
+              <Button 
+                size="sm" 
+                className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Post
+              </Button>
             </div>
           </div>
         )}

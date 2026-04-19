@@ -1,128 +1,169 @@
-import { CalendarDays, Plus, ChevronLeft, ChevronRight, Sparkles, Clock, MapPin, Users, Video, Eye, Edit, Trash2, Search, Filter } from "lucide-react";
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, Sparkles, Clock, MapPin, Users, Video, Eye, Edit, Trash2, Search, Filter, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./ui/modal";
+import { marketingService, MarketingEvent } from "../services/marketingService";
 
 export function MarketingCalendar() {
-  const [currentMonth] = useState("January 2024");
+  const [currentMonth, setCurrentMonth] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<typeof events[0] | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<MarketingEvent | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
+  const [filterOccasion, setFilterOccasion] = useState("all");
+  
+  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [eventList, setEventList] = useState<MarketingEvent[]>([]);
 
-  const events = [
-    { 
-      id: "EVT-001",
-      title: "Q1 Marketing Strategy Meeting", 
-      date: "2024-01-15",
-      startTime: "10:00 AM",
-      endTime: "11:30 AM",
-      type: "Meeting",
-      location: "Conference Room A",
-      meetingType: "In-Person",
-      attendees: ["John Doe", "Sarah Smith", "Mike Johnson", "Emily Davis"],
-      description: "Quarterly marketing strategy planning session to discuss goals, budgets, and campaign priorities for Q1 2024.",
-      organizer: "Sarah Smith",
-      color: "#422462"
-    },
-    { 
-      id: "EVT-002",
-      title: "Product Launch Event", 
-      date: "2024-01-18",
-      startTime: "2:00 PM",
-      endTime: "5:00 PM",
-      type: "Event",
-      location: "Grand Ballroom",
-      meetingType: "In-Person",
-      attendees: ["John Doe", "Sarah Smith", "Mike Johnson", "Emily Davis", "Alex Wilson", "Jessica Lee"],
-      description: "Official launch event for our new AI-powered product suite. Includes presentations, demos, and networking.",
-      organizer: "John Doe",
-      color: "#5A4079"
-    },
-    { 
-      id: "EVT-003",
-      title: "Content Team Sync", 
-      date: "2024-01-20",
-      startTime: "9:00 AM",
-      endTime: "9:45 AM",
-      type: "Meeting",
-      location: "Virtual - Zoom",
-      meetingType: "Virtual",
-      attendees: ["Sarah Smith", "Emily Davis", "Jessica Lee"],
-      description: "Weekly content team synchronization to review blog posts, social media content, and upcoming campaigns.",
-      organizer: "Emily Davis",
-      color: "#937CB4"
-    },
-    { 
-      id: "EVT-004",
-      title: "Client Presentation - Tech Corp", 
-      date: "2024-01-22",
-      startTime: "11:00 AM",
-      endTime: "12:00 PM",
-      type: "Meeting",
-      location: "Virtual - Google Meet",
-      meetingType: "Virtual",
-      attendees: ["John Doe", "Sarah Smith", "Mike Johnson"],
-      description: "Present marketing proposal and strategy to Tech Corp executives.",
-      organizer: "Mike Johnson",
-      color: "#422462"
-    },
-    { 
-      id: "EVT-005",
-      title: "Industry Conference 2024", 
-      date: "2024-01-25",
-      startTime: "8:00 AM",
-      endTime: "6:00 PM",
-      type: "Event",
-      location: "Convention Center",
-      meetingType: "In-Person",
-      attendees: ["John Doe", "Sarah Smith", "Mike Johnson", "Emily Davis", "Alex Wilson"],
-      description: "Annual marketing and technology conference with keynote speakers, workshops, and networking opportunities.",
-      organizer: "John Doe",
-      color: "#5A4079"
-    },
-    { 
-      id: "EVT-006",
-      title: "Social Media Planning Session", 
-      date: "2024-01-28",
-      startTime: "3:00 PM",
-      endTime: "4:00 PM",
-      type: "Meeting",
-      location: "Conference Room B",
-      meetingType: "Hybrid",
-      attendees: ["Sarah Smith", "Emily Davis", "Jessica Lee", "Alex Wilson"],
-      description: "Plan social media campaigns for February and review January performance metrics.",
-      organizer: "Sarah Smith",
-      color: "#937CB4"
-    },
-  ];
-
-  const filteredEvents = events.filter((event) => {
-    const searchMatch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const typeMatch = filterType === "all" || event.type === filterType;
-    return searchMatch && typeMatch;
+  // Form State
+  const [formData, setFormData] = useState<Partial<MarketingEvent>>({
+    title: "",
+    occasion: "Meeting",
+    meetingType: "In-Person",
+    date: new Date().toISOString().split('T')[0],
+    start_time: "10:00",
+    end_time: "11:00",
+    location: "",
+    organizer: "",
+    attendees: "",
+    description: ""
   });
 
-  const handleViewEvent = (event: typeof events[0]) => {
+  useEffect(() => {
+    // Set current month display
+    const now = new Date();
+    setCurrentMonth(now.toLocaleString('default', { month: 'long', year: 'numeric' }));
+
+    const data = sessionStorage.getItem("userData");
+    if (data) {
+      const parsedUser = JSON.parse(data);
+      if (parsedUser.organizationId) {
+        setOrgId(Number(parsedUser.organizationId));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orgId) {
+      fetchData();
+    }
+  }, [orgId]);
+
+  const fetchData = async () => {
+    if (!orgId) return;
+    setLoading(true);
+    try {
+      const res = await marketingService.getByOrg(orgId);
+      setEventList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching marketing events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgId) return;
+    setIsSaving(true);
+    try {
+      await marketingService.create({ ...formData, organizationID: orgId });
+      alert("Event created successfully! 🗓️");
+      setShowCreateModal(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      console.error("Error creating event:", error);
+      alert("Failed to create event.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteEvent = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    try {
+      await marketingService.delete(id);
+      alert("Event deleted successfully! 🗑️");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      alert("Failed to delete event.");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      occasion: "Meeting",
+      meetingType: "In-Person",
+      date: new Date().toISOString().split('T')[0],
+      start_time: "10:00",
+      end_time: "11:00",
+      location: "",
+      organizer: "",
+      attendees: "",
+      description: ""
+    });
+  };
+
+  const filteredEvents = eventList.filter((event) => {
+    const searchMatch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       (event.location?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+                       (event.organizer?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+    const occasionMatch = filterOccasion === "all" || event.occasion === filterOccasion;
+    return searchMatch && occasionMatch;
+  });
+
+  const handleViewEvent = (event: MarketingEvent) => {
     setSelectedEvent(event);
     setShowViewModal(true);
   };
 
-  const handleEditEvent = (event: typeof events[0]) => {
+  const handleEditEvent = (event: MarketingEvent) => {
     setSelectedEvent(event);
+    setFormData({
+      ...event,
+      attendees: event.attendees || ""
+    });
     setShowEditModal(true);
   };
 
-  const stats = [
-    { label: "Total Events", value: "24", gradient: "from-[#422462] to-[#5A4079]" },
-    { label: "Meetings", value: "18", gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Events This Month", value: "6", gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "Team Members", value: "12", gradient: "from-[#422462] to-[#937CB4]" },
-  ];
+  const handleUpdateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEvent || !orgId) return;
+    setIsSaving(true);
+    try {
+      await marketingService.update(selectedEvent.id, formData);
+      alert("Event updated successfully! ✅");
+      setShowEditModal(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating event:", error);
+      alert("Failed to update event.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getEventStats = () => {
+    const total = eventList.length;
+    const meetings = eventList.filter(e => e.occasion === "Meeting").length;
+    const currentMonthNum = new Date().getMonth();
+    const eventsThisMonth = eventList.filter(e => new Date(e.date).getMonth() === currentMonthNum).length;
+    
+    return [
+      { label: "Total Events", value: total.toString(), gradient: "from-[#422462] to-[#5A4079]" },
+      { label: "Meetings", value: meetings.toString(), gradient: "from-[#5A4079] to-[#937CB4]" },
+      { label: "Events This Month", value: eventsThisMonth.toString(), gradient: "from-[#937CB4] to-[#5A4079]" },
+      { label: "Team Members", value: "12", gradient: "from-[#422462] to-[#937CB4]" }, // Still hardcoded as per lack of team endpoint in audit
+    ];
+  };
+
+  const stats = getEventStats();
  
   const calendarDays = Array.from({ length: 35 }, (_, i) => i + 1);
 
@@ -187,7 +228,7 @@ export function MarketingCalendar() {
               </div>
             ))}
             {calendarDays.map((day) => {
-              const hasEvent = events.some(e => new Date(e.date).getDate() === day);
+              const hasEvent = eventList.some(e => new Date(e.date).getDate() === day && new Date(e.date).getMonth() === new Date().getMonth());
               return (
                 <div
                   key={day}
@@ -222,10 +263,10 @@ export function MarketingCalendar() {
                 </div>
                 <select 
                   className="px-3 py-2 rounded-lg border border-[#937CB4]/20 bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#937CB4] text-sm"
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
+                  value={filterOccasion}
+                  onChange={(e) => setFilterOccasion(e.target.value)}
                 >
-                  <option value="all">All Types</option>
+                  <option value="all">All Occasions</option>
                   <option value="Meeting">Meetings</option>
                   <option value="Event">Events</option>
                 </select>
@@ -256,23 +297,23 @@ export function MarketingCalendar() {
                     <td className="p-4 text-sm text-[#200B43] font-medium">{event.title}</td>
                     <td className="p-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                        event.type === "Meeting"
+                        event.occasion === "Meeting"
                           ? "bg-blue-100 text-blue-700 border-blue-300"
                           : "bg-purple-100 text-purple-700 border-purple-300"
                       }`}>
-                        {event.type}
+                        {event.occasion}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-[#5A4079]">
                       <div>{event.date}</div>
-                      <div className="text-xs">{event.startTime} - {event.endTime}</div>
+                      <div className="text-xs">{event.start_time} - {event.end_time}</div>
                     </td>
                     <td className="p-4 text-sm text-[#5A4079]">{event.location}</td>
                     <td className="p-4 text-sm text-[#200B43]">{event.organizer}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-[#5A4079]" />
-                        <span className="text-sm text-[#200B43]">{event.attendees.length}</span>
+                        <span className="text-sm text-[#200B43]">{(event.attendees || "").split(',').filter(Boolean).length}</span>
                       </div>
                     </td>
                     <td className="p-4">
@@ -283,7 +324,7 @@ export function MarketingCalendar() {
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-[#F0E9FF]" onClick={() => handleEditEvent(event)}>
                           <Edit className="h-4 w-4 text-[#5A4079]" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50" onClick={() => handleDeleteEvent(event.id)}>
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
@@ -297,20 +338,27 @@ export function MarketingCalendar() {
       </div>
  
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create New Event/Meeting" size="lg">
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleCreateEvent}>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-[#200B43] mb-2">Event/Meeting Title</label>
               <input
                 type="text"
+                required
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 placeholder="e.g., Q1 Marketing Strategy Meeting"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-[#200B43] mb-2">Type</label>
-              <select className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]">
+              <label className="block text-sm font-medium text-[#200B43] mb-2">Occasion</label>
+              <select 
+                className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                value={formData.occasion}
+                onChange={(e) => setFormData({...formData, occasion: e.target.value as any})}
+              >
                 <option value="Meeting">Meeting</option>
                 <option value="Event">Event</option>
               </select>
@@ -318,7 +366,11 @@ export function MarketingCalendar() {
             
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">Meeting Type</label>
-              <select className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]">
+              <select 
+                className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                value={formData.meetingType}
+                onChange={(e) => setFormData({...formData, meetingType: e.target.value as any})}
+              >
                 <option value="In-Person">In-Person</option>
                 <option value="Virtual">Virtual</option>
                 <option value="Hybrid">Hybrid</option>
@@ -329,7 +381,10 @@ export function MarketingCalendar() {
               <label className="block text-sm font-medium text-[#200B43] mb-2">Date</label>
               <input
                 type="date"
+                required
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                value={formData.date}
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
               />
             </div>
             
@@ -338,6 +393,8 @@ export function MarketingCalendar() {
               <input
                 type="time"
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                value={formData.start_time}
+                onChange={(e) => setFormData({...formData, start_time: e.target.value})}
               />
             </div>
             
@@ -346,6 +403,8 @@ export function MarketingCalendar() {
               <input
                 type="time"
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                value={formData.end_time}
+                onChange={(e) => setFormData({...formData, end_time: e.target.value})}
               />
             </div>
             
@@ -355,6 +414,8 @@ export function MarketingCalendar() {
                 type="text"
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 placeholder="e.g., Conference Room A or Virtual - Zoom"
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
               />
             </div>
             
@@ -364,6 +425,8 @@ export function MarketingCalendar() {
                 type="text"
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 placeholder="Organizer name"
+                value={formData.organizer}
+                onChange={(e) => setFormData({...formData, organizer: e.target.value})}
               />
             </div>
             
@@ -373,6 +436,8 @@ export function MarketingCalendar() {
                 rows={2}
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 placeholder="e.g., John Doe, Sarah Smith, Mike Johnson"
+                value={formData.attendees}
+                onChange={(e) => setFormData({...formData, attendees: e.target.value})}
               />
             </div>
             
@@ -382,18 +447,22 @@ export function MarketingCalendar() {
                 rows={4}
                 className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 placeholder="Event/Meeting description..."
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
               />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[#937CB4]/20 sticky bottom-0 bg-white">
             <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-            <Button type="submit" className="bg-gradient-to-r from-[#422462] to-[#5A4079]">Create Event</Button>
+            <Button type="submit" disabled={isSaving} className="bg-gradient-to-r from-[#422462] to-[#5A4079]">
+              {isSaving ? "Saving..." : "Create Event"}
+            </Button>
           </div>
         </form>
       </Modal>
  
       {selectedEvent && (
-        <Modal isOpen={showViewModal} onClose={() => setShowViewModal(false)} title={`${selectedEvent.type}: ${selectedEvent.title}`} size="lg">
+        <Modal isOpen={showViewModal} onClose={() => setShowViewModal(false)} title={`${selectedEvent.occasion}: ${selectedEvent.title}`} size="lg">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -401,13 +470,13 @@ export function MarketingCalendar() {
                 <p className="text-[#200B43] font-medium">{selectedEvent.id}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#5A4079]">Type</label>
+                <label className="text-sm font-medium text-[#5A4079]">Occasion</label>
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${
-                  selectedEvent.type === "Meeting"
+                  selectedEvent.occasion === "Meeting"
                     ? "bg-blue-100 text-blue-700 border-blue-300"
                     : "bg-purple-100 text-purple-700 border-purple-300"
                 }`}>
-                  {selectedEvent.type}
+                  {selectedEvent.occasion}
                 </span>
               </div>
               <div>
@@ -420,11 +489,11 @@ export function MarketingCalendar() {
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Start Time</label>
-                <p className="text-[#200B43] font-medium">{selectedEvent.startTime}</p>
+                <p className="text-[#200B43] font-medium">{selectedEvent.start_time}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">End Time</label>
-                <p className="text-[#200B43] font-medium">{selectedEvent.endTime}</p>
+                <p className="text-[#200B43] font-medium">{selectedEvent.end_time}</p>
               </div>
             </div>
             
@@ -447,12 +516,12 @@ export function MarketingCalendar() {
             <div>
               <label className="text-sm font-medium text-[#5A4079] flex items-center gap-2 mb-2">
                 <Users className="h-4 w-4" />
-                Attendees ({selectedEvent.attendees.length})
+                Attendees ({(selectedEvent.attendees || "").split(',').filter(Boolean).length})
               </label>
               <div className="flex flex-wrap gap-2">
-                {selectedEvent.attendees.map((attendee, index) => (
+                {(selectedEvent.attendees || "").split(',').filter(Boolean).map((attendee, index) => (
                   <span key={index} className="px-3 py-1 rounded-full text-xs font-medium bg-[#F0E9FF] text-[#422462] border border-[#937CB4]/30">
-                    {attendee}
+                    {attendee.trim()}
                   </span>
                 ))}
               </div>
@@ -476,7 +545,7 @@ export function MarketingCalendar() {
  
       {selectedEvent && (
         <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Event/Meeting" size="lg">
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleUpdateEvent}>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Event ID</label>
@@ -491,14 +560,19 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Event/Meeting Title</label>
                 <input
                   type="text"
-                  defaultValue={selectedEvent.title}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Type</label>
-                <select defaultValue={selectedEvent.type} className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]">
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Occasion</label>
+                <select 
+                  className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.occasion}
+                  onChange={(e) => setFormData({...formData, occasion: e.target.value as any})}
+                >
                   <option value="Meeting">Meeting</option>
                   <option value="Event">Event</option>
                 </select>
@@ -506,7 +580,11 @@ export function MarketingCalendar() {
               
               <div>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Meeting Type</label>
-                <select defaultValue={selectedEvent.meetingType} className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]">
+                <select 
+                  className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.meetingType}
+                  onChange={(e) => setFormData({...formData, meetingType: e.target.value as any})}
+                >
                   <option value="In-Person">In-Person</option>
                   <option value="Virtual">Virtual</option>
                   <option value="Hybrid">Hybrid</option>
@@ -517,8 +595,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Date</label>
                 <input
                   type="date"
-                  defaultValue={selectedEvent.date}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
                 />
               </div>
               
@@ -526,8 +605,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Start Time</label>
                 <input
                   type="text"
-                  defaultValue={selectedEvent.startTime}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
                 />
               </div>
               
@@ -535,8 +615,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">End Time</label>
                 <input
                   type="text"
-                  defaultValue={selectedEvent.endTime}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.end_time}
+                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
                 />
               </div>
               
@@ -544,8 +625,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Location</label>
                 <input
                   type="text"
-                  defaultValue={selectedEvent.location}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
                 />
               </div>
               
@@ -553,8 +635,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Organizer</label>
                 <input
                   type="text"
-                  defaultValue={selectedEvent.organizer}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.organizer}
+                  onChange={(e) => setFormData({...formData, organizer: e.target.value})}
                 />
               </div>
               
@@ -562,8 +645,9 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Attendees (comma separated)</label>
                 <textarea
                   rows={2}
-                  defaultValue={selectedEvent.attendees.join(", ")}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.attendees}
+                  onChange={(e) => setFormData({...formData, attendees: e.target.value})}
                 />
               </div>
               
@@ -571,14 +655,17 @@ export function MarketingCalendar() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Description</label>
                 <textarea
                   rows={4}
-                  defaultValue={selectedEvent.description}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-[#937CB4]/20 sticky bottom-0 bg-white">
               <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
-              <Button type="submit" className="bg-gradient-to-r from-[#422462] to-[#5A4079]">Save Changes</Button>
+              <Button type="submit" disabled={isSaving} className="bg-gradient-to-r from-[#422462] to-[#5A4079]">
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </form>
         </Modal>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -13,27 +13,15 @@ import {
   Percent,
   DollarSign,
   Users,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
-
-interface Coupon {
-  id: number;
-  code: string;
-  type: "percentage" | "fixed";
-  value: number;
-  minPurchase?: number;
-  maxDiscount?: number;
-  usageLimit: number;
-  usageCount: number;
-  validFrom: string;
-  validUntil: string;
-  active: boolean;
-  applicablePlans: string[];
-}
+import { couponService, ApiCoupon } from "../../services/couponService";
 
 export function AdminCoupons() {
   const [showCouponModal, setShowCouponModal] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<ApiCoupon | null>(null);
+  const [loading, setLoading] = useState(true);
   const [couponForm, setCouponForm] = useState({
     code: "",
     type: "percentage" as "percentage" | "fixed",
@@ -47,61 +35,23 @@ export function AdminCoupons() {
     applicablePlans: [] as string[]
   });
 
-  const [coupons, setCoupons] = useState<Coupon[]>([
-    {
-      id: 1,
-      code: "WELCOME20",
-      type: "percentage",
-      value: 20,
-      minPurchase: 0,
-      usageLimit: 1000,
-      usageCount: 245,
-      validFrom: "2026-01-01",
-      validUntil: "2026-12-31",
-      active: true,
-      applicablePlans: ["Basic", "Pro", "Enterprise"]
-    },
-    {
-      id: 2,
-      code: "SUMMER50",
-      type: "fixed",
-      value: 50,
-      minPurchase: 100,
-      maxDiscount: 50,
-      usageLimit: 500,
-      usageCount: 128,
-      validFrom: "2026-06-01",
-      validUntil: "2026-08-31",
-      active: true,
-      applicablePlans: ["Pro", "Enterprise"]
-    },
-    {
-      id: 3,
-      code: "ENTERPRISE10",
-      type: "percentage",
-      value: 10,
-      minPurchase: 299,
-      usageLimit: 100,
-      usageCount: 42,
-      validFrom: "2026-01-01",
-      validUntil: "2026-12-31",
-      active: true,
-      applicablePlans: ["Enterprise"]
-    },
-    {
-      id: 4,
-      code: "FLASH30",
-      type: "percentage",
-      value: 30,
-      minPurchase: 0,
-      usageLimit: 200,
-      usageCount: 200,
-      validFrom: "2026-02-01",
-      validUntil: "2026-02-15",
-      active: false,
-      applicablePlans: ["Basic", "Pro"]
-    },
-  ]);
+  const [coupons, setCoupons] = useState<ApiCoupon[]>([]);
+
+  const fetchCoupons = async () => {
+    try {
+      setLoading(true);
+      const res = await couponService.getAll();
+      setCoupons(Array.isArray(res.data) ? res.data : []);
+    } catch (err: any) {
+      console.error("Failed to fetch coupons", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
 
   const stats = [
     { label: "Total Coupons", value: coupons.length, gradient: "from-[#422462] to-[#5A4079]" },
@@ -129,7 +79,7 @@ export function AdminCoupons() {
     setShowCouponModal(true);
   };
 
-  const handleEditCoupon = (coupon: Coupon) => {
+  const handleEditCoupon = (coupon: ApiCoupon) => {
     setEditingCoupon(coupon);
     setCouponForm({
       code: coupon.code,
@@ -146,43 +96,57 @@ export function AdminCoupons() {
     setShowCouponModal(true);
   };
 
-  const handleSaveCoupon = () => {
+  const handleSaveCoupon = async () => {
     if (!couponForm.code || !couponForm.value || !couponForm.validFrom || !couponForm.validUntil) return;
 
-    const newCoupon: Coupon = {
-      id: editingCoupon ? editingCoupon.id : Math.max(...coupons.map(c => c.id), 0) + 1,
-      code: couponForm.code.toUpperCase(),
-      type: couponForm.type,
-      value: parseFloat(couponForm.value),
-      minPurchase: couponForm.minPurchase ? parseFloat(couponForm.minPurchase) : undefined,
-      maxDiscount: couponForm.maxDiscount ? parseFloat(couponForm.maxDiscount) : undefined,
-      usageLimit: parseInt(couponForm.usageLimit) || 0,
-      usageCount: editingCoupon ? editingCoupon.usageCount : 0,
-      validFrom: couponForm.validFrom,
-      validUntil: couponForm.validUntil,
-      active: couponForm.active,
-      applicablePlans: couponForm.applicablePlans
-    };
+    try {
+      const payload = {
+        code: couponForm.code.toUpperCase(),
+        type: couponForm.type,
+        value: parseFloat(couponForm.value),
+        minPurchase: couponForm.minPurchase ? parseFloat(couponForm.minPurchase) : null,
+        maxDiscount: couponForm.maxDiscount ? parseFloat(couponForm.maxDiscount) : null,
+        usageLimit: parseInt(couponForm.usageLimit) || 0,
+        validFrom: couponForm.validFrom,
+        validUntil: couponForm.validUntil,
+        active: couponForm.active,
+        applicablePlans: couponForm.applicablePlans
+      };
 
-    if (editingCoupon) {
-      setCoupons(coupons.map(c => c.id === editingCoupon.id ? newCoupon : c));
-    } else {
-      setCoupons([...coupons, newCoupon]);
+      if (editingCoupon) {
+        await couponService.update(editingCoupon.id, payload);
+      } else {
+        await couponService.create(payload);
+      }
+
+      await fetchCoupons();
+      setShowCouponModal(false);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to save coupon!");
     }
-
-    setShowCouponModal(false);
   };
 
-  const handleDeleteCoupon = (couponId: number) => {
+  const handleDeleteCoupon = async (couponId: number) => {
     if (confirm("Are you sure you want to delete this coupon?")) {
-      setCoupons(coupons.filter(c => c.id !== couponId));
+      try {
+        await couponService.delete(couponId);
+        setCoupons(coupons.filter(c => c.id !== couponId));
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
-  const handleToggleActive = (couponId: number) => {
-    setCoupons(coupons.map(c =>
-      c.id === couponId ? { ...c, active: !c.active } : c
-    ));
+  const handleToggleActive = async (coupon: ApiCoupon) => {
+    try {
+      await couponService.update(coupon.id, { active: !coupon.active });
+      setCoupons(coupons.map(c =>
+        c.id === coupon.id ? { ...c, active: !c.active } : c
+      ));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCopyCouponCode = (code: string) => {
@@ -235,7 +199,17 @@ export function AdminCoupons() {
       </div>
 
       <div className="grid gap-4">
-        {coupons.map((coupon) => (
+        {loading ? (
+          <div className="flex justify-center p-10">
+            <Loader2 className="h-8 w-8 animate-spin text-[#937CB4]" />
+          </div>
+        ) : coupons.length === 0 ? (
+          <div className="text-center p-10 text-[#5A4079] bg-white/50 rounded-xl backdrop-blur-sm border border-[#937CB4]/20">
+            <Tag className="h-10 w-10 mx-auto mb-3 opacity-50" />
+            <p>No coupons have been created yet.</p>
+          </div>
+        ) : (
+          coupons.map((coupon) => (
           <Card key={coupon.id} className={`gradient-card gradient-card-hover border-[#937CB4]/30 ${!coupon.active && "opacity-60"}`}>
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
@@ -301,7 +275,7 @@ export function AdminCoupons() {
                     size="sm"
                     variant="outline"
                     className={`border-[#937CB4]/30 ${coupon.active ? "hover:bg-yellow-50" : "hover:bg-green-50"}`}
-                    onClick={() => handleToggleActive(coupon.id)}
+                    onClick={() => handleToggleActive(coupon)}
                   >
                     {coupon.active ? "Disable" : "Enable"}
                   </Button>
@@ -317,7 +291,7 @@ export function AdminCoupons() {
               </div>
             </CardContent>
           </Card>
-        ))}
+        )))}
       </div>
 
       {showCouponModal && (

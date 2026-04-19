@@ -1,35 +1,75 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
-import { Sparkles, Mail, Lock, Eye, EyeOff, Shield, Building2, ArrowRight, UserCheck } from "lucide-react";
+import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import api from "../api";
+
+type UserType = "user" | "admin" | "employee";
 
 interface LoginProps {
-  onLogin: (userType: "user" | "admin" | "employee") => void;
+  onLogin: (userType: UserType) => void;
+  onShowSignup?: () => void;
 }
 
-export function Login({ onLogin }: LoginProps) {
-  const [loginMode, setLoginMode] = useState<"user" | "admin" | "employee">("user");
+export function Login({ onLogin, onShowSignup }: LoginProps) {
+  const [localRole, setLocalRole] = useState<UserType>("user");
+  const defaultOrganizationId = "SEED_ORG_001";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
  
-  const demoCredentials = {
-    user: { email: "user@oraddo.com", password: "user123" },
-    admin: { email: "admin@oraddo.com", password: "admin123" },
-    employee: { email: "employee@oraddo.com", password: "employee123" }
+  const demoCredentials = [
+    { label: "Admin", email: "admin@oraddo.com", password: "admin123" },
+    { label: "Manager", email: "employee@oraddo.com", password: "employee123" },
+    { label: "User", email: "user@oraddo.com", password: "user123" }
+  ];
+  const [demoIndex, setDemoIndex] = useState(0);
+
+  const getUserTypeFromRole = (role: string): UserType => {
+    const r = String(role).toLowerCase();
+    if (r.includes("admin")) return "admin";
+    if (r.includes("manager") || r.includes("employee")) return "employee";
+    return "user";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
- 
-    onLogin(loginMode);
+
+    try {
+      const response = await api.post("/api/auth/unified-login", { email, password });
+      
+      const responseData = response?.data as {
+        token?: string;
+        role?: string;
+        user?: {
+          id: number;
+          fullName: string;
+          email: string;
+        };
+      };
+
+      if (responseData.token) {
+        sessionStorage.setItem("token", responseData.token);
+      }
+
+      if (responseData.user) {
+        sessionStorage.setItem("userData", JSON.stringify(responseData.user));
+      }
+
+      const nextType = getUserTypeFromRole(responseData.role || "user");
+      onLogin(nextType);
+    } catch (error: any) {
+      console.error("Signin failed", error);
+      alert(error?.response?.data?.message || "Login failed. Please check your credentials.");
+    }
   };
 
   const handleDemoLogin = () => {
-    const credentials = demoCredentials[loginMode];
+    const credentials = demoCredentials[demoIndex];
     setEmail(credentials.email);
     setPassword(credentials.password);
-    onLogin(loginMode);
+    setLocalRole(getUserTypeFromRole(credentials.label));
+    setDemoIndex((prev) => (prev + 1) % demoCredentials.length);
   };
 
   return (
@@ -68,18 +108,10 @@ export function Login({ onLogin }: LoginProps) {
             
             <div className="relative z-10">
               <h2 className="text-2xl font-bold text-[#200B43] mb-2">
-                {loginMode === "admin" 
-                  ? "Super Admin Portal" 
-                  : loginMode === "employee"
-                  ? "Employee Portal"
-                  : "Welcome Back"}
+                Welcome Back
               </h2>
               <p className="text-[#5A4079] text-sm mb-6">
-                {loginMode === "admin" 
-                  ? "Access system administration and management" 
-                  : loginMode === "employee"
-                  ? "Access your employee workspace"
-                  : "Sign in to access your workspace"}
+                Sign in to access your Oraddo workspace
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -146,7 +178,7 @@ export function Login({ onLogin }: LoginProps) {
                 <Button
                   type="submit"
                   className={`w-full py-3 text-white shadow-lg transition-all ${
-                    loginMode === "admin"
+                    localRole === "admin"
                       ? "bg-gradient-to-r from-[#200B43] to-[#422462] hover:from-[#422462] hover:to-[#200B43] shadow-[#422462]/30"
                       : "bg-gradient-to-r from-[#422462] to-[#5A4079] hover:from-[#5A4079] hover:to-[#422462] shadow-[#937CB4]/30"
                   }`}
@@ -162,8 +194,19 @@ export function Login({ onLogin }: LoginProps) {
                   className="w-full py-3 border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Try Demo Login
+                  Demo: {demoCredentials[demoIndex].label}
                 </Button>
+
+                <div className="text-center text-sm text-[#5A4079]">
+                  <span>New to Oraddo? </span>
+                  <button
+                    type="button"
+                    onClick={onShowSignup}
+                    className="font-semibold text-[#422462] hover:text-[#5A4079] transition-colors"
+                  >
+                    Create account
+                  </button>
+                </div>
               </form>
             </div>
           </div>

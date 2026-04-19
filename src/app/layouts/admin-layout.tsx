@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { 
@@ -22,6 +22,22 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [adminInfo, setAdminInfo] = useState({ fullName: "Super Admin", email: "admin@company.com" });
+
+  useEffect(() => {
+    const storedAdmin = sessionStorage.getItem("adminData");
+    if (storedAdmin) {
+      try {
+        const data = JSON.parse(storedAdmin);
+        setAdminInfo({
+          fullName: data.fullName || "Super Admin",
+          email: data.email || "admin@company.com"
+        });
+      } catch (e) {
+        console.error("Error parsing adminData", e);
+      }
+    }
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -103,8 +119,8 @@ export default function AdminLayout() {
                 SA
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-semibold text-[#200B43]">Super Admin</p>
-                <p className="text-xs text-[#5A4079]">admin@company.com</p>
+                <p className="text-sm font-semibold text-[#200B43]">{adminInfo.fullName}</p>
+                <p className="text-xs text-[#5A4079]">{adminInfo.email}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-[#5A4079]" />
             </div>

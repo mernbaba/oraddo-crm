@@ -6,78 +6,49 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import { attendanceService } from "../services/attendanceService";
+import { leadService } from "../services/leadService";
+import { projectService } from "../services/projectService";
+import { employeeService } from "../services/employeeService";
+import { invoiceService, revenueService } from "../services/revenueService";
+import { meetingService } from "../services/meetingService";
+import { jobService } from "../services/jobService";
 
-const revenueExpensesData = [
-  { month: "Jan", revenue: 245000, expenses: 168000 },
-  { month: "Feb", revenue: 268000, expenses: 172000 },
-  { month: "Mar", revenue: 252000, expenses: 165000 },
-  { month: "Apr", revenue: 298000, expenses: 185000 },
-  { month: "May", revenue: 312000, expenses: 192000 },
-  { month: "Jun", revenue: 335000, expenses: 198000 },
-];
-
-const genderData = [
-  { name: "Male", value: 28, color: "#422462" },
-  { name: "Female", value: 20, color: "#937CB4" },
-];
-
-const initialLeadData = [
-  { status: "New", count: 145, color: "#5A4079" },
-  { status: "Qualified", count: 189, color: "#422462" },
-  { status: "Contacted", count: 98, color: "#937CB4" },
-  { status: "Converted", count: 94, color: "#200B43" },
-];
-
-const initialProjectData = [
-  { status: "On Track", count: 24, color: "#422462" },
-  { status: "At Risk", count: 6, color: "#937CB4" },
-  { status: "Delayed", count: 4, color: "#5A4079" },
-];
-
-const initialBirthdays = [
-  { id: 1, name: "Sarah Johnson", department: "Marketing", age: 28, avatar: "SJ", email: "sarah.j@company.com", phone: "+91 98765 43210", wished: false },
-  { id: 2, name: "Michael Chen", department: "Development", age: 32, avatar: "MC", email: "michael.c@company.com", phone: "+91 98765 43211", wished: false },
-  { id: 3, name: "Priya Sharma", department: "HR", age: 29, avatar: "PS", email: "priya.s@company.com", phone: "+91 98765 43212", wished: false },
-];
-
-const initialEvents = [
-  { id: 1, title: "Client Presentation", time: "10:00 AM", type: "meeting", attendees: 8, location: "Conference Room A", status: "upcoming" },
-  { id: 2, title: "Team Sprint Planning", time: "02:30 PM", type: "meeting", attendees: 12, location: "Conference Room B", status: "upcoming" },
-  { id: 3, title: "Budget Review", time: "04:00 PM", type: "meeting", attendees: 5, location: "CEO Office", status: "upcoming" },
-  { id: 4, title: "Product Launch Event", time: "Tomorrow", type: "event", attendees: 45, location: "Main Hall", status: "upcoming" },
-];
-
-const initialPunchActivity = [
-  { id: 1, name: "Amit Kumar", type: "in", time: "09:15 AM", status: "on-time", department: "Sales" },
-  { id: 2, name: "Neha Patel", type: "in", time: "09:45 AM", status: "late", department: "Marketing" },
-  { id: 3, name: "Raj Malhotra", type: "out", time: "06:30 PM", status: "on-time", department: "Development" },
-  { id: 4, name: "Kavita Singh", type: "in", time: "09:05 AM", status: "on-time", department: "HR" },
-];
-
-const initialJobOpenings = [
-  { id: 1, title: "Senior React Developer", applications: 45, department: "Technology", status: "active", posted: "5 days ago" },
-  { id: 2, title: "Marketing Manager", applications: 32, department: "Marketing", status: "active", posted: "3 days ago" },
-  { id: 3, title: "HR Business Partner", applications: 28, department: "HR", status: "active", posted: "7 days ago" },
-  { id: 4, title: "Sales Executive", applications: 56, department: "Sales", status: "active", posted: "2 days ago" },
-];
+// Component Constants
+const statusColors = {
+  leads: ["#5A4079", "#422462", "#937CB4", "#200B43"],
+  projects: ["#422462", "#937CB4", "#5A4079"]
+};
 
 export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [birthdays, setBirthdays] = useState(initialBirthdays);
-  const [events, setEvents] = useState(initialEvents);
-  const [punchActivity, setPunchActivity] = useState(initialPunchActivity);
-  const [jobOpenings, setJobOpenings] = useState(initialJobOpenings);
-  const [leadData, setLeadData] = useState(initialLeadData);
-  const [projectData, setProjectData] = useState(initialProjectData);
+  const [birthdays, setBirthdays] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [punchActivity, setPunchActivity] = useState<any[]>([]);
+  const [jobOpenings, setJobOpenings] = useState<any[]>([]);
+  const [leadData, setLeadData] = useState<any[]>([]);
+  const [revenueChartData, setRevenueChartData] = useState<any[]>([]);
+  const [projectData, setProjectData] = useState<any[]>([
+    { status: "On Track", count: 0, color: "#422462" },
+    { status: "At Risk", count: 0, color: "#937CB4" },
+    { status: "Delayed", count: 0, color: "#5A4079" },
+  ]);
   
   const [employeeStats, setEmployeeStats] = useState({
-    total: 48,
-    present: 42,
-    absent: 6,
-    male: 28,
-    female: 20
+    total: 0,
+    present: 0,
+    absent: 0,
+    male: 0,
+    female: 0
+  });
+
+  const [revenueStats, setRevenueStats] = useState({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    currentMonthRevenue: 0,
+    currentMonthExpenses: 0
   });
 
   const [selectedBirthday, setSelectedBirthday] = useState<any>(null);
@@ -95,53 +66,234 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
   const [punchInTime, setPunchInTime] = useState<Date | null>(null);
   const [punchOutTime, setPunchOutTime] = useState<Date | null>(null);
   const [workingHours, setWorkingHours] = useState("00:00:00");
-  const [currentUser] = useState({
-    name: "Haritha Sree",
-    employeeId: "EMP-2024-001",
-    department: "Development",
-    designation: "Senior Developer",
-    email: "haritha.sree@company.com",
-    phone: "+91 98765 43200"
+
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    employeeId: string;
+    department: string;
+    designation: string;
+    email: string;
+    phone: string;
+    organizationId?: number;
+  }>({
+    name: "Loading...",
+    employeeId: "EMP-000",
+    department: "...",
+    designation: "...",
+    email: "...",
+    phone: "..."
   });
 
-  const totalRevenue = 1710000;
-  const totalExpenses = 1080000;
-  const currentMonthRevenue = 335000;
-  const currentMonthExpenses = 198000;
+  const { totalRevenue, totalExpenses, currentMonthRevenue } = revenueStats;
   const profit = totalRevenue - totalExpenses;
-  const profitMargin = ((profit / totalRevenue) * 100).toFixed(1);
+  const profitMargin = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(1) : "0.0";
 
-  const totalLeads = leadData.reduce((sum, item) => sum + item.count, 0);
-  const totalProjects = projectData.reduce((sum, item) => sum + item.count, 0);
-  const totalApplications = jobOpenings.reduce((sum, item) => sum + item.applications, 0);
+  const totalLeads = leadData.reduce((sum, item) => sum + (item.count || 0), 0);
+  const totalProjects = projectData.reduce((sum, item) => sum + (item.count || 0), 0);
+  const totalApplications = jobOpenings.reduce((sum, item) => sum + (item.applications_count || 0), 0);
+  
+  const genderData = [
+    { name: "Male", value: employeeStats.male, color: "#422462" },
+    { name: "Female", value: employeeStats.female, color: "#937CB4" },
+  ];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
+    const data = sessionStorage.getItem("userData");
+    if (data) {
+      const parsedUser = JSON.parse(data);
+      setCurrentUser({
+        name: parsedUser.fullName,
+        employeeId: `EMP-${parsedUser.id}`,
+        department: parsedUser.department || "General",
+        designation: parsedUser.role || "User",
+        email: parsedUser.email,
+        phone: parsedUser.phoneNumber || "N/A",
+        organizationId: parsedUser.organizationId
+      });
+    }
   }, []);
 
   useEffect(() => {
-    if (isPunchedIn && punchInTime) {
-      const interval = setInterval(() => {
-        const now = new Date();
-        const diff = now.getTime() - punchInTime.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setWorkingHours(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
-      }, 1000);
-      return () => clearInterval(interval);
+    if (currentUser.organizationId !== undefined) {
+      fetchDashboardData();
     }
-  }, [isPunchedIn, punchInTime]);
+  }, [currentUser.organizationId]);
+
+  const fetchDashboardData = async () => {
+    if (!currentUser.organizationId) return;
+    
+    setIsRefreshing(true);
+    try {
+      const orgId = typeof currentUser.organizationId === 'string' ? parseInt(currentUser.organizationId) : currentUser.organizationId;
+      
+      // Parallel data fetching
+      const [
+        attendanceRes,
+        leadsRes,
+        projectsRes,
+        empRes,
+        invoiceRes,
+        revenueRes,
+        meetingRes,
+        jobRes
+      ] = await Promise.all([
+        attendanceService.getTodaysTeamStatus(orgId),
+        leadService.getLeadsByOrg(orgId),
+        projectService.getProjectsByOrg(orgId),
+        employeeService.getEmployeesByOrg(orgId),
+        invoiceService.getByOrg(orgId),
+        revenueService.getByOrg(orgId),
+        meetingService.getMeetingsByOrg(orgId),
+        jobService.getJobsByOrg(orgId)
+      ]);
+
+      // 1. Process Employees & Demographics
+      const allEmps = empRes.data || [];
+      const maleCount = allEmps.filter((e: any) => e.gender?.toLowerCase() === 'male').length;
+      const femaleCount = allEmps.length - maleCount;
+      
+      setEmployeeStats({
+        total: allEmps.length,
+        present: attendanceRes.data?.length || 0,
+        absent: Math.max(0, allEmps.length - (attendanceRes.data?.length || 0)),
+        male: maleCount,
+        female: femaleCount
+      });
+
+      // 2. Process Birthday List
+      const today = new Date();
+      const todayBirthdays = allEmps.filter((e: any) => {
+        if (!e.date_of_birth) return false;
+        const dob = new Date(e.date_of_birth);
+        return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
+      }).map((e: any) => ({
+        id: e.id,
+        name: e.emp_name,
+        department: e.department,
+        age: today.getFullYear() - new Date(e.date_of_birth).getFullYear(),
+        avatar: e.emp_name.split(' ').map((n:any) => n[0]).join(''),
+        email: e.personal_email,
+        phone: e.phone_number,
+        wished: false
+      }));
+      setBirthdays(todayBirthdays);
+
+      // 3. Process Leads
+      const leads = leadsRes.data || [];
+      const leadCounts = [
+        { status: "New", count: leads.filter((l:any) => l.status === 'New').length, color: "#5A4079" },
+        { status: "Qualified", count: leads.filter((l:any) => l.status === 'Qualified').length, color: "#422462" },
+        { status: "Contacted", count: leads.filter((l:any) => l.status === 'Contacted').length, color: "#937CB4" },
+        { status: "Converted", count: leads.filter((l:any) => l.status === 'Converted').length, color: "#200B43" },
+      ];
+      setLeadData(leadCounts);
+
+      // 4. Process Projects
+      const projects = projectsRes.data || [];
+      const projCounts = [
+        { status: "On Track", count: projects.filter((p:any) => p.status === 'On Track').length, color: "#422462" },
+        { status: "At Risk", count: projects.filter((p:any) => p.status === 'At Risk').length, color: "#937CB4" },
+        { status: "Delayed", count: projects.filter((p:any) => p.status === 'Delayed').length, color: "#5A4079" },
+      ];
+      setProjectData(projCounts);
+
+      // 5. Process Attendance Feed
+      const activities = attendanceRes.data?.map((a: any) => ({
+        id: a.id,
+        name: a.emp_name,
+        type: a.punch_out_time ? "out" : "in",
+        time: formatTime(a.punch_in_time),
+        status: "on-time",
+        department: "General"
+      })) || [];
+      setPunchActivity(activities);
+
+      // 6. Process Revenue & Chart (Rolling 6 Months)
+      const invoices = invoiceRes.data || [];
+      const revenues = revenueRes.data || [];
+      
+      const totalRevValue = invoices.reduce((sum: number, inv: any) => sum + (parseFloat(inv.Total) || 0), 0);
+      const totalExpValue = revenues.reduce((sum: number, rev: any) => sum + (parseFloat(rev.total_debit) || 0), 0);
+
+      // Calculate Current Month
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const currentMonthRevenue = invoices
+        .filter((inv: any) => {
+          const invDate = new Date(inv.Date);
+          return invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear;
+        })
+        .reduce((sum: number, inv: any) => sum + (parseFloat(inv.Total) || 0), 0);
+
+      setRevenueStats({
+        totalRevenue: totalRevValue,
+        totalExpenses: totalExpValue,
+        currentMonthRevenue,
+        currentMonthExpenses: 0 // Default or calculate similarly from revenues
+      });
+
+      // Rolling 6-month aggregation
+      const rollingData = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const monthName = d.toLocaleString('default', { month: 'short' });
+        const m = d.getMonth();
+        const y = d.getFullYear();
+
+        const monthRev = invoices
+          .filter((inv: any) => {
+            const invDate = new Date(inv.Date || inv.createdAt);
+            return invDate.getMonth() === m && invDate.getFullYear() === y;
+          })
+          .reduce((sum: number, inv: any) => sum + (parseFloat(inv.Total) || 0), 0);
+
+        const monthExp = revenues
+          .filter((rev: any) => {
+            const revDate = new Date(rev.date || rev.createdAt);
+            return revDate.getMonth() === m && revDate.getFullYear() === y;
+          })
+          .reduce((sum: number, rev: any) => sum + (parseFloat(rev.total_debit) || 0), 0);
+
+        rollingData.push({ month: monthName, revenue: monthRev, expenses: monthExp });
+      }
+      setRevenueChartData(rollingData);
+
+      // 7. Process Meetings & Events
+      const meetings = meetingRes.data || [];
+      setEvents(meetings.map((m: any) => ({
+        id: m.id,
+        title: m.summary,
+        time: formatTime(m.start_time),
+        type: 'meeting',
+        attendees: 0,
+        location: m.location || 'Online',
+        status: 'upcoming'
+      })));
+
+      // 8. Process Jobs
+      const jobs = jobRes.data || [];
+      setJobOpenings(jobs.map((j: any) => ({
+        id: j.id,
+        title: j.title,
+        applications: j.applications_count || 0,
+        department: j.department,
+        status: j.status,
+        posted: j.posted_date
+      })));
+
+    } catch (error) {
+      console.error("Dashboard data fetch failed", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      handleRefresh();
-    }, 30000);
+      fetchDashboardData();
+    }, 60000); // Refresh every minute
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [currentUser.organizationId]);
 
   const handleWishBirthday = (id: number) => {
     setBirthdays(birthdays.map(b => 
@@ -164,16 +316,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
   };
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-
-    setTimeout(() => {
-      setEmployeeStats(prev => ({
-        ...prev,
-        present: Math.min(prev.total, prev.present + Math.floor(Math.random() * 3) - 1)
-      }));
-      
-      setIsRefreshing(false);
-    }, 1000);
+    fetchDashboardData();
   };
 
   const handleExport = () => {
@@ -198,47 +341,48 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     alert('Dashboard report exported successfully!');
   };
 
-  const handlePunchIn = () => {
-    const now = new Date();
-    setPunchInTime(now);
-    setIsPunchedIn(true);
-    setPunchOutTime(null);
-
-    const newActivity = {
-      id: punchActivity.length + 1,
-      name: currentUser.name,
-      type: "in" as const,
-      time: formatTime(now),
-      status: now.getHours() < 10 ? "on-time" as const : "late" as const,
-      department: currentUser.department
-    };
-    setPunchActivity([newActivity, ...punchActivity]);
-
-    setEmployeeStats(prev => ({
-      ...prev,
-      present: Math.min(prev.total, prev.present + 1),
-      absent: Math.max(0, prev.absent - 1)
-    }));
-    
-    setShowPunchInModal(true);
+  const handlePunchIn = async () => {
+    try {
+      if (!currentUser.organizationId) {
+        alert("Organization ID not found. Please log in again.");
+        return;
+      }
+      const empId = parseInt(currentUser.employeeId.split('-')[1]);
+      await attendanceService.punchIn({ 
+        employeeId: empId, 
+        organizationId: currentUser.organizationId 
+      });
+      
+      const now = new Date();
+      setPunchInTime(now);
+      setIsPunchedIn(true);
+      setPunchOutTime(null);
+      setShowPunchInModal(true);
+      fetchDashboardData(); // Refresh list
+    } catch (error) {
+      console.error("Punch in failed", error);
+      alert("Punch in failed. Please try again.");
+    }
   };
 
-  const handlePunchOut = () => {
-    const now = new Date();
-    setPunchOutTime(now);
-    setIsPunchedIn(false);
+  const handlePunchOut = async () => {
+    try {
+      if (!currentUser.organizationId) return;
+      const empId = parseInt(currentUser.employeeId.split('-')[1]);
+      await attendanceService.punchOut({ 
+        employeeId: empId, 
+        organizationId: currentUser.organizationId 
+      });
 
-    const newActivity = {
-      id: punchActivity.length + 1,
-      name: currentUser.name,
-      type: "out" as const,
-      time: formatTime(now),
-      status: "on-time" as const,
-      department: currentUser.department
-    };
-    setPunchActivity([newActivity, ...punchActivity]);
-    
-    setShowPunchOutModal(true);
+      const now = new Date();
+      setPunchOutTime(now);
+      setIsPunchedIn(false);
+      setShowPunchOutModal(true);
+      fetchDashboardData(); // Refresh list
+    } catch (error) {
+      console.error("Punch out failed", error);
+      alert("Punch out failed. Please try again.");
+    }
   };
 
   const filteredPunchActivity = punchActivity.filter(activity => {
@@ -619,7 +763,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={revenueExpensesData}>
+            <ComposedChart data={revenueChartData}>
               <defs key="revenue-defs">
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#422462" stopOpacity={0.8}/>

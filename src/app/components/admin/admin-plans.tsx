@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -11,90 +11,85 @@ import {
   Users,
   DollarSign,
   Check,
-  Sparkles
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
+import { plansService, ApiPlan } from "../../services/plansService";
+
 
 interface Plan {
   id: number;
   name: string;
   price: number;
-  billingPeriod: "monthly" | "yearly";
-  features: string[];
-  subscribers: number;
-  active: boolean;
-  mrr: number;
+  billingPeriod: string;       // maps from model "duration" field
+  features: string[];           // not in model — shown as employeeLimit info
+  employeeLimit: number;
+  subscription?: string;
+  total?: number;
+}
+
+function mapApiPlanToLocal(p: ApiPlan): Plan {
+  const parsedPrice = parseFloat(p.price as any);
+  return {
+    id: p.id,
+    name: p.planName || "Unnamed Plan",
+    price: isNaN(parsedPrice) ? 0 : parsedPrice,
+    billingPeriod: p.duration ?? "monthly",
+    features: typeof p.subscription === "string" ? p.subscription.split("\n").filter(f => f.trim()) : [],
+    employeeLimit: p.employeeLimit ?? 0,
+    subscription: p.subscription,
+    total: p.total,
+  };
 }
 
 export function AdminPlans() {
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [planForm, setPlanForm] = useState({
     name: "",
     price: "",
-    billingPeriod: "monthly" as "monthly" | "yearly",
+    billingPeriod: "monthly",
+    employeeLimit: "",
     features: "",
     active: true
   });
 
-  const [plans, setPlans] = useState<Plan[]>([
-    {
-      id: 1,
-      name: "Free",
-      price: 0,
-      billingPeriod: "monthly",
-      features: ["1 User", "Basic Features", "5 Projects", "Email Support"],
-      subscribers: 850,
-      active: true,
-      mrr: 0
-    },
-    {
-      id: 2,
-      name: "Basic",
-      price: 29,
-      billingPeriod: "monthly",
-      features: ["5 Users", "All Basic Features", "Unlimited Projects", "Priority Support", "Analytics"],
-      subscribers: 680,
-      active: true,
-      mrr: 19720
-    },
-    {
-      id: 3,
-      name: "Pro",
-      price: 99,
-      billingPeriod: "monthly",
-      features: ["Unlimited Users", "All Pro Features", "Advanced Analytics", "24/7 Support", "API Access", "Custom Integrations"],
-      subscribers: 420,
-      active: true,
-      mrr: 41580
-    },
-    {
-      id: 4,
-      name: "Enterprise",
-      price: 299,
-      billingPeriod: "monthly",
-      features: ["Unlimited Everything", "Dedicated Account Manager", "Custom Development", "SLA", "On-premise Deployment", "Training & Onboarding"],
-      subscribers: 150,
-      active: true,
-      mrr: 44850
-    },
-  ]);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await plansService.getAll();
+      const data = Array.isArray(res.data) ? res.data : [];
+      setPlans(data.map(mapApiPlanToLocal));
+    } catch (err: any) {
+      console.error("Failed to fetch plans:", err);
+      setError(err?.response?.data?.message ?? "Failed to load plans from server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
   const stats = [
     { label: "Total Plans", value: plans.length, gradient: "from-[#422462] to-[#5A4079]" },
-    { label: "Total Subscribers", value: plans.reduce((sum, p) => sum + p.subscribers, 0), gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Total MRR", value: `$${plans.reduce((sum, p) => sum + p.mrr, 0).toLocaleString()}`, gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "Avg Revenue Per User", value: "$50.6", gradient: "from-[#422462] to-[#937CB4]" },
+    { label: "Max Employees", value: plans.reduce((sum, p) => sum + p.employeeLimit, 0), gradient: "from-[#5A4079] to-[#937CB4]" },
+    { label: "Total Value", value: `$${plans.reduce((sum, p) => sum + (p.total ?? 0), 0).toLocaleString()}`, gradient: "from-[#937CB4] to-[#5A4079]" },
+    { label: "Plan Types", value: new Set(plans.map(p => p.billingPeriod)).size, gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
   const handleAddPlan = () => {
     setEditingPlan(null);
-    setPlanForm({
-      name: "",
-      price: "",
-      billingPeriod: "monthly",
-      features: "",
-      active: true
-    });
+    setPlanForm({ name: "", price: "", billingPeriod: "monthly", employeeLimit: "", features: "", active: true });
     setShowPlanModal(true);
   };
 
@@ -104,51 +99,74 @@ export function AdminPlans() {
       name: plan.name,
       price: plan.price.toString(),
       billingPeriod: plan.billingPeriod,
+      employeeLimit: plan.employeeLimit.toString(),
       features: plan.features.join("\n"),
-      active: plan.active
+      active: true
     });
     setShowPlanModal(true);
   };
 
-  const handleSavePlan = () => {
+
+  const handleSavePlan = async () => {
     if (!planForm.name || !planForm.price) return;
-
-    const price = parseFloat(planForm.price);
-    const newPlan: Plan = {
-      id: editingPlan ? editingPlan.id : Math.max(...plans.map(p => p.id), 0) + 1,
-      name: planForm.name,
-      price,
-      billingPeriod: planForm.billingPeriod,
-      features: planForm.features.split("\n").filter(f => f.trim()),
-      subscribers: editingPlan ? editingPlan.subscribers : 0,
-      active: planForm.active,
-      mrr: editingPlan ? editingPlan.mrr : 0
+    setSaving(true);
+    const payload: Partial<ApiPlan> = {
+      planName: planForm.name,
+      price: planForm.price,
+      duration: planForm.billingPeriod,
+      subscription: planForm.features,
+      employeeLimit: parseInt(planForm.employeeLimit) || 0,
     };
-
-    if (editingPlan) {
-      setPlans(plans.map(p => p.id === editingPlan.id ? newPlan : p));
-    } else {
-      setPlans([...plans, newPlan]);
+    try {
+      if (editingPlan) {
+        await plansService.update(editingPlan.id, payload);
+        const updatedLocal: Plan = {
+          ...editingPlan,
+          name: planForm.name,
+          price: parseFloat(planForm.price) || 0,
+          billingPeriod: planForm.billingPeriod,
+          employeeLimit: parseInt(planForm.employeeLimit) || 0,
+          features: planForm.features.split("\n").filter(f => f.trim())
+        };
+        setPlans(prev => prev.map(p => p.id === editingPlan.id ? updatedLocal : p));
+      } else {
+        const res = await plansService.create(payload);
+        const newPlanFull = res.data?.id ? mapApiPlanToLocal(res.data) : {
+           ...mapApiPlanToLocal({ ...payload, id: Date.now() } as ApiPlan),
+        };
+        setPlans(prev => [...prev, newPlanFull]);
+      }
+      setShowPlanModal(false);
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? "Failed to save plan. Please try again.");
+    } finally {
+      setSaving(false);
     }
-
-    setShowPlanModal(false);
   };
 
-  const handleDeletePlan = (planId: number) => {
-    if (confirm("Are you sure you want to delete this plan?")) {
-      setPlans(plans.filter(p => p.id !== planId));
+  const handleDeletePlan = async (plan: Plan) => {
+    if (!confirm(`Are you sure you want to delete the "${plan.name}" plan?`)) return;
+    try {
+      await plansService.delete(plan.id);
+      setPlans(prev => prev.filter(p => p.id !== plan.id));
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? "Failed to delete plan.");
     }
   };
 
-  const handleToggleActive = (planId: number) => {
-    setPlans(plans.map(p =>
-      p.id === planId ? { ...p, active: !p.active } : p
-    ));
+  const handleToggleActive = async (plan: Plan) => {
+    const newStatus = plan.subscription === "active" ? "inactive" : "active";
+    try {
+      await plansService.update(plan.id, { subscription: newStatus });
+      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, subscription: newStatus } : p));
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? "Failed to update plan status.");
+    }
   };
 
   return (
     <div className="space-y-6">
-
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
@@ -158,7 +176,9 @@ export function AdminPlans() {
             <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
             <div className="relative z-10">
               <p className="text-sm text-[#5A4079] mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-bold text-[#200B43]">{stat.value}</h3>
+              <h3 className="text-3xl font-bold text-[#200B43]">
+                {loading ? <Loader2 className="h-6 w-6 animate-spin text-[#937CB4]" /> : stat.value}
+              </h3>
             </div>
             <div className="absolute top-2 right-2">
               <Sparkles className="h-5 w-5 text-[#937CB4] opacity-40 group-hover:opacity-100 transition-opacity" />
@@ -167,6 +187,16 @@ export function AdminPlans() {
         ))}
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <p className="text-sm flex-1">{error}</p>
+          <Button size="sm" variant="outline" className="border-red-300 hover:bg-red-100 text-red-700" onClick={fetchPlans}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Retry
+          </Button>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button
@@ -178,85 +208,101 @@ export function AdminPlans() {
         </Button>
       </div>
 
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {plans.map((plan) => (
-          <Card
-            key={plan.id}
-            className={`gradient-card gradient-card-hover border-[#937CB4]/30 ${!plan.active && "opacity-60"}`}
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-[#200B43] mb-2">{plan.name}</CardTitle>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-[#422462]">${plan.price}</span>
-                    <span className="text-sm text-[#5A4079]">/{plan.billingPeriod === "monthly" ? "mo" : "yr"}</span>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-[#937CB4] mx-auto mb-3" />
+            <p className="text-[#5A4079] text-sm">Loading plans from server...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {plans.length === 0 && !error ? (
+            <div className="col-span-4 text-center py-16 text-[#5A4079]">
+              <CreditCard className="h-12 w-12 mx-auto mb-3 text-[#937CB4]" />
+              <p>No plans found. Create your first plan.</p>
+            </div>
+          ) : (
+            plans.map((plan) => (
+              <Card
+                key={plan.id}
+                className="gradient-card gradient-card-hover border-[#937CB4]/30"
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-[#200B43] mb-2">{plan.name}</CardTitle>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-[#422462]">${plan.price}</span>
+                        <span className="text-sm text-[#5A4079]">/{plan.billingPeriod === "monthly" ? "mo" : "yr"}</span>
+                      </div>
+                    </div>
+                    <Badge className={plan.subscription === "active" ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
+                      {plan.subscription === "active" ? "Active" : "Inactive"}
+                    </Badge>
                   </div>
-                </div>
-                <Badge className={plan.active ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
-                  {plan.active ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-[#422462] mt-0.5 flex-shrink-0" />
-                    <span className="text-[#5A4079]">{feature}</span>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-[#422462] mt-0.5 flex-shrink-0" />
+                        <span className="text-[#5A4079]">{feature}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <div className="pt-4 border-t border-[#937CB4]/20 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5A4079] flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    Subscribers
-                  </span>
-                  <span className="font-semibold text-[#200B43]">{plan.subscribers}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5A4079] flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
-                    MRR
-                  </span>
-                  <span className="font-semibold text-[#200B43]">${plan.mrr.toLocaleString()}</span>
-                </div>
-              </div>
+                  <div className="pt-4 border-t border-[#937CB4]/20 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#5A4079] flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        Employee Limit
+                      </span>
+                      <span className="font-semibold text-[#200B43]">{plan.employeeLimit}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#5A4079] flex items-center gap-1">
+                        <DollarSign className="h-4 w-4" />
+                        Total
+                      </span>
+                      <span className="font-semibold text-[#200B43]">${plan.total?.toLocaleString() ?? "—"}</span>
+                    </div>
+                  </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 border-[#937CB4]/30 hover:bg-[#F0E9FF]"
-                  onClick={() => handleEditPlan(plan)}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className={`border-[#937CB4]/30 ${plan.active ? "hover:bg-yellow-50" : "hover:bg-green-50"}`}
-                  onClick={() => handleToggleActive(plan.id)}
-                >
-                  {plan.active ? "Disable" : "Enable"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-red-300 hover:bg-red-50"
-                  onClick={() => handleDeletePlan(plan.id)}
-                >
-                  <Trash2 className="h-3 w-3 text-red-600" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                      onClick={() => handleEditPlan(plan)}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-[#937CB4]/30 hover:bg-yellow-50"
+                      onClick={() => handleToggleActive(plan)}
+                    >
+                      Update
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 hover:bg-red-50"
+                      onClick={() => handleDeletePlan(plan)}
+                    >
+                      <Trash2 className="h-3 w-3 text-red-600" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
       {showPlanModal && (
         <Modal
@@ -317,7 +363,7 @@ export function AdminPlans() {
                 onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 rows={6}
-                placeholder="Unlimited Users&#10;Advanced Analytics&#10;24/7 Support&#10;API Access"
+                placeholder={"Unlimited Users\nAdvanced Analytics\n24/7 Support\nAPI Access"}
               />
             </div>
 
@@ -335,17 +381,15 @@ export function AdminPlans() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowPlanModal(false)}
-              >
+              <Button variant="outline" onClick={() => setShowPlanModal(false)}>
                 Cancel
               </Button>
               <Button
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white"
                 onClick={handleSavePlan}
-                disabled={!planForm.name || !planForm.price}
+                disabled={!planForm.name || !planForm.price || saving}
               >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 {editingPlan ? "Update Plan" : "Create Plan"}
               </Button>
             </div>

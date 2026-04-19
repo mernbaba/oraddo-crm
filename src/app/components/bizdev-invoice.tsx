@@ -1,7 +1,8 @@
-import { Receipt, Plus, Search, Filter, Download, Send, Eye, Sparkles, DollarSign, Edit, X } from "lucide-react";
+import { Receipt, Plus, Search, Filter, Download, Send, Eye, Sparkles, DollarSign, Edit, X, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./ui/modal";
+import { invoiceService, ApiInvoice } from "../services/revenueService";
 
 export function BizDevInvoice() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,7 +10,71 @@ export function BizDevInvoice() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<typeof invoices[0] | null>(null);
+  const [invoiceList, setInvoiceList] = useState<ApiInvoice[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statsData, setStatsData] = useState([
+    { label: "Total Invoices", value: "0", change: "+0", gradient: "from-[#422462] to-[#5A4079]" },
+    { label: "Total Revenue", value: "₹0", change: "+0%", gradient: "from-[#5A4079] to-[#937CB4]" },
+    { label: "Paid", value: "0", change: "+0%", gradient: "from-[#937CB4] to-[#5A4079]" },
+    { label: "Pending", value: "0", change: "+0", gradient: "from-[#422462] to-[#937CB4]" },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<ApiInvoice | null>(null);
+
+  useEffect(() => {
+    const data = sessionStorage.getItem("userData");
+    if (data) {
+      const parsedUser = JSON.parse(data);
+      if (parsedUser.organizationId !== undefined && parsedUser.organizationId !== null) {
+        setOrgId(Number(parsedUser.organizationId));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orgId !== null) {
+      fetchData();
+    }
+  }, [orgId, searchTerm, filterStatus]);
+
+  const fetchData = async () => {
+    if (orgId === null) return;
+    setLoading(true);
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      // 1. Fetch Finance Stats
+      const financeRes = await invoiceService.getByOrgForFinance(orgId, currentYear);
+      const financeInvoices = financeRes.data.invoices || [];
+      
+      const totalRevenue = financeInvoices.reduce((sum, inv) => sum + (parseFloat(inv.Total) || 0), 0);
+      const paidCount = financeInvoices.filter(inv => inv.status === "Approved").length;
+      const pendingCount = financeInvoices.filter(inv => inv.status === "Pending").length;
+
+      setStatsData([
+        { label: "Total Invoices", value: financeRes.data.totalInvoice.toString(), change: "+0", gradient: "from-[#422462] to-[#5A4079]" },
+        { label: "Total Revenue", value: `₹${(totalRevenue / 1000000).toFixed(1)}M`, change: "+0%", gradient: "from-[#5A4079] to-[#937CB4]" },
+        { label: "Paid", value: paidCount.toString(), change: "+0%", gradient: "from-[#937CB4] to-[#5A4079]" },
+        { label: "Pending", value: pendingCount.toString(), change: "+0", gradient: "from-[#422462] to-[#937CB4]" },
+      ]);
+
+      // 2. Fetch Table Data
+      const tableRes = await invoiceService.getTableData(orgId, {
+        page: 0,
+        pageSize: 50,
+        year: currentYear
+      });
+      setInvoiceList(tableRes.data.invoices || []);
+      setTotalCount(tableRes.data.totalInvoice || 0);
+
+    } catch (error) {
+      console.error("Error fetching invoice data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -28,133 +93,33 @@ export function BizDevInvoice() {
   });
   const [isContentGenerated, setIsContentGenerated] = useState(false);
 
-  const invoices = [
-    { 
-      id: "INV-2024-001",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Tech Corp", 
-      clientBillingDetails: "456 Business Ave, New York, NY 10001 | Tax ID: 98-7654321",
-      service: "AI Integration System",
-      paymentType: "Bank Transfer",
-      subtotal: "₹125,000",
-      gstCharges: "₹12,500",
-      gstPercentage: "10%",
-      totalAmount: "₹137,500",
-      status: "Paid", 
-      dueDate: "2024-01-15", 
-      issueDate: "2024-01-01",
-      description: "Complete AI integration solution with machine learning capabilities"
-    },
-    { 
-      id: "INV-2024-002",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Digital Solutions", 
-      clientBillingDetails: "789 Corporate Blvd, Austin, TX 73301 | Tax ID: 11-2233445",
-      service: "Cloud Migration",
-      paymentType: "Credit Card",
-      subtotal: "₹89,500",
-      gstCharges: "₹8,950",
-      gstPercentage: "10%",
-      totalAmount: "₹98,450",
-      status: "Pending", 
-      dueDate: "2024-01-20", 
-      issueDate: "2024-01-05",
-      description: "Full cloud migration and infrastructure setup"
-    },
-    { 
-      id: "INV-2024-003",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Future Systems", 
-      clientBillingDetails: "321 Innovation Way, Seattle, WA 98101 | Tax ID: 55-6677889",
-      service: "Security Upgrade",
-      paymentType: "Wire Transfer",
-      subtotal: "₹156,000",
-      gstCharges: "₹15,600",
-      gstPercentage: "10%",
-      totalAmount: "₹171,600",
-      status: "Overdue", 
-      dueDate: "2024-01-05", 
-      issueDate: "2023-12-20",
-      description: "Enterprise-level security implementation"
-    },
-    { 
-      id: "INV-2024-004",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Global Enterprises", 
-      clientBillingDetails: "555 International Plaza, Miami, FL 33101 | Tax ID: 22-3344556",
-      service: "Data Analytics Platform",
-      paymentType: "Bank Transfer",
-      subtotal: "₹203,000",
-      gstCharges: "₹20,300",
-      gstPercentage: "10%",
-      totalAmount: "₹223,300",
-      status: "Paid", 
-      dueDate: "2024-01-25", 
-      issueDate: "2024-01-10",
-      description: "Advanced analytics and reporting system"
-    },
-    { 
-      id: "INV-2024-005",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Smart Industries", 
-      clientBillingDetails: "888 Manufacturing Dr, Detroit, MI 48201 | Tax ID: 33-4455667",
-      service: "IoT Implementation",
-      paymentType: "Check",
-      subtotal: "₹98,750",
-      gstCharges: "₹9,875",
-      gstPercentage: "10%",
-      totalAmount: "₹108,625",
-      status: "Pending", 
-      dueDate: "2024-01-30", 
-      issueDate: "2024-01-12",
-      description: "IoT sensors and management platform"
-    },
-    { 
-      id: "INV-2024-006",
-      companyName: "ProcessFlow Inc.",
-      companyBillingDetails: "123 Tech Street, Silicon Valley, CA 94025 | Tax ID: 12-3456789 | Email: billing@processflow.com",
-      clientName: "Innovation Labs", 
-      clientBillingDetails: "999 Research Park, Boston, MA 02101 | Tax ID: 44-5566778",
-      service: "Machine Learning Suite",
-      paymentType: "ACH",
-      subtotal: "₹175,000",
-      gstCharges: "₹17,500",
-      gstPercentage: "10%",
-      totalAmount: "₹192,500",
-      status: "Draft", 
-      dueDate: "2024-02-05", 
-      issueDate: "2024-01-08",
-      description: "Custom ML algorithms and training platform"
-    },
-  ];
-
-  const filteredInvoices = invoices.filter((invoice) => {
-    const searchMatch = invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-    const statusMatch = filterStatus === "all" || invoice.status === filterStatus;
-    return searchMatch && statusMatch;
-  });
-
-  const handleViewInvoice = (invoice: typeof invoices[0]) => {
+  const handleViewInvoice = (invoice: ApiInvoice) => {
     setSelectedInvoice(invoice);
     setShowViewModal(true);
   };
 
-  const handleEditInvoice = (invoice: typeof invoices[0]) => {
+  const handleEditInvoice = (invoice: ApiInvoice) => {
     setSelectedInvoice(invoice);
     setShowEditModal(true);
   };
 
+  const handleDeleteInvoice = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this invoice?")) return;
+    try {
+      await invoiceService.delete(id);
+      alert("Invoice deleted successfully! 🗑️");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      alert("Failed to delete invoice.");
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Paid": return "bg-green-100 text-green-700 border-green-300";
+      case "Approved": return "bg-green-100 text-green-700 border-green-300";
       case "Pending": return "bg-yellow-100 text-yellow-700 border-yellow-300";
-      case "Overdue": return "bg-red-100 text-red-700 border-red-300";
+      case "Decline": return "bg-red-100 text-red-700 border-red-300";
       default: return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
@@ -355,11 +320,44 @@ export function BizDevInvoice() {
     return baseAmount;
   };
 
-  const handleSaveInvoice = (e: React.FormEvent) => {
+  const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Invoice saved successfully! ✅");
-    setShowCreateModal(false);
-    resetAIForm();
+    if (orgId === null) return;
+    setIsSaving(true);
+    try {
+      const numericSubtotal = parseFloat(generatedContent.subtotal.replace(/[^0-9.]/g, '')) || 0;
+      const numericTotal = parseFloat(generatedContent.totalAmount.replace(/[^0-9.]/g, '')) || 0;
+
+      const payload: Partial<ApiInvoice> = {
+        billTo: generatedContent.clientBillingDetails,
+        Date: new Date().toISOString().split('T')[0],
+        invoiceId: "", // Backend generates this
+        base: [generatedContent.service],
+        amount: [numericSubtotal],
+        currency: "INR",
+        comments: generatedContent.description,
+        status: "Pending",
+        GST: generatedContent.gstPercentage,
+        Total: numericTotal.toString(),
+        totalPrize: numericTotal.toString(),
+        companyName: generatedContent.companyName,
+        clientName: generatedContent.clientName,
+        organizationID: orgId,
+        services: [generatedContent.service],
+        invoiceType: "Professional Services"
+      };
+
+      await invoiceService.create(payload);
+      alert("Invoice saved successfully! ✅");
+      setShowCreateModal(false);
+      resetAIForm();
+      fetchData();
+    } catch (error: any) {
+      console.error("Error saving invoice:", error);
+      alert(`Failed to save invoice: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDownloadInvoice = () => {
@@ -404,7 +402,7 @@ export function BizDevInvoice() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {statsData.map((stat, index) => (
           <div
             key={index}
             className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group"
@@ -458,16 +456,16 @@ export function BizDevInvoice() {
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.map((invoice, index) => (
+              {invoiceList.map((invoice, index) => (
                 <tr
                   key={invoice.id}
                   className="border-b border-[#937CB4]/10 hover:bg-[#F0E9FF]/30 transition-colors"
                 >
-                  <td className="p-4 text-sm font-medium text-[#422462]">{invoice.id}</td>
+                  <td className="p-4 text-sm font-medium text-[#422462]">{invoice.invoiceId}</td>
                   <td className="p-4 text-sm text-[#200B43]">{invoice.clientName}</td>
-                  <td className="p-4 text-sm font-semibold text-[#422462]">{invoice.totalAmount}</td>
-                  <td className="p-4 text-sm text-[#5A4079]">{invoice.issueDate}</td>
-                  <td className="p-4 text-sm text-[#5A4079]">{invoice.dueDate}</td>
+                  <td className="p-4 text-sm font-semibold text-[#422462]">₹{parseFloat(invoice.Total).toLocaleString('en-IN')}</td>
+                  <td className="p-4 text-sm text-[#5A4079]">{invoice.Date ? new Date(invoice.Date).toLocaleDateString() : 'N/A'}</td>
+                  <td className="p-4 text-sm text-[#5A4079]">{invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'N/A'}</td>
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(invoice.status)}`}>
                       {invoice.status}
@@ -484,8 +482,8 @@ export function BizDevInvoice() {
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-[#F0E9FF]" onClick={() => handleEditInvoice(invoice)}>
                         <Edit className="h-4 w-4 text-[#5A4079]" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-[#F0E9FF]">
-                        <Send className="h-4 w-4 text-[#5A4079]" />
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50" onClick={() => handleDeleteInvoice(invoice.id)}>
+                        <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
                   </td>
@@ -767,9 +765,10 @@ export function BizDevInvoice() {
               </Button>
               <Button 
                 type="submit" 
+                disabled={isSaving}
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079]"
               >
-                Save Invoice
+                {isSaving ? "Saving..." : "Save Invoice"}
               </Button>
             </div>
           )}
@@ -783,11 +782,11 @@ export function BizDevInvoice() {
             <div className="grid grid-cols-2 gap-4 pb-4 border-b border-[#937CB4]/20">
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Invoice Date</label>
-                <p className="text-[#200B43] font-medium">{selectedInvoice.issueDate}</p>
+                <p className="text-[#200B43] font-medium">{selectedInvoice.Date ? new Date(selectedInvoice.Date).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#5A4079]">Due Date</label>
-                <p className="text-[#200B43] font-medium">{selectedInvoice.dueDate}</p>
+                <label className="text-sm font-medium text-[#5A4079]">Created At</label>
+                <p className="text-[#200B43] font-medium">{selectedInvoice.createdAt ? new Date(selectedInvoice.createdAt).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium text-[#5A4079]">Status</label>
@@ -805,10 +804,6 @@ export function BizDevInvoice() {
                 <label className="text-sm font-medium text-[#5A4079]">Company Name</label>
                 <p className="text-[#200B43] font-medium mb-2">{selectedInvoice.companyName}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-[#5A4079]">Billing Details</label>
-                <p className="text-[#200B43] text-sm">{selectedInvoice.companyBillingDetails}</p>
-              </div>
             </div>
 
             <div className="pb-4 border-b border-[#937CB4]/20">
@@ -818,8 +813,8 @@ export function BizDevInvoice() {
                 <p className="text-[#200B43] font-medium mb-2">{selectedInvoice.clientName}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#5A4079]">Billing Details</label>
-                <p className="text-[#200B43] text-sm">{selectedInvoice.clientBillingDetails}</p>
+                <label className="text-sm font-medium text-[#5A4079]">Billing Address</label>
+                <p className="text-[#200B43] text-sm">{selectedInvoice.billTo}</p>
               </div>
             </div>
 
@@ -827,34 +822,30 @@ export function BizDevInvoice() {
               <h3 className="text-sm font-semibold text-[#422462] mb-3">Service Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-[#5A4079]">Service</label>
-                  <p className="text-[#200B43] font-medium">{selectedInvoice.service}</p>
+                  <label className="text-sm font-medium text-[#5A4079]">Type</label>
+                  <p className="text-[#200B43] font-medium">{selectedInvoice.invoiceType}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#5A4079]">Payment Type</label>
-                  <p className="text-[#200B43] font-medium">{selectedInvoice.paymentType}</p>
+                  <label className="text-sm font-medium text-[#5A4079]">Currency</label>
+                  <p className="text-[#200B43] font-medium">{selectedInvoice.currency}</p>
                 </div>
               </div>
               <div className="mt-3">
-                <label className="text-sm font-medium text-[#5A4079]">Description</label>
-                <p className="text-[#200B43] mt-1">{selectedInvoice.description}</p>
+                <label className="text-sm font-medium text-[#5A4079]">Comments</label>
+                <p className="text-[#200B43] mt-1">{selectedInvoice.comments}</p>
               </div>
             </div>
 
             <div className="bg-gradient-to-br from-[#F0E9FF]/50 to-[#F0E9FF]/20 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-[#422462] mb-3">Amount Breakdown</h3>
+              <h3 className="text-sm font-semibold text-[#422462] mb-3">Amount Summary</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-[#5A4079]">Subtotal</span>
-                  <span className="text-sm font-medium text-[#200B43]">{selectedInvoice.subtotal}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[#5A4079]">GST ({selectedInvoice.gstPercentage})</span>
-                  <span className="text-sm font-medium text-[#200B43]">{selectedInvoice.gstCharges}</span>
+                  <span className="text-sm text-[#5A4079]">GST</span>
+                  <span className="text-sm font-medium text-[#200B43]">{selectedInvoice.GST}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-[#937CB4]/30">
                   <span className="text-base font-semibold text-[#422462]">Total Amount</span>
-                  <span className="text-2xl font-bold gradient-text">{selectedInvoice.totalAmount}</span>
+                  <span className="text-2xl font-bold gradient-text">₹{parseFloat(selectedInvoice.Total).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -882,13 +873,13 @@ export function BizDevInvoice() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Invoice ID</label>
                 <input
                   type="text"
-                  defaultValue={selectedInvoice.id}
+                  defaultValue={selectedInvoice.invoiceId}
                   readOnly
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg bg-gray-50"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Client</label>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Client Name</label>
                 <input
                   type="text"
                   defaultValue={selectedInvoice.clientName}
@@ -896,42 +887,34 @@ export function BizDevInvoice() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Amount</label>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Total Amount</label>
                 <input
                   type="text"
-                  defaultValue={selectedInvoice.totalAmount}
+                  defaultValue={selectedInvoice.Total}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Tax</label>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">GST</label>
                 <input
                   type="text"
-                  defaultValue={selectedInvoice.gstCharges}
+                  defaultValue={selectedInvoice.GST}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Issue Date</label>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Date</label>
                 <input
                   type="date"
-                  defaultValue={selectedInvoice.issueDate}
-                  className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Due Date</label>
-                <input
-                  type="date"
-                  defaultValue={selectedInvoice.dueDate}
+                  defaultValue={selectedInvoice.Date ? new Date(selectedInvoice.Date).toISOString().split('T')[0] : ''}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-[#200B43] mb-2">Items/Description</label>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Comments</label>
                 <textarea
                   rows={3}
-                  defaultValue={selectedInvoice.description}
+                  defaultValue={selectedInvoice.comments}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
@@ -941,10 +924,9 @@ export function BizDevInvoice() {
                   defaultValue={selectedInvoice.status}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 >
-                  <option value="Draft">Draft</option>
                   <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Overdue">Overdue</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Decline">Decline</option>
                 </select>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { 
@@ -36,11 +36,32 @@ import {
 export default function EmployeeLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [employeeInfo, setEmployeeInfo] = useState({ fullName: "Employee", role: "Employee" });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hrMenuExpanded, setHrMenuExpanded] = useState(false);
   const [bizDevExpanded, setBizDevExpanded] = useState(false);
   const [marketingExpanded, setMarketingExpanded] = useState(false);
   const [projectExpanded, setProjectExpanded] = useState(false);
+
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    const storedType = sessionStorage.getItem("userType");
+
+    if (!storedUser) return;
+
+    try {
+      const parsed = JSON.parse(storedUser);
+      const displayRole =
+        storedType === "admin" ? "Admin" : storedType === "employee" ? "Employee" : "User";
+
+      setEmployeeInfo({
+        fullName: parsed?.fullName || parsed?.emp_name || "Employee",
+        role: displayRole,
+      });
+    } catch (error) {
+      console.error("Failed to parse userData from sessionStorage", error);
+    }
+  }, []);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
   const isSectionActive = (prefix: string) => location.pathname.includes(prefix);
@@ -119,11 +140,16 @@ export default function EmployeeLayout() {
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#422462]/10 to-[#5A4079]/10 border border-[#937CB4]/20 cursor-pointer hover:bg-[#F0E9FF]/50 transition-colors" onClick={() => navigate("/employee/profile")}>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center text-white font-bold text-sm">
-                HS
+                {employeeInfo.fullName
+                  .split(" ")
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0]?.toUpperCase())
+                  .join("") || "E"}
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-semibold text-[#200B43]">Haritha Sree</p>
-                <p className="text-xs text-[#5A4079]">Employee</p>
+                <p className="text-sm font-semibold text-[#200B43]">{employeeInfo.fullName}</p>
+                <p className="text-xs text-[#5A4079]">{employeeInfo.role}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-[#5A4079]" />
             </div>

@@ -1,255 +1,321 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Users,
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Activity,
   CreditCard,
   UserCheck,
   UserX,
   Sparkles,
   ArrowUpRight,
-  ArrowDownRight
+  Loader2,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
+import { orgService } from "../../services/orgService";
+import { plansService } from "../../services/plansService";
+import { revenueService } from "../../services/revenueService";
+import { notificationService } from "../../services/notificationService";
 
-const revenueData = [
-  { month: "Jan", revenue: 145000, users: 1250, mrr: 42000 },
-  { month: "Feb", revenue: 168000, users: 1420, mrr: 48000 },
-  { month: "Mar", revenue: 182000, users: 1580, mrr: 52000 },
-  { month: "Apr", revenue: 195000, users: 1720, mrr: 58000 },
-  { month: "May", revenue: 218000, users: 1890, mrr: 64000 },
-  { month: "Jun", revenue: 245000, users: 2100, mrr: 72000 },
-];
-
-const planDistribution = [
-  { name: "Free", value: 850, color: "#937CB4" },
-  { name: "Basic", value: 680, color: "#5A4079" },
-  { name: "Pro", value: 420, color: "#422462" },
-  { name: "Enterprise", value: 150, color: "#200B43" },
-];
-
-const queryData = [
-  { day: "Mon", open: 45, resolved: 38, pending: 12 },
-  { day: "Tue", open: 52, resolved: 45, pending: 15 },
-  { day: "Wed", open: 38, resolved: 42, pending: 8 },
-  { day: "Thu", open: 48, resolved: 40, pending: 16 },
-  { day: "Fri", open: 55, resolved: 48, pending: 18 },
-  { day: "Sat", open: 32, resolved: 28, pending: 10 },
-  { day: "Sun", open: 28, resolved: 25, pending: 8 },
-];
-
-const recentActivity = [
-  { id: 1, type: "user", action: "New user registered", user: "john.doe@email.com", time: "2 minutes ago", status: "success" },
-  { id: 2, type: "payment", action: "Payment received", user: "sarah.smith@email.com", time: "8 minutes ago", status: "success" },
-  { id: 3, type: "upgrade", action: "Plan upgraded to Pro", user: "mike.chen@email.com", time: "15 minutes ago", status: "info" },
-  { id: 4, type: "query", action: "New support query", user: "emily.davis@email.com", time: "23 minutes ago", status: "warning" },
-  { id: 5, type: "cancel", action: "Subscription cancelled", user: "tom.brown@email.com", time: "35 minutes ago", status: "error" },
-  { id: 6, type: "payment", action: "Payment received", user: "lisa.wang@email.com", time: "42 minutes ago", status: "success" },
-];
+const PLAN_COLORS: Record<string, string> = {
+  Free: "#937CB4",
+  Basic: "#5A4079",
+  Pro: "#422462",
+  Enterprise: "#200B43",
+};
 
 export function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalRevenue: 0,
+    activeSubscriptions: 0,
+    mrr: 0,
+    newUsersToday: 0,
+    openQueries: 0,
+  });
+  const [planDistribution, setPlanDistribution] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [revenueChartData, setRevenueChartData] = useState<{ month: string; revenue: number }[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch everything in parallel
+      const [orgsRes, plansRes, revenuesRes, notifRes] = await Promise.allSettled([
+        orgService.getAll(),
+        plansService.getAll(),
+        revenueService.getAll(),
+        notificationService.getAll(),
+      ]);
+
+      // ── Orgs / Users ──────────────────────────────────
+      const orgsData = orgsRes.status === "fulfilled" ? orgsRes.value.data : null;
+      const orgs: any[] = Array.isArray(orgsData?.Clients) ? orgsData.Clients : [];
+
+      const today = new Date().toISOString().substring(0, 10);
+      const newUsersToday = orgs.filter(o => (o.createdAt ?? "").startsWith(today)).length;
+
+      // Plan distribution from org data
+      const planCounts: Record<string, number> = {};
+      orgs.forEach(o => {
+        const plan = o.plan ?? o.planName ?? o.subscriptionPlan ?? "Free";
+        planCounts[plan] = (planCounts[plan] ?? 0) + 1;
+      });
+
+      // ── Plans ─────────────────────────────────────────
+      const plans = plansRes.status === "fulfilled" && Array.isArray(plansRes.value.data)
+        ? plansRes.value.data : [];
+
+      // Fall back to plan names from orgs if plans API didn't return useful data
+      const planNames = plans.length > 0 ? plans.map(p => p.name) : Object.keys(planCounts);
+      const distribution = planNames
+        .filter(name => planCounts[name] !== undefined)
+        .map(name => ({
+          name,
+          value: planCounts[name] ?? 0,
+          color: PLAN_COLORS[name] ?? "#937CB4",
+        }));
+      // also include any plan names from orgs not in plans API
+      Object.keys(planCounts).forEach(name => {
+        if (!distribution.find(d => d.name === name)) {
+          distribution.push({ name, value: planCounts[name], color: PLAN_COLORS[name] ?? "#937CB4" });
+        }
+      });
+      setPlanDistribution(distribution);
+
+      const activeSubscriptions = orgs.filter(o => {
+        const plan = o.plan ?? o.planName ?? "Free";
+        return plan !== "Free" && (o.status ?? "active") === "active";
+      }).length;
+
+      // ── Revenue ───────────────────────────────────────
+      const revenues = revenuesRes.status === "fulfilled" && Array.isArray(revenuesRes.value.data)
+        ? revenuesRes.value.data : [];
+
+      const totalRevenue = revenues.reduce((sum, r) => sum + (r.amount ?? r.totalRevenue ?? 0), 0);
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      const mrr = revenues
+        .filter(r => (r.createdAt ?? r.month ?? "").startsWith(currentMonth))
+        .reduce((sum, r) => sum + (r.amount ?? r.totalRevenue ?? 0), 0);
+
+      // Build chart from last 6 revenue records
+      const chartData = revenues.slice(-6).map((r, i) => ({
+        month: r.month ?? r.createdAt?.substring(0, 7) ?? `M${i + 1}`,
+        revenue: r.amount ?? r.totalRevenue ?? 0,
+      }));
+      setRevenueChartData(chartData);
+
+      // ── Notifications (recent activity) ───────────────
+      const notifs = notifRes.status === "fulfilled" && Array.isArray(notifRes.value.data)
+        ? notifRes.value.data : [];
+
+      const activity = notifs.slice(0, 6).map((n: any, i: number) => ({
+        id: n._id ?? i,
+        action: n.message ?? n.title ?? "Platform event",
+        user: n.email ?? n.adminId ?? "System",
+        time: n.createdAt ? new Date(n.createdAt).toLocaleTimeString() : "—",
+        status: n.type === "error" ? "error" : n.type === "warning" ? "warning" : "success",
+      }));
+      setRecentActivity(activity);
+
+      setStats({
+        totalUsers: orgs.length,
+        totalRevenue,
+        activeSubscriptions,
+        mrr,
+        newUsersToday,
+        openQueries: 0, // Contact Form API available separately
+      });
+    } catch (err: any) {
+      console.error("Dashboard fetch error:", err);
+      setError("Failed to load dashboard data. Check your backend connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchDashboardData(); }, []);
+
+  const metricCards = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers,
+      change: "+live",
+      icon: Users,
+      gradient: "from-[#937CB4] to-[#5A4079]",
+    },
+    {
+      label: "Total Revenue",
+      value: `$${stats.totalRevenue.toLocaleString()}`,
+      change: "live",
+      icon: DollarSign,
+      gradient: "from-[#5A4079] to-[#422462]",
+    },
+    {
+      label: "Active Subscriptions",
+      value: stats.activeSubscriptions,
+      change: "live",
+      icon: CreditCard,
+      gradient: "from-[#422462] to-[#200B43]",
+    },
+    {
+      label: "MRR (This Month)",
+      value: `$${stats.mrr.toLocaleString()}`,
+      change: "live",
+      icon: TrendingUp,
+      gradient: "from-[#937CB4] via-[#5A4079] to-[#422462]",
+    },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <p className="text-sm flex-1">{error}</p>
+          <button
+            onClick={fetchDashboardData}
+            className="flex items-center gap-1 text-sm border border-red-300 px-3 py-1 rounded-lg hover:bg-red-100"
+          >
+            <RefreshCw className="h-3 w-3" /> Retry
+          </button>
+        </div>
+      )}
+
+      {/* Metric Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-2xl"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Total Users</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#5A4079] flex items-center justify-center shadow-md">
-              <Users className="h-5 w-5 text-white" />
-            </div>
+        {metricCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Card key={card.label} className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-2xl"></div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#200B43]">{card.label}</CardTitle>
+                <div className={`h-10 w-10 rounded-lg bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-md`}>
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Loader2 className="h-7 w-7 animate-spin text-[#937CB4]" />
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-[#200B43]">{card.value}</div>
+                    <div className="flex items-center gap-1 mt-2">
+                      <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      <p className="text-xs text-green-600 font-medium">Live from server</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Revenue Chart */}
+        <Card className="gradient-card border-[#937CB4]/30">
+          <CardHeader>
+            <CardTitle className="text-[#200B43] flex items-center gap-2">
+              <Activity className="h-5 w-5" /> Revenue Trend
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#200B43]">2,100</div>
-            <div className="flex items-center gap-1 mt-2">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">
-                +12.5% from last month
-              </p>
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <Loader2 className="h-8 w-8 animate-spin text-[#937CB4]" />
+              </div>
+            ) : revenueChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={revenueChartData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#422462" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#422462" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
+                  <XAxis dataKey="month" stroke="#5A4079" />
+                  <YAxis stroke="#5A4079" />
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #937CB4', borderRadius: '8px' }} />
+                  <Legend />
+                  <Area type="monotone" dataKey="revenue" stroke="#422462" fillOpacity={1} fill="url(#revenueGradient)" name="Revenue ($)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-[#5A4079]">
+                <p className="text-sm">No revenue data available yet.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#5A4079]/10 to-transparent rounded-full blur-2xl"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Monthly Revenue</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#5A4079] to-[#422462] flex items-center justify-center shadow-md">
-              <DollarSign className="h-5 w-5 text-white" />
-            </div>
+        {/* Plan Distribution */}
+        <Card className="gradient-card border-[#937CB4]/30">
+          <CardHeader>
+            <CardTitle className="text-[#200B43] flex items-center gap-2">
+              <CreditCard className="h-5 w-5" /> Plan Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#200B43]">$245K</div>
-            <div className="flex items-center gap-1 mt-2">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">
-                +18.2% from last month
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#422462]/10 to-transparent rounded-full blur-2xl"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Active Subscriptions</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#422462] to-[#200B43] flex items-center justify-center shadow-md">
-              <CreditCard className="h-5 w-5 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#200B43]">1,250</div>
-            <div className="flex items-center gap-1 mt-2">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">
-                +8.4% from last month
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 via-[#5A4079]/10 to-transparent rounded-full blur-2xl animate-gradient"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">MRR</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#937CB4] via-[#5A4079] to-[#422462] flex items-center justify-center animate-gradient shadow-md">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#200B43]">$72K</div>
-            <div className="flex items-center gap-1 mt-2">
-              <ArrowUpRight className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">
-                +15.8% from last month
-              </p>
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <Loader2 className="h-8 w-8 animate-spin text-[#937CB4]" />
+              </div>
+            ) : planDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={planDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={100}
+                    dataKey="value"
+                  >
+                    {planDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #937CB4', borderRadius: '8px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-[#5A4079]">
+                <p className="text-sm">No subscription data available yet.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="gradient-card border-[#937CB4]/30">
-          <CardHeader>
-            <CardTitle className="text-[#200B43] flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Revenue & User Growth
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={revenueData}>
-                <defs key="admin-revenue-defs">
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#422462" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#422462" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="usersGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#5A4079" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#5A4079" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid key="admin-revenue-grid" strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
-                <XAxis key="admin-revenue-xaxis" dataKey="month" stroke="#5A4079" />
-                <YAxis key="admin-revenue-yaxis" stroke="#5A4079" />
-                <Tooltip
-                  key="admin-revenue-tooltip"
-                  contentStyle={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #937CB4',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(147, 124, 180, 0.15)'
-                  }}
-                />
-                <Legend key="admin-revenue-legend" />
-                <Area key="admin-revenue-area" type="monotone" dataKey="revenue" stroke="#422462" fillOpacity={1} fill="url(#revenueGradient)" name="Revenue ($)" />
-                <Area key="admin-users-area" type="monotone" dataKey="users" stroke="#5A4079" fillOpacity={1} fill="url(#usersGradient)" name="Users" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card border-[#937CB4]/30">
-          <CardHeader>
-            <CardTitle className="text-[#200B43] flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Plan Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={planDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {planDistribution.map((entry, index) => (
-                    <Cell key={`admin-plan-cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  key="admin-plan-tooltip"
-                  contentStyle={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #937CB4',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(147, 124, 180, 0.15)'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="gradient-card border-[#937CB4]/30">
-          <CardHeader>
-            <CardTitle className="text-[#200B43] flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Support Query Analytics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={queryData}>
-                <CartesianGrid key="admin-query-grid" strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
-                <XAxis key="admin-query-xaxis" dataKey="day" stroke="#5A4079" />
-                <YAxis key="admin-query-yaxis" stroke="#5A4079" />
-                <Tooltip
-                  key="admin-query-tooltip"
-                  contentStyle={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #937CB4',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(147, 124, 180, 0.15)'
-                  }}
-                />
-                <Legend key="admin-query-legend" />
-                <Bar key="admin-query-open" dataKey="open" fill="#937CB4" name="Opened" />
-                <Bar key="admin-query-resolved" dataKey="resolved" fill="#422462" name="Resolved" />
-                <Bar key="admin-query-pending" dataKey="pending" fill="#f59e0b" name="Pending" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card border-[#937CB4]/30">
-          <CardHeader>
-            <CardTitle className="text-[#200B43] flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Recent Activity */}
+      <Card className="gradient-card border-[#937CB4]/30">
+        <CardHeader>
+          <CardTitle className="text-[#200B43] flex items-center gap-2">
+            <Activity className="h-5 w-5" /> Recent Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#937CB4]" />
+            </div>
+          ) : recentActivity.length > 0 ? (
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
               {recentActivity.map((activity) => (
                 <div
@@ -257,10 +323,9 @@ export function AdminDashboard() {
                   className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-[#F0E9FF] to-white border border-[#937CB4]/20 hover:shadow-md transition-all"
                 >
                   <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.status === 'success' ? 'bg-green-500' :
-                    activity.status === 'error' ? 'bg-red-500' :
-                    activity.status === 'warning' ? 'bg-yellow-500' :
-                    'bg-blue-500'
+                    activity.status === "success" ? "bg-green-500" :
+                    activity.status === "error" ? "bg-red-500" :
+                    activity.status === "warning" ? "bg-yellow-500" : "bg-blue-500"
                   }`}></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-[#200B43]">{activity.action}</p>
@@ -271,54 +336,41 @@ export function AdminDashboard() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="py-8 text-center text-[#5A4079] text-sm">
+              No recent activity found.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">New Users Today</CardTitle>
-            <UserCheck className="h-5 w-5 text-[#5A4079]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#200B43]">24</div>
-            <p className="text-xs text-[#5A4079] mt-1">+4 from yesterday</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Churned Users</CardTitle>
-            <UserX className="h-5 w-5 text-[#5A4079]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#200B43]">8</div>
-            <p className="text-xs text-[#5A4079] mt-1">3.8% churn rate</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Open Queries</CardTitle>
-            <Activity className="h-5 w-5 text-[#5A4079]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#200B43]">42</div>
-            <p className="text-xs text-[#5A4079] mt-1">Avg response: 2.4h</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card gradient-card-hover border-[#937CB4]/30">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#200B43]">Active Coupons</CardTitle>
-            <Sparkles className="h-5 w-5 text-[#5A4079]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#200B43]">18</div>
-            <p className="text-xs text-[#5A4079] mt-1">125 redemptions</p>
-          </CardContent>
-        </Card>
+      {/* Quick Stats Row */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: "New Users Today", value: stats.newUsersToday, icon: UserCheck, note: "Live from DB" },
+          { label: "Active Subscriptions", value: stats.activeSubscriptions, icon: CreditCard, note: "Paid plans only" },
+          { label: "Total Organizations", value: stats.totalUsers, icon: Users, note: "All registered" },
+        ].map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.label} className="gradient-card gradient-card-hover border-[#937CB4]/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#200B43]">{s.label}</CardTitle>
+                <Icon className="h-5 w-5 text-[#5A4079]" />
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-[#937CB4]" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-[#200B43]">{s.value}</div>
+                    <p className="text-xs text-[#5A4079] mt-1">{s.note}</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

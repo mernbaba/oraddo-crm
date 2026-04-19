@@ -1,7 +1,8 @@
 import { FileText, Plus, Search, Filter, Download, Eye, Edit, Trash2, Sparkles, X } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./ui/modal";
+import { proposalService, Proposal } from "../services/proposalService";
 
 export function BizDevProposal() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,13 +10,25 @@ export function BizDevProposal() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState<typeof proposals[0] | null>(null);
-  
+  const [proposalList, setProposalList] = useState<Proposal[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statsData, setStatsData] = useState([
+    { label: "Total Proposals", value: "0", change: "0%", gradient: "from-[#422462] to-[#5A4079]" },
+    { label: "Total Value", value: "₹0", change: "0%", gradient: "from-[#5A4079] to-[#937CB4]" },
+    { label: "Approval", value: "0", change: "0%", gradient: "from-[#937CB4] to-[#5A4079]" },
+    { label: "Declined", value: "0", change: "0%", gradient: "from-[#422462] to-[#937CB4]" },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState({
-    companyName: "",
-    clientName: "",
+    companyname: "",
+    name: "",
     requirements: "",
     timeline: "",
     resources: "",
@@ -25,120 +38,65 @@ export function BizDevProposal() {
   });
   const [isContentGenerated, setIsContentGenerated] = useState(false);
 
-  const proposals = [
-    { 
-      id: "PRO-001", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Tech Corp", 
-      requirements: "AI integration with existing systems, real-time data processing, machine learning model deployment",
-      timeline: "6 months",
-      resources: "3 AI Engineers, 2 Data Scientists, 1 Project Manager",
-      services: "AI Integration, Machine Learning, Custom Development",
-      description: "Complete AI integration solution with machine learning capabilities for enterprise-level automation",
-      pricing: "₹125,000", 
-      status: "Pending", 
-      date: "2024-01-08"
-    },
-    { 
-      id: "PRO-002", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Digital Solutions", 
-      requirements: "Full cloud infrastructure migration, data security compliance, zero-downtime deployment",
-      timeline: "4 months",
-      resources: "2 Cloud Architects, 3 DevOps Engineers, 1 Security Specialist",
-      services: "Cloud Migration, Infrastructure Setup, Security Implementation",
-      description: "Full cloud migration and infrastructure setup with AWS/Azure deployment",
-      pricing: "₹89,500", 
-      status: "Approved", 
-      date: "2024-01-07"
-    },
-    { 
-      id: "PRO-003", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Future Systems", 
-      requirements: "Enterprise security audit, penetration testing, security policy implementation",
-      timeline: "5 months",
-      resources: "2 Security Engineers, 1 Compliance Officer, 2 System Administrators",
-      services: "Security Audit, Penetration Testing, Policy Implementation",
-      description: "Enterprise-level security implementation with compliance certifications",
-      pricing: "₹156,000", 
-      status: "Draft", 
-      date: "2024-01-06"
-    },
-    { 
-      id: "PRO-004", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Global Enterprises", 
-      requirements: "Real-time analytics dashboard, predictive modeling, data visualization",
-      timeline: "7 months",
-      resources: "3 Data Engineers, 2 Analysts, 1 UI/UX Designer",
-      services: "Data Analytics, Dashboard Development, Predictive Modeling",
-      description: "Advanced analytics and reporting system with AI-powered insights",
-      pricing: "₹203,000", 
-      status: "Approved", 
-      date: "2024-01-05"
-    },
-    { 
-      id: "PRO-005", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Smart Industries", 
-      requirements: "IoT sensor deployment, data collection platform, monitoring dashboard",
-      timeline: "3 months",
-      resources: "2 IoT Specialists, 1 Backend Developer, 1 Hardware Engineer",
-      services: "IoT Implementation, Sensor Integration, Platform Development",
-      description: "IoT sensors and management platform for industrial automation",
-      pricing: "₹98,750", 
-      status: "Pending", 
-      date: "2024-01-04"
-    },
-    { 
-      id: "PRO-006", 
-      companyName: "ProcessFlow Inc.",
-      clientName: "Innovation Labs", 
-      requirements: "Custom ML algorithms, model training infrastructure, API integration",
-      timeline: "8 months",
-      resources: "4 ML Engineers, 2 Data Scientists, 1 DevOps Engineer",
-      services: "Machine Learning, Custom Algorithms, API Development",
-      description: "Custom ML algorithms and training platform with auto-scaling capabilities",
-      pricing: "₹175,000", 
-      status: "Rejected", 
-      date: "2024-01-03"
-    },
-  ];
+  useEffect(() => {
+    const data = sessionStorage.getItem("userData");
+    if (data) {
+      const parsedUser = JSON.parse(data);
+      if (parsedUser.organizationId !== undefined && parsedUser.organizationId !== null) {
+        setOrgId(Number(parsedUser.organizationId));
+      }
+    }
+  }, []);
 
-  const filteredProposals = proposals.filter((proposal) => {
-    const searchMatch = proposal.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       proposal.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       proposal.services.toLowerCase().includes(searchTerm.toLowerCase());
-    const statusMatch = filterStatus === "all" || proposal.status === filterStatus;
-    return searchMatch && statusMatch;
-  });
+  useEffect(() => {
+    if (orgId) {
+      fetchData();
+    }
+  }, [orgId, searchTerm, filterStatus]);
 
-  const handleViewProposal = (proposal: typeof proposals[0]) => {
-    setSelectedProposal(proposal);
-    setShowViewModal(true);
-  };
+  const fetchData = async () => {
+    if (orgId === null) return;
+    setLoading(true);
+    try {
+      // 1. Fetch Stats (using the all-proposals endpoint as per audit)
+      const statsRes = await proposalService.getByOrg(orgId);
+      const allProposals = statsRes.data.praposals || [];
+      
+      const totalVal = allProposals.reduce((sum: number, p: any) => sum + (p.pricing || 0), 0);
+      const approvalCount = allProposals.filter((p: any) => p.status === "Approval").length;
+      const declinedCount = allProposals.filter((p: any) => p.status === "Declined").length;
 
-  const handleEditProposal = (proposal: typeof proposals[0]) => {
-    setSelectedProposal(proposal);
-    setShowEditModal(true);
+      setStatsData([
+        { label: "Total Proposals", value: allProposals.length.toString(), change: "+0%", gradient: "from-[#422462] to-[#5A4079]" },
+        { label: "Total Value", value: `₹${(totalVal / 1000000).toFixed(1)}M`, change: "+0%", gradient: "from-[#5A4079] to-[#937CB4]" },
+        { label: "Approval", value: approvalCount.toString(), change: "+0%", gradient: "from-[#937CB4] to-[#5A4079]" },
+        { label: "Declined", value: declinedCount.toString(), change: "-0%", gradient: "from-[#422462] to-[#937CB4]" },
+      ]);
+
+      // 2. Fetch Table Data (Paginated)
+      const tableRes = await proposalService.getTableData(orgId, { 
+        search: searchTerm, 
+        page: 0, 
+        pageSize: 50 
+      });
+      setProposalList(tableRes.data.praposals || []);
+      setTotalCount(tableRes.data.billingCount || 0);
+
+    } catch (error) {
+      console.error("Error fetching proposal data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Approved": return "bg-green-100 text-green-700 border-green-300";
+      case "Approval": return "bg-green-100 text-green-700 border-green-300";
       case "Pending": return "bg-yellow-100 text-yellow-700 border-yellow-300";
-      case "Rejected": return "bg-red-100 text-red-700 border-red-300";
+      case "Declined": return "bg-red-100 text-red-700 border-red-300";
       default: return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
-
-  const stats = [
-    { label: "Total Proposals", value: "48", change: "+12%", gradient: "from-[#422462] to-[#5A4079]" },
-    { label: "Total Value", value: "₹2.4M", change: "+18%", gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Approved", value: "32", change: "+8%", gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "Pending", value: "10", change: "-5%", gradient: "from-[#422462] to-[#937CB4]" },
-  ];
 
   const handleGenerateProposal = () => {
     if (!aiPrompt.trim()) {
@@ -153,8 +111,8 @@ export function BizDevProposal() {
       const promptLower = aiPrompt.toLowerCase();
 
       const extractedInfo = {
-        companyName: "ProcessFlow Inc.",
-        clientName: promptLower.includes("client") ? extractClientName(aiPrompt) : "Acme Corporation",
+        companyname: "ProcessFlow Inc.",
+        name: promptLower.includes("client") ? extractClientName(aiPrompt) : "Acme Corporation",
         requirements: generateRequirements(aiPrompt),
         timeline: extractTimeline(aiPrompt),
         resources: generateResources(aiPrompt),
@@ -325,11 +283,76 @@ export function BizDevProposal() {
     return `₹${basePrice.toLocaleString('en-IN')}`;
   };
 
-  const handleSaveProposal = (e: React.FormEvent) => {
+  const handleSaveProposal = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Proposal saved successfully! ✅");
-    setShowCreateModal(false);
-    resetAIForm();
+    if (orgId === null) {
+      alert("Organization ID not found. Please try refreshing the page.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Convert pricing string to number
+      const priceStr = String(generatedContent.pricing || "0");
+      const numericPrice = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+      
+      const payload: Partial<Proposal> = {
+        companyname: generatedContent.companyname,
+        name: generatedContent.name,
+        requirements: generatedContent.requirements,
+        timeline: generatedContent.timeline,
+        pricing: numericPrice,
+        organizationID: orgId,
+        status: "Pending",
+        // Flatten other AI fields if necessary or store them in JSON fields
+        togetstarted: generatedContent.description
+      };
+
+      console.log("Saving Proposal with payload:", payload);
+      await proposalService.create(payload);
+      alert("Proposal saved successfully! ✅");
+      setShowCreateModal(false);
+      resetAIForm();
+      fetchData(); // Refresh list
+    } catch (error: any) {
+      console.error("Error saving proposal:", error);
+      alert(`Failed to save proposal: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+  const handleUpdateStatus = async (id: number, status: Proposal['status']) => {
+    try {
+      await proposalService.update(id, { status });
+      fetchData();
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  const handleViewProposal = (proposal: Proposal) => {
+    setSelectedProposal(proposal);
+    setShowViewModal(true);
+  };
+
+  const handleEditProposal = (proposal: Proposal) => {
+    setSelectedProposal(proposal);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteProposal = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this proposal?")) return;
+    try {
+      await proposalService.delete(id);
+      alert("Proposal deleted successfully! 🗑️");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting proposal:", error);
+      alert("Failed to delete proposal.");
+    }
   };
 
   const handleDownloadProposal = () => {
@@ -339,16 +362,16 @@ export function BizDevProposal() {
   const resetAIForm = () => {
     setAiPrompt("");
     setIsContentGenerated(false);
-    setGeneratedContent({
-      companyName: "",
-      clientName: "",
-      requirements: "",
-      timeline: "",
-      resources: "",
-      services: "",
-      description: "",
-      pricing: ""
-    });
+      setGeneratedContent({
+        companyname: "",
+        name: "",
+        requirements: "",
+        timeline: "",
+        resources: "",
+        services: "",
+        description: "",
+        pricing: ""
+      });
   };
 
   return (
@@ -372,7 +395,7 @@ export function BizDevProposal() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {statsData.map((stat, index) => (
           <div
             key={index}
             className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group"
@@ -426,21 +449,21 @@ export function BizDevProposal() {
               </tr>
             </thead>
             <tbody>
-              {filteredProposals.map((proposal, index) => (
+              {proposalList.map((proposal, index) => (
                 <tr
                   key={proposal.id}
                   className="border-b border-[#937CB4]/10 hover:bg-[#F0E9FF]/30 transition-colors"
                 >
                   <td className="p-4 text-sm font-medium text-[#422462]">{proposal.id}</td>
-                  <td className="p-4 text-sm text-[#200B43]">{proposal.clientName}</td>
-                  <td className="p-4 text-sm text-[#200B43]">{proposal.services}</td>
-                  <td className="p-4 text-sm font-semibold text-[#422462]">{proposal.pricing}</td>
+                  <td className="p-4 text-sm text-[#200B43]">{proposal.name}</td>
+                  <td className="p-4 text-sm text-[#200B43]">{Array.isArray(proposal.service) ? proposal.service.length : 0} Services</td>
+                  <td className="p-4 text-sm font-semibold text-[#422462]">₹{proposal.pricing?.toLocaleString('en-IN')}</td>
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(proposal.status)}`}>
                       {proposal.status}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-[#5A4079]">{proposal.date}</td>
+                  <td className="p-4 text-sm text-[#5A4079]">{proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : 'N/A'}</td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-[#F0E9FF]" onClick={() => handleViewProposal(proposal)}>
@@ -452,7 +475,7 @@ export function BizDevProposal() {
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-[#F0E9FF]">
                         <Download className="h-4 w-4 text-[#5A4079]" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50" onClick={() => handleDeleteProposal(proposal.id)}>
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
@@ -541,8 +564,8 @@ export function BizDevProposal() {
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Company Name</label>
                   <input
                     type="text"
-                    value={generatedContent.companyName}
-                    onChange={(e) => setGeneratedContent({...generatedContent, companyName: e.target.value})}
+                    value={generatedContent.companyname}
+                    onChange={(e) => setGeneratedContent({...generatedContent, companyname: e.target.value})}
                     className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                   />
                 </div>
@@ -550,8 +573,8 @@ export function BizDevProposal() {
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Client Name</label>
                   <input
                     type="text"
-                    value={generatedContent.clientName}
-                    onChange={(e) => setGeneratedContent({...generatedContent, clientName: e.target.value})}
+                    value={generatedContent.name}
+                    onChange={(e) => setGeneratedContent({...generatedContent, name: e.target.value})}
                     className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                   />
                 </div>
@@ -576,10 +599,9 @@ export function BizDevProposal() {
                 <div>
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Status</label>
                   <select className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]">
-                    <option value="Draft">Draft</option>
                     <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
+                    <option value="Approval">Approval</option>
+                    <option value="Declined">Declined</option>
                   </select>
                 </div>
                 <div className="col-span-2">
@@ -635,8 +657,8 @@ export function BizDevProposal() {
                   onClick={() => {
                     setIsContentGenerated(false);
                     setGeneratedContent({
-                      companyName: "",
-                      clientName: "",
+                      companyname: "",
+                      name: "",
                       requirements: "",
                       timeline: "",
                       resources: "",
@@ -677,9 +699,10 @@ export function BizDevProposal() {
               </Button>
               <Button 
                 type="submit" 
+                disabled={isSaving}
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079]"
               >
-                Save Proposal
+                {isSaving ? "Saving..." : "Save Proposal"}
               </Button>
             </div>
           )}
@@ -692,15 +715,15 @@ export function BizDevProposal() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Company Name</label>
-                <p className="text-[#200B43] font-medium">{selectedProposal.companyName}</p>
+                <p className="text-[#200B43] font-medium">{selectedProposal.companyname}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Client Name</label>
-                <p className="text-[#200B43] font-medium">{selectedProposal.clientName}</p>
+                <p className="text-[#200B43] font-medium">{selectedProposal.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Pricing</label>
-                <p className="text-2xl font-bold gradient-text">{selectedProposal.pricing}</p>
+                <p className="text-2xl font-bold gradient-text">₹{selectedProposal.pricing?.toLocaleString('en-IN')}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Status</label>
@@ -716,7 +739,7 @@ export function BizDevProposal() {
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5A4079]">Date</label>
-                <p className="text-[#200B43] font-medium">{selectedProposal.date}</p>
+                <p className="text-[#200B43] font-medium">{selectedProposal.createdAt ? new Date(selectedProposal.createdAt).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
             
@@ -768,7 +791,7 @@ export function BizDevProposal() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Company Name</label>
                 <input
                   type="text"
-                  defaultValue={selectedProposal.companyName}
+                  defaultValue={selectedProposal.companyname}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
@@ -776,7 +799,7 @@ export function BizDevProposal() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Client Name</label>
                 <input
                   type="text"
-                  defaultValue={selectedProposal.clientName}
+                  defaultValue={selectedProposal.name}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>
@@ -802,10 +825,9 @@ export function BizDevProposal() {
                   defaultValue={selectedProposal.status}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 >
-                  <option value="Draft">Draft</option>
                   <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
+                  <option value="Approval">Approval</option>
+                  <option value="Declined">Declined</option>
                 </select>
               </div>
               <div className="col-span-2">
@@ -844,7 +866,7 @@ export function BizDevProposal() {
                 <label className="block text-sm font-medium text-[#200B43] mb-2">Date</label>
                 <input
                   type="date"
-                  defaultValue={selectedProposal.date}
+                  defaultValue={selectedProposal.createdAt ? new Date(selectedProposal.createdAt).toISOString().split('T')[0] : ''}
                   className="w-full px-3 py-2 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
                 />
               </div>

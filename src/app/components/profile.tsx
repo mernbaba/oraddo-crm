@@ -26,7 +26,7 @@ import {
   Home,
   Landmark
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -80,6 +80,49 @@ export function Profile() {
   });
 
   const [editData, setEditData] = useState(profileData);
+
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    const storedType = sessionStorage.getItem("userType");
+
+    if (!storedUser) return;
+
+    try {
+      const parsed = JSON.parse(storedUser);
+      const displayName = parsed?.fullName || parsed?.emp_name || "Employee";
+      const displayInitials = displayName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part: string) => part[0]?.toUpperCase())
+        .join("") || "E";
+
+      const displayPosition =
+        storedType === "admin" ? "Super Administrator" : storedType === "employee" ? "Employee" : "User";
+
+      setProfileData((prev) => ({
+        ...prev,
+        name: displayName,
+        initials: displayInitials,
+        position: displayPosition,
+        email: parsed?.email || prev.email,
+        businessEmail: parsed?.email || prev.businessEmail,
+        personalEmail: parsed?.email || prev.personalEmail,
+      }));
+
+      setEditData((prev) => ({
+        ...prev,
+        name: displayName,
+        initials: displayInitials,
+        position: displayPosition,
+        email: parsed?.email || prev.email,
+        businessEmail: parsed?.email || prev.businessEmail,
+        personalEmail: parsed?.email || prev.personalEmail,
+      }));
+    } catch (error) {
+      console.error("Failed to parse userData from sessionStorage", error);
+    }
+  }, []);
 
   const handleSave = () => {
     setProfileData(editData);

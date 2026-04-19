@@ -4,12 +4,20 @@ import { router } from "./routes";
 import { Button } from "./components/ui/button";
 import { LogOut } from "lucide-react";
 import { Login } from "./components/login";
+import { Signup } from "./components/signup";
+import api from "./api";
+
+type UserType = "user" | "admin" | "employee";
+type AuthScreen =
+  | "login"
+  | "signup";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userType, setUserType] = useState<"user" | "admin" | "employee" | null>(null);
+  const [userType, setUserType] = useState<UserType | null>(null);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
 
-  const handleLogin = (type: "user" | "admin" | "employee") => {
+  const handleLogin = (type: UserType) => {
     setUserType(type);
     setIsAuthenticated(true);
     // Store in sessionStorage for persistence
@@ -26,9 +34,16 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/api/auth/signout");
+    } catch (error) {
+      console.error("Signout failed", error);
+    }
+
     setIsAuthenticated(false);
     setUserType(null);
+    sessionStorage.removeItem("token");
     sessionStorage.removeItem("userType");
     sessionStorage.removeItem("isAuthenticated");
     window.location.href = "/";
@@ -46,7 +61,22 @@ export default function App() {
 
   // Show login screen if not authenticated
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    if (authScreen === "login") {
+      return (
+        <Login
+          onLogin={handleLogin}
+          onShowSignup={() => setAuthScreen("signup")}
+        />
+      );
+    }
+
+    return (
+      <Signup
+        role="user" // Signup still uses role selection for now
+        onShowLogin={() => setAuthScreen("login")}
+        onSwitchRole={(role) => console.log("Signup role switch:", role)}
+      />
+    );
   }
 
   // Provide auth context to router
