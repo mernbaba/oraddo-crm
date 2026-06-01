@@ -1,0 +1,102 @@
+// sync.js
+const sequelize = require("./database");
+const defineAssociations = require("../api/association/association");
+
+require('../api/models/Emp_onboarding');
+require("../api/models/OrganizationModule");
+require("../api/routes/employeeRoutes");
+require("../api/routes/chatRoute");
+require("../api/routes/groupChatRoute");
+require("../api/routes/reportSubmissionRoutes");
+require("../api/routes/salaryManagementRoutes");
+require("../api/routes/salary_advanceRoutes");
+require("../api/routes/hiring_activitiesRoutes");
+require("../api/routes/team_perfomanceRoutes");
+require("../api/routes/holiday_crteationRoutes");
+require("../api/routes/praposalQuotationRoutes");
+require("../api/routes/leadManagementRoutes");
+require("../api/routes/InvoiceMangementRoutes");
+require("../api/routes/leavesCreationRoutes");
+require("../api/routes/RevenuecreationRoutes");
+require("../api/routes/authRoute");
+require("../api/routes/departmentRoutes");
+require("../api/routes/modulesRoutes");
+require("../api/routes/attendenceRoute");
+require("../api/routes/praposalServciesRoutes");
+require("../api/routes/empDocumentsRoutes");
+require("../api/routes/employeeExpensesRoutes");
+require("../api/routes/taskRoutes");
+require("../api/routes/employee_Task");
+require("../api/routes/notesRoute");
+require("../api/routes/attendenceMeetingRoute");
+require("../api/routes/taskRoutes");
+require("../api/routes/projectsRoutes");
+require("../api/routes/projectSprintRoutes");
+require("../api/routes/notificationsRoute");
+require("../api/routes/employeeSatisfactionSurveyRoutes");
+require("../api/routes/employeePolleRoutes");
+require("../api/routes/employeeResignationRoutes");
+require("../api/routes/GratuityRoutes");
+require("../api/routes/JobManagementRoutes");
+require("../api/routes/ShiftCreationRoutes");
+require("../api/routes/TrainingManagementRoutes");
+require("../api/routes/datapointsRoutes");
+require("../api/routes/employeeFinalSettlemetRoute");
+require("../api/routes/formSurveyRoutes");
+require("../api/routes/leadCreationRoutes");
+require("../api/routes/invoiceModuleRoute");
+require("../api/routes/expensesCreationManagementRoute");
+require("../api/routes/projectBoardCreationRoutes");
+require("../api/routes/marketStrategiesRoutes");
+require("../api/routes/meetingMomRoute");
+require("../api/routes/faqRoute");
+require("../api/routes/marketingEventsMeetingsRoute");
+require("../api/routes/newDataPointRoute");
+require("../api/controllers/attendenceController");
+require("../api/models/attendence");
+require("../api/routes/InboundLeadRoute");
+require("../api/routes/Clients");
+require("../api/routes/blogRoutes");
+require("../api/routes/trainingModuleRoute");
+require("../api/routes/OrganizationRoute");
+require("../api/routes/orgRegisterRoute");
+require("../api/routes/premiumPlansRoute");
+require("../api/routes/planRenewelRoute");
+require("../api/routes/phonepayRoute");
+require("../api/routes/contactForm");
+require("../api/routes/organizationInvoiceRoute");
+require("../api/routes/invoiceModuleServicesRoute");
+require("../api/routes/sapRoutes");
+require("../api/routes/testFormRoute");
+require("../api/routes/questionRoutes");
+require("../api/routes/imageRoute");
+require("../api/routes/assetsImagesRoute");
+require("../api/routes/HrPanelRoute");
+require("../api/routes/EmployeeDocumentation");
+// const { Op, where } = require("sequelize");
+require("../api/models/Emp_onboarding");
+require("../api/models/Notifications");
+require("../api/routes/shareNoteRoute");
+// const Salary_Management = require('../api/models/salaryManagement');
+// const Salary_Advance_Loan = require('../api/models/salary_advance_loan');
+// const HiringActivities = require('../api/models/hiring_activities');
+// const ManagementCreation = require('../api/models/LeadManagementCreation');
+// const PraposalCreation = require('../api/models/ProposalQuotation');
+// const Report_Submission = require('../api/models/report_submission');
+// const Salary_Management = require('../api/models/salaryManagement');
+// const Salary_Advance_Loan = require('../api/models/salary_advance_loan');
+// const Team_Performance = require('../api/models/team_performance');
+// const Holiday_Creation = require('../api/models/holiday_creation');
+// const InvoiceManagement = require('../api/models/InvoiceManagement');
+// const empRoles = require('../api/models/empRoles');
+
+defineAssociations();
+
+sequelize
+  .sync({ force: true })
+  .then(() => {
+    console.log("Database & tables created!");
+  })
+  .catch((err) => {
+    console.error("Unable to create database tables:", err);
+  });

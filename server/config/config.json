@@ -1,0 +1,25 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "soujanya123",
+    "database": "tridizi",
+      "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "System",
+    "database": "tridizi",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "System",
+    "database": "tridizi",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
+
+
