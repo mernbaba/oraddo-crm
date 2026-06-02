@@ -6,8 +6,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { FolderKanban, Calendar, Users, CheckCircle2, Clock, AlertTriangle, Plus } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+import { projectService } from "../services/projectService";
 
-const projects = [
+type ProjectRow = {
+  id: string;
+  name: string;
+  status: "in-progress" | "completed" | "planning" | "on-hold";
+  progress: number;
+  team: string[];
+  startDate: string;
+  endDate: string;
+  budget: string;
+  tasksCompleted: number;
+  tasksTotal: number;
+  priority: "high" | "medium" | "low";
+};
+
+const fallbackProjects: ProjectRow[] = [
   {
     id: "1",
     name: "Customer Portal Redesign",
@@ -99,6 +115,58 @@ const milestones = [
 ];
 
 export function ProjectManagement() {
+  const [projects, setProjects] = useState<ProjectRow[]>(fallbackProjects);
+
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    if (!storedUser) return;
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      const orgId = parsedUser?.organizationId;
+      if (!orgId) return;
+
+      projectService.getProjectsByOrg(orgId)
+        .then((response) => {
+          const rows = response?.data || [];
+          if (!Array.isArray(rows) || rows.length === 0) return;
+
+          const mappedProjects = rows.map((item: any, index: number) => {
+            const tasks = Array.isArray(item.task_projectData) ? item.task_projectData.length : Number(item.task_total || item.task_count || 0);
+            const completed = Number(item.tasksCompleted || item.completedTasks || 0);
+            const progress = Number.isFinite(Number(item.progress))
+              ? Number(item.progress)
+              : tasks > 0
+                ? Math.min(100, Math.round((completed / tasks) * 100))
+                : item.isComplete
+                  ? 100
+                  : 35;
+
+            return {
+              id: String(item.id ?? index + 1),
+              name: item.title || item.project_name || item.projectTitle || "Project",
+              status: item.isComplete ? "completed" : item.isHold ? "on-hold" : progress >= 80 ? "completed" : progress >= 40 ? "in-progress" : "planning",
+              progress,
+              team: Array.isArray(item.team_Assigned) ? item.team_Assigned : item.team_lead?.emp_name ? [item.team_lead.emp_name] : [],
+              startDate: item.from_date || item.startDate || item.createdAt || new Date().toISOString(),
+              endDate: item.to_date || item.endDate || item.createdAt || new Date().toISOString(),
+              budget: item.budget ? `₹${item.budget}` : "$0",
+              tasksCompleted: completed,
+              tasksTotal: tasks || Math.max(completed, 1),
+              priority: progress >= 80 ? "high" : progress >= 40 ? "medium" : "low",
+            } satisfies ProjectRow;
+          });
+
+          setProjects(mappedProjects);
+        })
+        .catch((error) => {
+          console.error("Failed to load organization projects", error);
+        });
+    } catch (error) {
+      console.error("Failed to parse userData for projects", error);
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

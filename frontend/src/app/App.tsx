@@ -7,7 +7,7 @@ import { Login } from "./components/login";
 import { Signup } from "./components/signup";
 import api from "./api";
 
-type UserType = "user" | "admin" | "employee";
+type UserType = "organization" | "admin" | "employee";
 type AuthScreen =
   | "login"
   | "signup";
@@ -55,7 +55,7 @@ export default function App() {
     const storedUserType = sessionStorage.getItem("userType");
     if (storedAuth === "true" && storedUserType) {
       setIsAuthenticated(true);
-      setUserType(storedUserType as "user" | "admin" | "employee");
+      setUserType(storedUserType as "organization" | "admin" | "employee");
     }
   }, []);
 

@@ -2,15 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  Calendar, 
-  Building2, 
-  Shield, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  Building2,
+  Shield,
   Clock,
   Edit,
   Save,
@@ -27,107 +27,229 @@ import {
   Landmark
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { employeeService } from "../services/employeeService";
+
+// Default shape used while the API is loading or if the user record is missing fields.
+// All values are blank/empty so that the UI never displays fake "Haritha Sree" data.
+const EMPTY_PROFILE = {
+  name: "",
+  initials: "",
+  employeeId: "",
+  phone: "",
+  alternatePhone: "",
+  dateOfBirth: "",
+  gender: "",
+  religion: "",
+  educationQualification: "",
+  fatherHusbandName: "",
+  fatherHusbandNumber: "",
+  motherWifeName: "",
+  motherWifeNumber: "",
+  currentAddress: "",
+  permanentAddress: "",
+  city: "",
+  panNumber: "",
+  aadharNumber: "",
+  position: "",
+  department: "",
+  joiningDate: "",
+  empType: "",
+  workFromHome: "",
+  leaveBalance: "",
+  salary: "",
+  reportingTo: "",
+  workHours: "",
+  email: "",
+  businessEmail: "",
+  personalEmail: "",
+  bankAccountNumber: "",
+  bankName: "",
+  ifscCode: "",
+  pfUanNumber: "",
+};
 
 export function Profile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
- 
-    name: "Haritha Sree",
-    initials: "HS",
-    employeeId: "EMP-2024-001",
-    
- 
-    phone: "+91 98765 43210",
-    alternatePhone: "+91 87654 32109",
-    dateOfBirth: "1995-05-15",
-    gender: "Female",
-    religion: "Hindu",
-    educationQualification: "B.Tech in Computer Science",
-    
- 
-    fatherHusbandName: "Rajesh Kumar",
-    fatherHusbandNumber: "+91 98765 11111",
-    motherWifeName: "Lakshmi Devi",
-    motherWifeNumber: "+91 98765 22222",
-    
- 
-    currentAddress: "Flat 204, Green Valley Apartments, Bandra West",
-    permanentAddress: "Plot 45, MG Road, Secunderabad",
-    city: "Mumbai",
- 
-    panNumber: "ABCDE1234F",
-    aadharNumber: "1234 5678 9012",
- 
-    position: "System Administrator",
-    department: "IT & Operations",
-    joiningDate: "2023-01-15",
-    empType: "Full-Time",
-    workFromHome: "Yes",
-    leaveBalance: "18",
-    salary: "₹95,000",
-    reportingTo: "CEO",
-    workHours: "09:00 AM - 06:00 PM",
- 
-    email: "haritha.sree@tridizi.com",
-    businessEmail: "haritha.sree@company.com",
-    personalEmail: "haritha95@gmail.com",
-    
- 
-    bankAccountNumber: "1234567890123456",
-    bankName: "HDFC Bank",
-    ifscCode: "HDFC0001234",
-    pfUanNumber: "101234567890",
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profileData, setProfileData] = useState(EMPTY_PROFILE);
 
-  const [editData, setEditData] = useState(profileData);
+  const [editData, setEditData] = useState(EMPTY_PROFILE);
+
+  // Helper: safely format a value or return "" for null/undefined
+  const safe = (v: any): string => {
+    if (v === null || v === undefined) return "";
+    return String(v);
+  };
+
+  // Map an Employee API row into the local profile shape
+  const mapEmployeeToProfile = (emp: any, fallbackName: string, fallbackInitials: string, fallbackPosition: string) => {
+    const name = emp.emp_name || fallbackName;
+    const initials =
+      name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p: string) => p[0]?.toUpperCase())
+        .join("") || fallbackInitials;
+    return {
+      name,
+      initials,
+      employeeId: safe(emp.id ? `EMP-${emp.id}` : ""),
+      phone: safe(emp.contact_number),
+      alternatePhone: safe(emp.alternative_number),
+      dateOfBirth: safe(emp.date_of_birth),
+      gender: safe(emp.gender),
+      religion: safe(emp.Religion),
+      educationQualification: safe(emp.education_qualification),
+      fatherHusbandName: safe(emp.father_or_husband_name),
+      fatherHusbandNumber: safe(emp.father_or_husband_number),
+      motherWifeName: safe(emp.mother_name),
+      motherWifeNumber: safe(emp.mother_number),
+      currentAddress: safe(emp.current_address),
+      permanentAddress: safe(emp.permanent_address),
+      city: safe(emp.city),
+      panNumber: safe(emp.pancard),
+      aadharNumber: safe(emp.adharnumber),
+      position: safe(emp.position) || fallbackPosition,
+      department: safe(emp.department),
+      joiningDate: safe(emp.date_of_joining),
+      empType: safe(emp.employee_type),
+      workFromHome: emp.wfh_no_ofdays != null ? String(emp.wfh_no_ofdays) : "",
+      leaveBalance: safe(emp.leave_balance),
+      salary: emp.salary != null ? `₹${emp.salary}` : "",
+      reportingTo: safe(emp.teamLeadId),
+      workHours: "",
+      email: safe(emp.personal_email),
+      businessEmail: safe(emp.bussiness_email),
+      personalEmail: safe(emp.personal_email),
+      bankAccountNumber: safe(emp.bank_account),
+      bankName: safe(emp.bank_name),
+      ifscCode: safe(emp.IFSC_code),
+      pfUanNumber: safe(emp.UAN_Number),
+    };
+  };
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("userData");
     const storedType = sessionStorage.getItem("userType");
 
-    if (!storedUser) return;
+    if (!storedUser) {
+      setIsLoading(false);
+      return;
+    }
 
+    let parsed: any = null;
     try {
-      const parsed = JSON.parse(storedUser);
-      const displayName = parsed?.fullName || parsed?.emp_name || "Employee";
-      const displayInitials = displayName
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part: string) => part[0]?.toUpperCase())
-        .join("") || "E";
-
-      const displayPosition =
-        storedType === "admin" ? "Super Administrator" : storedType === "employee" ? "Employee" : "User";
-
-      setProfileData((prev) => ({
-        ...prev,
-        name: displayName,
-        initials: displayInitials,
-        position: displayPosition,
-        email: parsed?.email || prev.email,
-        businessEmail: parsed?.email || prev.businessEmail,
-        personalEmail: parsed?.email || prev.personalEmail,
-      }));
-
-      setEditData((prev) => ({
-        ...prev,
-        name: displayName,
-        initials: displayInitials,
-        position: displayPosition,
-        email: parsed?.email || prev.email,
-        businessEmail: parsed?.email || prev.businessEmail,
-        personalEmail: parsed?.email || prev.personalEmail,
-      }));
+      parsed = JSON.parse(storedUser);
     } catch (error) {
       console.error("Failed to parse userData from sessionStorage", error);
+      setIsLoading(false);
+      return;
+    }
+
+    const displayName = parsed?.fullName || parsed?.emp_name || "Employee";
+    const displayInitials = displayName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase())
+      .join("") || "E";
+
+    const displayPosition =
+      storedType === "admin"
+        ? "Super Administrator"
+        : storedType === "employee"
+        ? "Employee"
+        : "User";
+
+    // Seed from sessionStorage so the UI is never blank
+    const seed = {
+      ...EMPTY_PROFILE,
+      name: displayName,
+      initials: displayInitials,
+      position: displayPosition,
+      email: parsed?.email || "",
+      businessEmail: parsed?.email || "",
+      personalEmail: parsed?.email || "",
+    };
+    setProfileData(seed);
+    setEditData(seed);
+
+    // Fetch full profile from API
+    const employeeId = parsed?.id;
+    if (employeeId) {
+      employeeService
+        .getEmployeeById(employeeId)
+        .then((res) => {
+          const emp = res?.data;
+          if (emp) {
+            const mapped = mapEmployeeToProfile(emp, displayName, displayInitials, displayPosition);
+            setProfileData(mapped);
+            setEditData(mapped);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not load employee profile from API; using session data.", err);
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, []);
 
-  const handleSave = () => {
-    setProfileData(editData);
-    setIsEditing(false);
-    alert("Profile updated successfully! ✅");
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const raw = sessionStorage.getItem("userData");
+      const parsed = raw ? JSON.parse(raw) : null;
+      const employeeId = parsed?.id;
+      if (employeeId) {
+        // Map the form fields back to the API's snake_case model.
+        // Only fields the backend's updateEmployeeProfile accepts are sent.
+        const payload = {
+          contact_number: editData.phone,
+          alternative_number: editData.alternatePhone,
+          date_of_birth: editData.dateOfBirth,
+          gender: editData.gender,
+          Religion: editData.religion,
+          education_qualification: editData.educationQualification,
+          father_or_husband_name: editData.fatherHusbandName,
+          father_or_husband_number: editData.fatherHusbandNumber,
+          mother_name: editData.motherWifeName,
+          mother_number: editData.motherWifeNumber,
+          current_address: editData.currentAddress,
+          permanent_address: editData.permanentAddress,
+          city: editData.city,
+          pancard: editData.panNumber,
+          adharnumber: editData.aadharNumber,
+          position: editData.position,
+          department: editData.department,
+          date_of_joining: editData.joiningDate,
+          employee_type: editData.empType,
+          wfh_no_ofdays: editData.workFromHome,
+          leave_balance: editData.leaveBalance,
+          bank_account: editData.bankAccountNumber,
+          bank_name: editData.bankName,
+          IFSC_code: editData.ifscCode,
+          UAN_Number: editData.pfUanNumber,
+          personal_email: editData.personalEmail,
+          bussiness_email: editData.businessEmail,
+        };
+        await employeeService.updateProfile(employeeId, payload);
+      }
+      setProfileData(editData);
+      setIsEditing(false);
+      alert("Profile updated successfully! ✅");
+    } catch (err: any) {
+      console.error("Profile save failed", err);
+      alert(
+        err?.response?.data?.message ||
+          "Could not save profile. Please try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -151,13 +273,16 @@ export function Profile() {
 
   return (
     <div className="space-y-6 pb-8">
- 
+
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#200B43] via-[#422462] to-[#937CB4] bg-clip-text text-transparent">
             My Profile
           </h1>
           <p className="text-[#5A4079] mt-1">Manage your personal information and preferences</p>
+          {isLoading && (
+            <p className="text-xs text-[#937CB4] mt-1">Loading profile…</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {!isEditing ? (
@@ -178,12 +303,13 @@ export function Profile() {
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button 
+              <Button
                 className="bg-gradient-to-r from-green-600 to-green-500 text-white"
                 onClick={handleSave}
+                disabled={isSaving}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </>
           )}

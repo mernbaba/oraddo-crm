@@ -149,13 +149,13 @@ const unifiedSignIn = async (identifier, password) => {
 
       if (isAdminPassValid) {
         const token = jwt.sign(
-          { userId: admin.id, email: admin.email, role: "employee" },
+          { userId: admin.id, email: admin.email, role: "organization" },
           JWT_SECRET,
           { expiresIn: "1d" }
         );
         return {
           token,
-          role: "employee",
+          role: "organization",
           user: { id: admin.id, fullName: admin.fullName, email: admin.email, organizationId: admin.id }
         };
       }

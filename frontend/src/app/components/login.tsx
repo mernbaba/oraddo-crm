@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import api from "../api";
 
-type UserType = "user" | "admin" | "employee";
+type UserType = "organization" | "admin" | "employee";
 
 interface LoginProps {
   onLogin: (userType: UserType) => void;
@@ -11,7 +11,7 @@ interface LoginProps {
 }
 
 export function Login({ onLogin, onShowSignup }: LoginProps) {
-  const [localRole, setLocalRole] = useState<UserType>("user");
+  const [localRole, setLocalRole] = useState<UserType>("organization");
   const defaultOrganizationId = "SEED_ORG_001";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,17 +19,18 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
 
  
   const demoCredentials = [
-    { label: "Admin", email: "admin@oraddo.com", password: "admin123" },
-    { label: "Manager", email: "employee@oraddo.com", password: "employee123" },
-    { label: "User", email: "user@oraddo.com", password: "user123" }
+    { label: "Admin", email: "admin@ok.com", password: "123456" },
+    { label: "Organization", email: "org@ok.com", password: "123456" },
+    { label: "Employee", email: "employee@ok.com", password: "123456" }
   ];
   const [demoIndex, setDemoIndex] = useState(0);
 
   const getUserTypeFromRole = (role: string): UserType => {
     const r = String(role).toLowerCase();
     if (r.includes("admin")) return "admin";
+    if (r.includes("organization")) return "organization";
     if (r.includes("manager") || r.includes("employee")) return "employee";
-    return "user";
+    return "organization";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +57,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
         sessionStorage.setItem("userData", JSON.stringify(responseData.user));
       }
 
-      const nextType = getUserTypeFromRole(responseData.role || "user");
+      const nextType = getUserTypeFromRole(responseData.role || "organization");
       onLogin(nextType);
     } catch (error: any) {
       console.error("Signin failed", error);

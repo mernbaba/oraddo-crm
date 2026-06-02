@@ -48,7 +48,9 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     totalRevenue: 0,
     totalExpenses: 0,
     currentMonthRevenue: 0,
-    currentMonthExpenses: 0
+    currentMonthExpenses: 0,
+    previousMonthRevenue: 0,
+    revenueTrendPct: 0
   });
 
   const [selectedBirthday, setSelectedBirthday] = useState<any>(null);
@@ -91,11 +93,24 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
   const totalLeads = leadData.reduce((sum, item) => sum + (item.count || 0), 0);
   const totalProjects = projectData.reduce((sum, item) => sum + (item.count || 0), 0);
   const totalApplications = jobOpenings.reduce((sum, item) => sum + (item.applications_count || 0), 0);
-  
+
+  // Initials for the topbar avatar — derived from the logged-in user's name
+  const currentUserInitials = currentUser.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("") || "U";
+
   const genderData = [
     { name: "Male", value: employeeStats.male, color: "#422462" },
     { name: "Female", value: employeeStats.female, color: "#937CB4" },
   ];
+
+  // Unique departments for the filter dropdown — derived from the punch activity feed
+  const availableDepartments = Array.from(
+    new Set(punchActivity.map((a) => a.department).filter(Boolean))
+  );
 
   useEffect(() => {
     const data = sessionStorage.getItem("userData");
@@ -198,14 +213,24 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
       setProjectData(projCounts);
 
       // 5. Process Attendance Feed
-      const activities = attendanceRes.data?.map((a: any) => ({
-        id: a.id,
-        name: a.emp_name,
-        type: a.punch_out_time ? "out" : "in",
-        time: formatTime(a.punch_in_time),
-        status: "on-time",
-        department: "General"
-      })) || [];
+      // Build a quick lookup of employees by name so we can pull real department
+      const empByName = new Map<string, any>();
+      allEmps.forEach((e: any) => {
+        if (e.emp_name) empByName.set(String(e.emp_name).trim().toLowerCase(), e);
+      });
+      const activities = attendanceRes.data?.map((a: any) => {
+        const emp = a.emp_name
+          ? empByName.get(String(a.emp_name).trim().toLowerCase())
+          : null;
+        return {
+          id: a.id,
+          name: a.emp_name,
+          type: a.punch_out_time ? "out" : "in",
+          time: formatTime(a.punch_in_time),
+          status: "on-time",
+          department: emp?.department || a.department || "General"
+        };
+      }) || [];
       setPunchActivity(activities);
 
       // 6. Process Revenue & Chart (Rolling 6 Months)
@@ -225,11 +250,26 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         })
         .reduce((sum: number, inv: any) => sum + (parseFloat(inv.Total) || 0), 0);
 
+      // Previous month revenue for trend %
+      const prevDate = new Date(currentYear, currentMonth - 1, 1);
+      const previousMonthRevenue = invoices
+        .filter((inv: any) => {
+          const invDate = new Date(inv.Date);
+          return invDate.getMonth() === prevDate.getMonth() && invDate.getFullYear() === prevDate.getFullYear();
+        })
+        .reduce((sum: number, inv: any) => sum + (parseFloat(inv.Total) || 0), 0);
+
+      const revenueTrendPct = previousMonthRevenue > 0
+        ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
+        : 0;
+
       setRevenueStats({
         totalRevenue: totalRevValue,
         totalExpenses: totalExpValue,
         currentMonthRevenue,
-        currentMonthExpenses: 0 // Default or calculate similarly from revenues
+        currentMonthExpenses: 0, // Default or calculate similarly from revenues
+        previousMonthRevenue,
+        revenueTrendPct
       });
 
       // Rolling 6-month aggregation
@@ -262,12 +302,12 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
       const meetings = meetingRes.data || [];
       setEvents(meetings.map((m: any) => ({
         id: m.id,
-        title: m.summary,
+        title: m.summary || m.title || 'Untitled Meeting',
         time: formatTime(m.start_time),
         type: 'meeting',
-        attendees: 0,
+        attendees: m.attendees ?? m.participants ?? 0,
         location: m.location || 'Online',
-        status: 'upcoming'
+        status: m.status || 'upcoming'
       })));
 
       // 8. Process Jobs
@@ -294,6 +334,25 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
     }, 60000); // Refresh every minute
     return () => clearInterval(refreshInterval);
   }, [currentUser.organizationId]);
+
+  // Tick the working-hours counter every second while punched in
+  useEffect(() => {
+    if (!isPunchedIn || !punchInTime) {
+      setWorkingHours("00:00:00");
+      return;
+    }
+    const tick = () => {
+      const diffMs = Date.now() - punchInTime.getTime();
+      const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+      const h = String(Math.floor(totalSec / 3600)).padStart(2, "0");
+      const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
+      const s = String(totalSec % 60).padStart(2, "0");
+      setWorkingHours(`${h}:${m}:${s}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isPunchedIn, punchInTime]);
 
   const handleWishBirthday = (id: number) => {
     setBirthdays(birthdays.map(b => 
@@ -430,7 +489,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gradient-to-r from-[#F0E9FF] to-transparent border border-[#937CB4]/30">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#422462] to-[#937CB4] flex items-center justify-center text-white text-sm font-bold shadow-lg">
-              HS
+              {currentUserInitials}
             </div>
             <div>
               <p className="text-sm font-bold text-[#200B43]">{currentUser.name}</p>
@@ -518,11 +577,16 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
           <CardContent>
             <div className="text-3xl font-bold text-[#200B43]">₹{(totalRevenue / 1000000).toFixed(2)}M</div>
             <div className="flex items-center gap-2 mt-2">
-              <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+              <span
+                className={`flex items-center gap-1 text-xs font-semibold ${
+                  revenueStats.revenueTrendPct >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 <TrendingUp className="h-3 w-3" />
-                +7.3%
+                {revenueStats.revenueTrendPct >= 0 ? "+" : ""}
+                {revenueStats.revenueTrendPct.toFixed(1)}%
               </span>
-              <span className="text-xs text-[#5A4079]">vs last period</span>
+              <span className="text-xs text-[#5A4079]">vs last month</span>
             </div>
             <div className="mt-2 text-xs text-[#5A4079]">
               This month: ₹{(currentMonthRevenue / 1000).toFixed(0)}K
@@ -544,11 +608,18 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
             <div className="flex items-center gap-2 mt-2">
               <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
                 <CheckCircle2 className="h-3 w-3" />
-                189 Qualified
+                {leadData.find((l) => l.status === "Qualified")?.count ?? 0} Qualified
               </span>
             </div>
             <div className="mt-2 text-xs text-[#5A4079]">
-              Conversion: 36% • 94 Converted
+              Conversion: {totalLeads > 0
+                ? Math.round(
+                    ((leadData.find((l) => l.status === "Converted")?.count || 0) /
+                      totalLeads) *
+                      100
+                  )
+                : 0}
+              % • {leadData.find((l) => l.status === "Converted")?.count ?? 0} Converted
             </div>
           </CardContent>
         </Card>
@@ -702,10 +773,11 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
                 onChange={(e) => setFilterDepartment(e.target.value)}
               >
                 <option value="all">All Departments</option>
-                <option value="Sales">Sales</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Development">Development</option>
-                <option value="HR">HR</option>
+                {availableDepartments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -1127,11 +1199,31 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
                 </div>
               </div>
 
-              <Button 
+              <Button
                 className="w-full bg-gradient-to-r from-[#422462] to-[#937CB4] text-white"
-                onClick={() => {
-                  setSelectedJob(null);
-                  alert('Opening full application review interface...');
+                onClick={async () => {
+                  if (!selectedJob?.id) {
+                    setSelectedJob(null);
+                    return;
+                  }
+                  try {
+                    const res = await jobService.getJobById(selectedJob.id);
+                    const detail = (res as any)?.data;
+                    if (detail) {
+                      setJobOpenings((prev) =>
+                        prev.map((j) =>
+                          j.id === selectedJob.id
+                            ? { ...j, ...detail, applications: detail.applications_count ?? detail.applicants ?? j.applications }
+                            : j
+                        )
+                      );
+                    }
+                  } catch (err) {
+                    console.warn("Could not load full job details", err);
+                  } finally {
+                    setSelectedJob(null);
+                    if (onNavigate) onNavigate("hr-job-management");
+                  }
                 }}
               >
                 <ChevronRight className="h-4 w-4 mr-2" />

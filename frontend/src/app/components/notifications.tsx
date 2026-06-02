@@ -1,104 +1,134 @@
-import { Bell, CheckCheck, Trash2, Settings, Filter, Sparkles, Clock, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { Bell, CheckCheck, Trash2, Settings, Filter, Sparkles, Clock, AlertCircle, CheckCircle, Info, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  notificationService,
+  ApiNotification,
+} from "../services/notificationService";
+
+// Map a notification's `type` string to a Lucide icon + color used by the UI
+const TYPE_PRESETS: Record<string, { icon: any; color: string }> = {
+  success: { icon: CheckCircle, color: "#22c55e" },
+  warning: { icon: AlertCircle, color: "#f59e0b" },
+  error: { icon: AlertCircle, color: "#ef4444" },
+  info: { icon: Info, color: "#422462" },
+  default: { icon: Bell, color: "#5A4079" },
+};
+
+// Format a date string to a "x ago" relative-time string
+const formatRelativeTime = (dateStr?: string): string => {
+  if (!dateStr) return "Just now";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "Just now";
+  const diffMs = Date.now() - date.getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hr / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return date.toLocaleDateString();
+};
+
+// Map a raw API notification to the shape the UI consumes
+const mapNotification = (n: ApiNotification) => {
+  const preset = TYPE_PRESETS[n.type] || TYPE_PRESETS.default;
+  return {
+    id: n.id,
+    type: n.type || "info",
+    title: (n as any).title || n.type || "Notification",
+    message: n.message || "",
+    time: formatRelativeTime(n.createdAt),
+    read: !!n.isRead,
+    icon: preset.icon,
+    color: preset.color,
+  };
+};
 
 export function Notifications() {
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const notifications = [
-    {
-      id: 1,
-      type: "success",
-      title: "Proposal Approved",
-      message: "Your proposal for Tech Corp project has been approved by the client.",
-      time: "5 minutes ago",
-      read: false,
-      icon: CheckCircle,
-      color: "#22c55e",
-    },
-    {
-      id: 2,
-      type: "info",
-      title: "New Task Assigned",
-      message: "Sarah Johnson assigned you a new task: 'Update marketing dashboard'",
-      time: "15 minutes ago",
-      read: false,
-      icon: Info,
-      color: "#422462",
-    },
-    {
-      id: 3,
-      type: "warning",
-      title: "Payment Due",
-      message: "Invoice #INV-2024-045 payment is due in 3 days",
-      time: "1 hour ago",
-      read: false,
-      icon: AlertCircle,
-      color: "#f59e0b",
-    },
-    {
-      id: 4,
-      type: "info",
-      title: "Meeting Reminder",
-      message: "Team standup meeting starts in 30 minutes",
-      time: "2 hours ago",
-      read: true,
-      icon: Clock,
-      color: "#5A4079",
-    },
-    {
-      id: 5,
-      type: "success",
-      title: "Project Completed",
-      message: "E-Commerce Platform Redesign project has been marked as completed",
-      time: "3 hours ago",
-      read: true,
-      icon: CheckCircle,
-      color: "#22c55e",
-    },
-    {
-      id: 6,
-      type: "info",
-      title: "New Comment",
-      message: "Mike Chen commented on your task: 'Looks good, ready to deploy'",
-      time: "5 hours ago",
-      read: true,
-      icon: Info,
-      color: "#422462",
-    },
-    {
-      id: 7,
-      type: "warning",
-      title: "Budget Alert",
-      message: "Marketing department has reached 80% of monthly budget",
-      time: "1 day ago",
-      read: true,
-      icon: AlertCircle,
-      color: "#f59e0b",
-    },
-    {
-      id: 8,
-      type: "success",
-      title: "Leave Approved",
-      message: "Your leave request for Jan 20-22 has been approved",
-      time: "2 days ago",
-      read: true,
-      icon: CheckCircle,
-      color: "#22c55e",
-    },
-  ];
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await notificationService.getAll();
+      const list = Array.isArray(res.data) ? res.data : [];
+      setNotifications(list);
+    } catch (err: any) {
+      console.error("Failed to load notifications", err);
+      setError("Could not load notifications. Please try again.");
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const filteredNotifications = filter === "unread" 
-    ? notifications.filter(n => !n.read)
-    : notifications;
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const handleMarkRead = async (id: number) => {
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    );
+    try {
+      await notificationService.markRead(id);
+    } catch (err) {
+      console.error("Failed to mark notification read", err);
+      // Revert
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: false } : n))
+      );
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setNotifications((prev) =>
+      prev.map((n) => (unreadIds.includes(n.id) ? { ...n, isRead: true } : n))
+    );
+    // Fire-and-forget for each id (no bulk endpoint exists yet — see plan G3)
+    await Promise.allSettled(
+      unreadIds.map((id) => notificationService.markRead(id))
+    );
+  };
+
+  const handleDelete = async (id: number) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await notificationService.delete(id);
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+      // Revert: reload
+      load();
+    }
+  };
+
+  const mapped = notifications.map(mapNotification);
+  const filteredNotifications =
+    filter === "unread" ? mapped.filter((n) => !n.read) : mapped;
+
+  const unreadCount = mapped.filter((n) => !n.read).length;
+  const todayCount = mapped.filter((n) => {
+    if (!n.time.includes("hour") && !n.time.includes("minute") && !n.time.includes("s ago")) {
+      return false;
+    }
+    return true;
+  }).length;
 
   const stats = [
-    { label: "Total", value: notifications.length.toString(), gradient: "from-[#422462] to-[#5A4079]" },
+    { label: "Total", value: mapped.length.toString(), gradient: "from-[#422462] to-[#5A4079]" },
     { label: "Unread", value: unreadCount.toString(), gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Today", value: "5", gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "This Week", value: "12", gradient: "from-[#422462] to-[#937CB4]" },
+    { label: "Today", value: todayCount.toString(), gradient: "from-[#937CB4] to-[#5A4079]" },
+    { label: "This Week", value: "—", gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
   return (
@@ -120,6 +150,8 @@ export function Notifications() {
             variant="outline"
             size="sm"
             className="border-[#937CB4]/20 text-[#422462] hover:bg-[#F0E9FF]/50"
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0 || isLoading}
           >
             <CheckCheck className="h-4 w-4 mr-2" />
             Mark all as read
@@ -128,6 +160,8 @@ export function Notifications() {
             variant="outline"
             size="sm"
             className="border-[#937CB4]/20 text-[#422462] hover:bg-[#F0E9FF]/50"
+            onClick={load}
+            disabled={isLoading}
           >
             <Settings className="h-4 w-4" />
           </Button>
@@ -180,7 +214,18 @@ export function Notifications() {
       </div>
  
       <div className="space-y-3">
-        {filteredNotifications.map((notification) => {
+        {isLoading && (
+          <div className="flex items-center justify-center py-12 text-[#5A4079]">
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Loading notifications…
+          </div>
+        )}
+        {error && !isLoading && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+        {!isLoading && !error && filteredNotifications.map((notification) => {
           const Icon = notification.icon;
           return (
             <div
@@ -191,7 +236,7 @@ export function Notifications() {
               `}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#937CB4]/10 to-transparent rounded-full blur-2xl"></div>
-              
+
               <div className="relative z-10 flex items-start gap-4">
                 {/* Icon */}
                 <div
@@ -200,7 +245,7 @@ export function Notifications() {
                 >
                   <Icon className="h-6 w-6" style={{ color: notification.color }} />
                 </div>
- 
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-1">
                     <h4 className={`font-semibold ${notification.read ? 'text-[#5A4079]' : 'text-[#200B43]'}`}>
@@ -222,11 +267,18 @@ export function Notifications() {
                           size="sm"
                           variant="ghost"
                           className="h-7 px-2 text-xs hover:bg-[#F0E9FF]"
+                          onClick={() => handleMarkRead(notification.id)}
                         >
                           Mark as read
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:bg-red-50">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 hover:bg-red-50"
+                        onClick={() => handleDelete(notification.id)}
+                        aria-label="Delete notification"
+                      >
                         <Trash2 className="h-3 w-3 text-red-600" />
                       </Button>
                     </div>
@@ -238,7 +290,7 @@ export function Notifications() {
         })}
       </div>
  
-      {filteredNotifications.length === 0 && (
+      {filteredNotifications.length === 0 && !isLoading && !error && (
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 text-center shadow-lg">
           <div className="flex flex-col items-center gap-4">
             <div className="h-20 w-20 rounded-full bg-gradient-to-br from-[#F0E9FF] to-[#F0E9FF]/50 flex items-center justify-center">
@@ -246,7 +298,11 @@ export function Notifications() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[#200B43] mb-2">No notifications</h3>
-              <p className="text-sm text-[#5A4079]">You're all caught up! No unread notifications.</p>
+              <p className="text-sm text-[#5A4079]">
+                {filter === "unread"
+                  ? "You're all caught up! No unread notifications."
+                  : "You have no notifications yet."}
+              </p>
             </div>
           </div>
         </div>

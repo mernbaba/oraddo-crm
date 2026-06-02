@@ -22,6 +22,11 @@ export const employeeService = {
     return api.get(`/api/employees/${id}`);
   },
 
+  // Update the logged-in employee's own profile (PUT /api/employees/profile/:id)
+  updateProfile: (id: number, data: Partial<Employee>) => {
+    return api.put(`/api/employees/profile/${id}`, data);
+  },
+
   // Get onboarded employees organization wise
   getOnboardEmployees: (orgId: number) => {
     return api.get(`/api/organization-Employee/${orgId}`);

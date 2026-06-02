@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
 import { 
   Menu, 
@@ -54,8 +54,19 @@ import { Notifications } from "./components/notifications";
 import { Profile } from "./components/profile";
 import { HRJobManagement } from "./components/hr-job-management";
 import { HRPerformanceMetrics, HRSalaryStructure, HRResignation } from "./components/hr-all-remaining";
+import { notificationService } from "./services/notificationService";
 
 type View = string;
+
+interface SessionUser {
+  id?: number;
+  fullName?: string;
+  emp_name?: string;
+  email?: string;
+  role?: string;
+  organizationId?: number;
+  [key: string]: any;
+}
 
 export default function EmployeePortal() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -64,6 +75,62 @@ export default function EmployeePortal() {
   const [bizDevExpanded, setBizDevExpanded] = useState(false);
   const [marketingExpanded, setMarketingExpanded] = useState(false);
   const [projectExpanded, setProjectExpanded] = useState(false);
+
+  // Current user derived from sessionStorage (replaces hardcoded "Haritha Sree / HS")
+  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    // Hydrate current user from sessionStorage
+    try {
+      const raw = sessionStorage.getItem("userData");
+      if (raw) {
+        const parsed: SessionUser = JSON.parse(raw);
+        setCurrentUser(parsed);
+      }
+    } catch (err) {
+      console.error("Failed to parse userData from sessionStorage", err);
+    }
+  }, []);
+
+  // Fetch unread notification count for the bell badge
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUnread = async () => {
+      try {
+        const res = await notificationService.getAll();
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (isMounted) {
+          setUnreadCount(list.filter((n) => !n.isRead).length);
+        }
+      } catch (err) {
+        // Silently ignore — keep bell showing 0 if API fails
+        if (isMounted) setUnreadCount(0);
+      }
+    };
+    fetchUnread();
+    // Refresh every 60s
+    const interval = setInterval(fetchUnread, 60_000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [currentView]); // refresh after navigating back from notifications
+
+  // Derive display name + initials from sessionStorage
+  const displayName =
+    currentUser?.fullName || currentUser?.emp_name || "Employee";
+  const displayInitials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "E";
+  const displayRole =
+    currentUser?.role ||
+    (sessionStorage.getItem("userType") === "admin"
+      ? "Super Administrator"
+      : "Employee");
 
   const getViewTitle = () => {
     const titles: Record<string, { title: string; subtitle: string }> = {
@@ -224,16 +291,20 @@ export default function EmployeePortal() {
               onClick={() => setCurrentView("notifications")}
             >
               <Bell className="h-5 w-5 text-[#5A4079]" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Button>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#422462]/10 to-[#5A4079]/10 border border-[#937CB4]/20 cursor-pointer hover:bg-[#F0E9FF]/50 transition-colors" onClick={() => setCurrentView("profile")}>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center text-white font-bold text-sm">
-                HS
+                {displayInitials}
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-semibold text-[#200B43]">Haritha Sree</p>
-                <p className="text-xs text-[#5A4079]">Employee</p>
+                <p className="text-sm font-semibold text-[#200B43]">{displayName}</p>
+                <p className="text-xs text-[#5A4079]">{displayRole}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-[#5A4079]" />
             </div>

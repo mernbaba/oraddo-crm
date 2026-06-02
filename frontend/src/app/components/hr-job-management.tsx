@@ -3,8 +3,21 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Briefcase, User, Clock, CheckCircle2, Plus, Sparkles } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+import { jobService } from "../services/jobService";
 
-const jobOpenings = [
+type JobOpening = {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  type: string;
+  applicants: number;
+  status: "active" | "closed";
+  posted: string;
+};
+
+const fallbackJobOpenings: JobOpening[] = [
   { id: "1", title: "Senior Software Engineer", department: "Engineering", location: "Remote", type: "Full-time", applicants: 45, status: "active", posted: "2025-12-15" },
   { id: "2", title: "Marketing Manager", department: "Marketing", location: "New York", type: "Full-time", applicants: 28, status: "active", posted: "2025-12-20" },
   { id: "3", title: "Product Designer", department: "Design", location: "San Francisco", type: "Full-time", applicants: 32, status: "active", posted: "2026-01-05" },
@@ -21,6 +34,43 @@ const hiringPipeline = [
 ];
 
 export function HRJobManagement() {
+  const [jobOpenings, setJobOpenings] = useState<JobOpening[]>(fallbackJobOpenings);
+
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    if (!storedUser) return;
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      const orgId = parsedUser?.organizationId;
+      if (!orgId) return;
+
+      jobService.getJobsByOrg(orgId)
+        .then((response) => {
+          const rows = response?.data || [];
+          if (!Array.isArray(rows) || rows.length === 0) return;
+
+          const mappedJobs = rows.map((item: any, index: number) => ({
+            id: String(item.id ?? index + 1),
+            title: item.title || item.jobTitle || "Job Opening",
+            department: item.department || "General",
+            location: item.location || "Remote",
+            type: item.type || item.job_type || "Full-time",
+            applicants: Number(item.applications_count || item.applicants || 0),
+            status: String(item.status || "active").toLowerCase() === "closed" ? "closed" : "active",
+            posted: item.posted_date || item.createdAt || new Date().toISOString(),
+          }));
+
+          setJobOpenings(mappedJobs);
+        })
+        .catch((error) => {
+          console.error("Failed to load organization jobs", error);
+        });
+    } catch (error) {
+      console.error("Failed to parse userData for jobs", error);
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
