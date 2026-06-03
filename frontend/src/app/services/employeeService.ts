@@ -27,8 +27,10 @@ export const employeeService = {
     return api.put(`/api/employees/profile/${id}`, data);
   },
 
-  // Get onboarded employees organization wise
+  // Get all employees for an organization (the non-paginated variant —
+  // returns the full list, not just the first page). Used by the chat
+  // picker so every coworker in the org is reachable.
   getOnboardEmployees: (orgId: number) => {
-    return api.get(`/api/organization-Employee/${orgId}`);
+    return api.get(`/api/employeesbyorganization/${orgId}`);
   }
 };

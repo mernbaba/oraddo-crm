@@ -370,11 +370,45 @@ const replyInPersonalChat = async (req, res) => {
   }
 };
 
+const getConversation = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.params;
+    const result = await messageService.getConversationMessages(
+      parseInt(senderId, 10),
+      parseInt(receiverId, 10)
+    );
+    // Best-effort live push to both participants
+    try {
+      if (req.io) {
+        req.io.to(`${senderId}`).emit("conversation", { messages: result });
+        req.io.to(`${receiverId}`).emit("conversation", { messages: result });
+      }
+    } catch (emitErr) {
+      console.error("getConversation emit failed (non-fatal):", emitErr.message);
+    }
+    res.status(200).json({ messages: result });
+  } catch (error) {
+    console.error("Error in getConversation controller:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getChatPartners = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const partners = await messageService.getChatPartners(parseInt(userId, 10));
+    res.status(200).json({ partners });
+  } catch (error) {
+    console.error("getChatPartners error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createChatMessage,
   getMessages,
   getMessagesById,
-  //   getConversation,
+  getConversation,
   updateMessageById,
   deleteChat,
   deleteMessageForMe,
@@ -383,5 +417,6 @@ module.exports = {
   replyInGroup,
   replyInPersonalChat,
   getUnreadMessages,
-  markMessagesAsRead
+  markMessagesAsRead,
+  getChatPartners
 };

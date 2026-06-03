@@ -166,67 +166,7 @@ if (isNaN(parsedSenderId) || isNaN(receiverId)) {
 }
 
   try {
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { senderId: parsedSenderId, "$receivers.id$": receiverId },
-          { senderId: receiverId, "$receivers.id$": parsedSenderId },
-        ],
-        isDeletedForEveryone: false,
-      },
-      include: [
-        {
-          model: Emp_onboarding,
-          as: "sender",
-          attributes: ["id", "emp_name"],
-        },
-        {
-          model: Emp_onboarding,
-          as: "receivers",
-          attributes: ["id", "emp_name"],
-        },
-        {
-          model: MessageVisibility,
-          where: { userId: [parsedSenderId, receiverId] },
-          required: false,
-        },
-        {
-          model: Message,
-          as: 'replyTo', // For personal-to-personal replies
-          include: [{ model: Emp_onboarding, as: 'sender', attributes: ['id', 'emp_name'] }],
-          required: false,
-        },
-        {
-          model: GroupMessage,
-          as: 'replyToGroupMessage', // For private replies to group messages
-          include: [
-            {
-              model: Emp_onboarding,
-              as: 'sender',
-              attributes: ['id', 'emp_name'],
-            },
-            {
-              model: GroupChat,
-              as: 'group',
-              attributes: ['id', 'groupName'],
-            },
-          ],
-          required: false,
-        },
-      ],
-      order: [["createdAt", "ASC"]],
-    });
-
-    const filteredMessages = messages.filter((msg) => {
-      const visibility = msg.MessageVisibilities?.find(
-        (v) => v.userId === parsedSenderId
-      );
-      // return !visibility || !visibility.isDeleted;
-      return (
-  msg.isDeletedForEveryone !== true &&   // important!
-  (!visibility || !visibility.isDeleted)
-);
-    });
+    const filteredMessages = await getConversationMessages(parsedSenderId, parseInt(receiverId, 10));
 
     req.io
       .to(`user_${parsedSenderId}`)
@@ -239,6 +179,59 @@ if (isNaN(parsedSenderId) || isNaN(receiverId)) {
     console.error(error);
     res.status(500).json({ error: "Error retrieving messages" });
   }
+};
+
+// Pure: returns the conversation between two users without touching the
+// response object. Used by the controller and reusable from other callers
+// (e.g. a future socket consumer).
+const getConversationMessages = async (parsedSenderId, parsedReceiverId) => {
+  if (!Number.isFinite(parsedSenderId) || !Number.isFinite(parsedReceiverId)) {
+    throw new Error("Invalid sender or receiver");
+  }
+  const messages = await Message.findAll({
+    where: {
+      [Op.or]: [
+        { senderId: parsedSenderId, "$receivers.id$": parsedReceiverId },
+        { senderId: parsedReceiverId, "$receivers.id$": parsedSenderId },
+      ],
+      isDeletedForEveryone: false,
+    },
+    include: [
+      { model: Emp_onboarding, as: "sender", attributes: ["id", "emp_name"] },
+      { model: Emp_onboarding, as: "receivers", attributes: ["id", "emp_name"] },
+      {
+        model: MessageVisibility,
+        where: { userId: [parsedSenderId, parsedReceiverId] },
+        required: false,
+      },
+      {
+        model: Message,
+        as: 'replyTo',
+        include: [{ model: Emp_onboarding, as: 'sender', attributes: ['id', 'emp_name'] }],
+        required: false,
+      },
+      {
+        model: GroupMessage,
+        as: 'replyToGroupMessage',
+        include: [
+          { model: Emp_onboarding, as: 'sender', attributes: ['id', 'emp_name'] },
+          { model: GroupChat, as: 'group', attributes: ['id', 'groupName'] },
+        ],
+        required: false,
+      },
+    ],
+    order: [["createdAt", "ASC"]],
+  });
+
+  return messages.filter((msg) => {
+    const visibility = msg.MessageVisibilities?.find(
+      (v) => v.userId === parsedSenderId
+    );
+    return (
+      msg.isDeletedForEveryone !== true &&
+      (!visibility || !visibility.isDeleted)
+    );
+  });
 };
 
 const updateMessageContent = async (messageId, senderId, fields, files) => {
@@ -448,15 +441,63 @@ const markMessagesAsRead = async (userId, senderId) => {
   }
 };
 
+// Return the set of 1:1 chat partners the given user has ever exchanged
+// non-deleted messages with, plus the most recent message and timestamp
+// for each partner. Used to build the chat rail on a fresh page load.
+const getChatPartners = async (userId) => {
+  if (!Number.isFinite(userId)) throw new Error("Invalid userId");
+
+  // Pull every non-deleted 1:1 message the user is part of, joined with
+  // its receivers, and reduce in code to one row per partner.
+  const messages = await Message.findAll({
+    where: {
+      isDeletedForEveryone: false,
+      [Op.or]: [
+        { senderId: userId },
+        { "$receivers.id$": userId },
+      ],
+    },
+    attributes: ["id", "senderId", "content", "other_documents", "createdAt"],
+    include: [
+      { model: Emp_onboarding, as: "receivers", attributes: ["id"], through: { attributes: [] } },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+
+  const partners = new Map();
+  for (const m of messages) {
+    const receiverIds = (m.receivers || []).map((r) => r.id);
+    // The "other side" of the conversation: if I sent it, it's every
+    // receiver. If I received it, the partner is the sender.
+    const otherIds = m.senderId === userId
+      ? receiverIds.filter((id) => id !== userId)
+      : [m.senderId];
+
+    for (const otherId of otherIds) {
+      if (otherId === userId) continue;
+      if (partners.has(otherId)) continue; // already have the newest
+      partners.set(otherId, {
+        partnerId: otherId,
+        lastMessage: m.content || (m.other_documents ? "📎 Attachment" : ""),
+        lastAt: m.createdAt,
+      });
+    }
+  }
+
+  return Array.from(partners.values());
+};
+
 module.exports = {
   createMessage,
   getChats,
   getChatById,
   getConversation,
+  getConversationMessages,
   updateMessageContent,
   deleteMessageByIds,
   deleteMessageForMe,
   deleteMessageForEveryone,
   getUnreadMessages,
   markMessagesAsRead,
+  getChatPartners,
 };

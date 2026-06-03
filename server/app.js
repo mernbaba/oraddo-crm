@@ -88,6 +88,7 @@ const couponsRoutes = require("./api/routes/couponsRoutes");
 // const kanbanAuto =require("./api/routes/kanbanAutoRoute")
 const projectDetailedRoutes = require("./api/routes/projectDetailedRoutes");
 const groupChatRoutes = require("./api/routes/groupChatRoute");
+const chatRoutes = require("./api/routes/chatRoute");
 
 
 require("dotenv").config();
@@ -623,6 +624,7 @@ app.use("/api", couponsRoutes);
 app.use('/api', fcmTokenRoute);
 app.use("/api", projectDetailedRoutes);
 app.use("/api", groupChatRoutes);
+app.use("/api", chatRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
@@ -646,7 +648,7 @@ app.get("/*", (req, res) => {
 });
 
 sequelize
-  .sync()
+  .sync({ alter: true })
   .then(() => {
     server.listen(PORT, () => {
       console.log("removedall");

@@ -15,6 +15,17 @@ const EmpNotes = sequelize.define("employee_notes", {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  // JSON-encoded array of tag strings. Stored as TEXT so it works on any
+  // dialect; the service handles serialize/deserialize.
+  tags: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  // Hex color string (e.g. "#422462") used as the card accent.
+  color: {
+    type: DataTypes.STRING(16),
+    allowNull: true,
+  },
   isedited: {
     type: DataTypes.BOOLEAN,
     allowNull: true,
