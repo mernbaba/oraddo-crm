@@ -182,6 +182,32 @@ const getByOrganizationId = async (id) => {
 
 
 
+// All tasks assigned to one employee, across every status (Pending, In Progress,
+// Completed, Overdue, Achieved). Unlike getTaskbyEmployee this does NOT filter by
+// status, so it can power the employee's full task board (pending/ongoing/completed).
+const getAllTasksByEmployee = async (id) => {
+  try {
+    const tasks = await Tasks.findAll({
+      where: { empOnboardingId: id },
+      include: [
+        {
+          model: Emp_onboarding,
+          as: "taskOfEmploye",
+          attributes: ["emp_name"],
+        },
+        {
+          model: ProjectBoard,
+          as: "ProjectCreation",
+        },
+      ],
+      order: [["updatedAt", "DESC"]],
+    });
+    return tasks;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getEmployeeTasks = async (page, limit) => {
   try {
     const offset = (page - 1) * limit;
@@ -1006,5 +1032,6 @@ module.exports = {
   removeEmployeeFromProject,
   UpdateTaskViaReAssignEmp,
   getTaskbyEmployee,
+  getAllTasksByEmployee,
   updatetlTask
 };

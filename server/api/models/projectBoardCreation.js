@@ -54,6 +54,27 @@ const ProjectBoard = sequelize.define("ProjectBoard", {
   isComplete:{
     type: DataTypes.BOOLEAN,
     allowNull:true
+  },
+  // Completed-project metadata surfaced on the employee "Completed Projects" page.
+  client:{
+    type: DataTypes.STRING,
+    allowNull:true
+  },
+  budget:{
+    type: DataTypes.STRING,
+    allowNull:true
+  },
+  rating:{
+    type: DataTypes.FLOAT,
+    allowNull:true
+  },
+  deliverables:{
+    type: DataTypes.INTEGER,
+    allowNull:true
+  },
+  team_size:{
+    type: DataTypes.INTEGER,
+    allowNull:true
   }
 });
 

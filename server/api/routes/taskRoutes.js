@@ -11,6 +11,7 @@ router.get('/tasks', taskController.getTasks);
 router.get('/tasksOrganizationId/:id',taskController.getTasksByOrganizationId);
 router.get('/tasks/:id', taskController.getTaskById);
 router.get("/task-for-employee/:id",taskController.getTaskbyEmployee)
+router.get("/all-tasks-for-employee/:id", taskController.getAllTasksByEmployee)
 router.put('/tasks/:id', taskController.updateTask);
 router.put('/taskViaReAssignEmp/:id',taskController.updateTaskViaReAssignEmp);
 router.post("/update-task", taskController.UpdateTimer);

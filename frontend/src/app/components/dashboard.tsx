@@ -194,7 +194,8 @@ export function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void 
       setBirthdays(todayBirthdays);
 
       // 3. Process Leads
-      const leads = leadsRes.data || [];
+      // getLeadsByOrg returns { data, totalRows, ... }, so the rows live under .data.data.
+      const leads = leadsRes.data?.data || leadsRes.data || [];
       const leadCounts = [
         { status: "New", count: leads.filter((l:any) => l.status === 'New').length, color: "#5A4079" },
         { status: "Qualified", count: leads.filter((l:any) => l.status === 'Qualified').length, color: "#422462" },

@@ -2299,13 +2299,30 @@ const updateEmployeeProfile = async (id, profileData) => {
       "city",
       "Religion",
       "gender",
+      "pancard",
+      "adharnumber",
+      "bank_account",
+      "bank_name",
+      "IFSC_code",
+      "UAN_Number",
+      "personal_email",
+      "bussiness_email",
+      "position",
+      "department",
+      "date_of_joining",
+      "employee_type",
+      "wfh_no_ofdays",
+      "leave_balance",
     ];
 
     // Filter profileData to include only allowed fields
     const filteredData = {};
     allowedFields.forEach((field) => {
       if (profileData[field] !== undefined) {
-        filteredData[field] = profileData[field];
+        // Empty strings from the form should clear the column rather than be
+        // written verbatim — writing "" into numeric/date/enum columns errors.
+        const value = profileData[field];
+        filteredData[field] = value === "" ? null : value;
       }
     });
 

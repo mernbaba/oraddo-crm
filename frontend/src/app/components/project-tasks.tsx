@@ -1,118 +1,263 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { 
-  Briefcase, 
-  CheckCircle2, 
-  Clock, 
-  Plus, 
-  Sparkles, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Briefcase,
+  CheckCircle2,
+  Clock,
+  Plus,
+  Sparkles,
+  Trash2,
   Calendar,
   X,
   Check,
   AlertCircle,
   PlayCircle,
-  Send
+  Loader2,
 } from "lucide-react";
+import { taskService } from "../services/taskService";
 
-type Task = {
-  id: string;
+type Bucket = "pending" | "in-progress" | "completed";
+
+type UITask = {
+  id: number;
   title: string;
   description: string;
   assignedTo: string;
+  project: string;
   dueDate: string;
-  priority: "high" | "medium" | "low";
-  status: "pending" | "in-progress" | "completed";
+  createdAt: string;
+  priority: string; // high | medium | low
+  rawStatus: string;
+  status: Bucket;
   completion: number;
   category: "daily" | "regular";
+  duration: string;
+  raw: any;
 };
 
-const initialTasks: Task[] = [
-  { id: "1", title: "Design user interface mockups", description: "Create wireframes and mockups for new features", assignedTo: "Sarah Williams", dueDate: "2026-02-17", priority: "high", status: "pending", completion: 0, category: "daily" },
-  { id: "2", title: "Implement authentication system", description: "Build secure login and registration functionality", assignedTo: "You", dueDate: "2026-02-17", priority: "high", status: "in-progress", completion: 65, category: "daily" },
-  { id: "3", title: "Code review and QA testing", description: "Review code changes and perform quality assurance", assignedTo: "You", dueDate: "2026-02-17", priority: "medium", status: "completed", completion: 100, category: "daily" },
-  { id: "4", title: "Database schema optimization", description: "Optimize database queries for better performance", assignedTo: "Sarah Williams", dueDate: "2026-02-20", priority: "high", status: "in-progress", completion: 75, category: "regular" },
-  { id: "5", title: "API documentation update", description: "Update API endpoints documentation", assignedTo: "Michael Torres", dueDate: "2026-02-18", priority: "high", status: "completed", completion: 100, category: "regular" },
-  { id: "6", title: "Implement payment gateway", description: "Integrate payment processing system", assignedTo: "Jennifer Lee", dueDate: "2026-02-25", priority: "medium", status: "pending", completion: 0, category: "regular" },
-  { id: "7", title: "Mobile responsiveness fixes", description: "Fix UI issues on mobile devices", assignedTo: "David Kim", dueDate: "2026-02-22", priority: "medium", status: "in-progress", completion: 45, category: "regular" },
-  { id: "8", title: "Security audit and fixes", description: "Conduct security review and fix vulnerabilities", assignedTo: "Emma Johnson", dueDate: "2026-02-28", priority: "high", status: "pending", completion: 0, category: "regular" },
-  { id: "9", title: "Daily standup report", description: "Prepare and share daily progress report", assignedTo: "You", dueDate: "2026-02-17", priority: "medium", status: "completed", completion: 100, category: "daily" },
-];
+const toBucket = (status: string): Bucket => {
+  const v = String(status || "").toLowerCase();
+  if (v === "completed" || v === "achieved") return "completed";
+  if (v === "in progress") return "in-progress";
+  return "pending"; // pending, overdue, or unset
+};
+
+const normPriority = (segment: string): string => {
+  const v = String(segment || "").toLowerCase();
+  return ["high", "medium", "low"].includes(v) ? v : "medium";
+};
+
+const normalizeTask = (t: any): UITask => {
+  const bucket = toBucket(t.status);
+  const proj = t.ProjectCreation || {};
+  return {
+    id: t.id,
+    title: t.task_name || "Untitled Task",
+    description: t.task_description || "",
+    assignedTo: t.taskOfEmploye?.emp_name || "You",
+    project: proj.project_name || proj.projectName || proj.name || "",
+    dueDate: t.recurrence_task_date || "",
+    createdAt: t.createdAt || "",
+    priority: normPriority(t.segment),
+    rawStatus: t.status || "Pending",
+    status: bucket,
+    completion: bucket === "completed" ? 100 : bucket === "in-progress" ? 50 : 0,
+    category: String(t.recurrence_types || "").toLowerCase() === "daily" ? "daily" : "regular",
+    duration: t.duration || "",
+    raw: t,
+  };
+};
+
+const formatDate = (v: string): string => {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const statusLabel = (s: string) => {
+  const v = String(s || "").toLowerCase();
+  if (v === "in progress") return "In Progress";
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Pending";
+};
+
+const EMPTY_FORM = {
+  task_name: "",
+  task_description: "",
+  priority: "medium",
+  category: "regular",
+  duration: "",
+  due_date: "",
+};
+
+type FormState = typeof EMPTY_FORM;
 
 export function ProjectTasks() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [activeTab, setActiveTab] = useState<"pending" | "ongoing" | "completed">("pending");
+  const [tasks, setTasks] = useState<UITask[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [currentUser, setCurrentUser] = useState<{ id?: number; fullName?: string }>({});
+  const [orgId, setOrgId] = useState<number | null>(null);
+
+  const [activeTab, setActiveTab] = useState<Bucket>("pending");
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
- 
-  const getFilteredTasks = () => {
-    switch (activeTab) {
-      case "pending":
-        return tasks.filter(t => t.status === "pending");
-      case "ongoing":
-        return tasks.filter(t => t.status === "in-progress");
-      case "completed":
-        return tasks.filter(t => t.status === "completed");
-      default:
-        return tasks;
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) {
+      setIsLoading(false);
+      setError("You are not logged in.");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      setCurrentUser({ id: parsed?.id, fullName: parsed?.fullName || parsed?.emp_name });
+      const oid = parsed?.organizationId ?? parsed?.organizationID;
+      if (oid !== undefined && oid !== null && oid !== "") setOrgId(Number(oid));
+      if (!parsed?.id) {
+        setIsLoading(false);
+        setError("Could not identify your account.");
+      }
+    } catch (e) {
+      console.error("Failed to parse userData", e);
+      setIsLoading(false);
+      setError("Could not read your session.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentUser.id) fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser.id]);
+
+  const fetchTasks = async () => {
+    if (!currentUser.id) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const res = await taskService.getMyTasks(currentUser.id);
+      const rows: any[] = Array.isArray(res?.data) ? res.data : res?.data?.tasks ?? [];
+      setTasks(rows.map(normalizeTask));
+    } catch (e: any) {
+      console.error("Failed to load tasks", e);
+      setError(e?.response?.data?.error || "Could not load tasks. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleCompleteTask = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: "completed", completion: 100 }
-        : task
-    ));
-  };
+  const pendingTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
+  const ongoingTasks = useMemo(() => tasks.filter((t) => t.status === "in-progress"), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((t) => t.status === "completed"), [tasks]);
 
-  const handleMarkInProgress = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: "in-progress" }
-        : task
-    ));
-  };
+  const filteredTasks =
+    activeTab === "pending" ? pendingTasks : activeTab === "in-progress" ? ongoingTasks : completedTasks;
 
-  const handleSubmitTask = (taskId: string) => {
-    alert(`Task ${taskId} has been submitted successfully!`);
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      setTasks(tasks.filter(task => task.id !== taskId));
+  const updateStatus = async (task: UITask, status: string) => {
+    setBusyId(task.id);
+    try {
+      await taskService.updateTask(task.id, { status });
+      await fetchTasks();
+    } catch (e: any) {
+      alert(e?.response?.data?.error || "Could not update the task.");
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const pendingTasks = tasks.filter(t => t.status === "pending");
-  const ongoingTasks = tasks.filter(t => t.status === "in-progress");
-  const completedTasks = tasks.filter(t => t.status === "completed");
+  const handleDeleteTask = async (task: UITask) => {
+    if (!window.confirm(`Delete task "${task.title}"? This cannot be undone.`)) return;
+    setBusyId(task.id);
+    try {
+      await taskService.deleteTask(task.id);
+      await fetchTasks();
+    } catch (e: any) {
+      alert(e?.response?.data?.error || "Could not delete the task.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!form.task_name.trim()) {
+      alert("Please enter a task title.");
+      return;
+    }
+    if (!currentUser.id) return;
+    setIsSaving(true);
+    try {
+      await taskService.createTask({
+        task_name: form.task_name.trim(),
+        task_description: form.task_description,
+        // The model needs a non-null segment/duration; we reuse `segment` to carry priority.
+        segment: form.priority,
+        duration: form.duration.trim() || "1 Day",
+        status: "Pending",
+        recurrence_types: form.category === "daily" ? "daily" : "onetime",
+        recurrence_task_date: form.due_date || null,
+        empOnboardingId: currentUser.id,
+        organizationID: orgId ?? undefined,
+      });
+      setShowNewTaskModal(false);
+      setForm(EMPTY_FORM);
+      await fetchTasks();
+    } catch (e: any) {
+      alert(e?.response?.data?.error || "Could not create the task.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const setField = (key: keyof FormState, value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   const getPriorityColor = (priority: string) => {
-    switch(priority) {
-      case "high": return "bg-red-100 text-red-700 border-red-300";
-      case "medium": return "bg-yellow-100 text-yellow-700 border-yellow-300";
-      case "low": return "bg-green-100 text-green-700 border-green-300";
-      default: return "bg-gray-100 text-gray-700 border-gray-300";
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-700 border-red-300";
+      case "medium":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "low":
+        return "bg-green-100 text-green-700 border-green-300";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch(status) {
-      case "completed": return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-      case "in-progress": return <Clock className="h-5 w-5 text-yellow-600" />;
-      case "pending": return <AlertCircle className="h-5 w-5 text-gray-600" />;
-      default: return null;
+  const getStatusIcon = (status: Bucket) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+      case "in-progress":
+        return <Clock className="h-5 w-5 text-yellow-600" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-gray-600" />;
     }
   };
+
+  const tabBtn = (tab: Bucket, label: string, count: number, Icon: any) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-6 py-3 font-medium transition-all ${
+        activeTab === tab
+          ? "text-[#422462] border-b-2 border-[#422462] bg-[#F0E9FF]/30"
+          : "text-[#5A4079] hover:text-[#422462] hover:bg-[#F0E9FF]/20"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        {label} ({count})
+      </div>
+    </button>
+  );
 
   return (
     <div className="space-y-6">
- 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -121,22 +266,23 @@ export function ProjectTasks() {
           </div>
           <div>
             <h2 className="text-3xl font-bold gradient-text">Project Tasks</h2>
-            <p className="text-[#5A4079]">
-              Track and manage project tasks and assignments
-            </p>
+            <p className="text-[#5A4079]">Track and manage project tasks and assignments</p>
           </div>
         </div>
-        <Button 
-          onClick={() => setShowNewTaskModal(true)}
+        <Button
+          onClick={() => {
+            setForm(EMPTY_FORM);
+            setShowNewTaskModal(true);
+          }}
           className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462] shadow-lg"
         >
           <Plus className="mr-2 h-4 w-4" />
           New Task
         </Button>
       </div>
- 
+
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-[#200B43]">Total Tasks</CardTitle>
             <Briefcase className="h-5 w-5 text-[#422462]" />
@@ -147,7 +293,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-[#200B43]">Pending</CardTitle>
             <AlertCircle className="h-5 w-5 text-[#422462]" />
@@ -158,7 +304,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-[#200B43]">Ongoing</CardTitle>
             <Clock className="h-5 w-5 text-[#422462]" />
@@ -169,7 +315,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all">
+        <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-[#200B43]">Completed</CardTitle>
             <CheckCircle2 className="h-5 w-5 text-[#422462]" />
@@ -180,51 +326,27 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
- 
+
       <div className="flex gap-2 border-b border-[#937CB4]/20">
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`px-6 py-3 font-medium transition-all ${
-            activeTab === "pending"
-              ? "text-[#422462] border-b-2 border-[#422462] bg-[#F0E9FF]/30"
-              : "text-[#5A4079] hover:text-[#422462] hover:bg-[#F0E9FF]/20"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Pending Tasks ({pendingTasks.length})
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("ongoing")}
-          className={`px-6 py-3 font-medium transition-all ${
-            activeTab === "ongoing"
-              ? "text-[#422462] border-b-2 border-[#422462] bg-[#F0E9FF]/30"
-              : "text-[#5A4079] hover:text-[#422462] hover:bg-[#F0E9FF]/20"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Ongoing Tasks ({ongoingTasks.length})
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("completed")}
-          className={`px-6 py-3 font-medium transition-all ${
-            activeTab === "completed"
-              ? "text-[#422462] border-b-2 border-[#422462] bg-[#F0E9FF]/30"
-              : "text-[#5A4079] hover:text-[#422462] hover:bg-[#F0E9FF]/20"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            Completed Tasks ({completedTasks.length})
-          </div>
-        </button>
+        {tabBtn("pending", "Pending Tasks", pendingTasks.length, AlertCircle)}
+        {tabBtn("in-progress", "Ongoing Tasks", ongoingTasks.length, Clock)}
+        {tabBtn("completed", "Completed Tasks", completedTasks.length, CheckCircle2)}
       </div>
- 
+
       <div className="space-y-4">
-        {getFilteredTasks().length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16 text-[#5A4079]">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            Loading tasks…
+          </div>
+        ) : error ? (
+          <Card className="rounded-xl border border-[#937CB4]/20 bg-white/90 p-10 text-center">
+            <p className="text-red-600 mb-3">{error}</p>
+            <Button variant="outline" onClick={fetchTasks}>
+              Retry
+            </Button>
+          </Card>
+        ) : filteredTasks.length === 0 ? (
           <Card className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 shadow-lg text-center">
             <div className="flex flex-col items-center gap-4">
               <div className="h-20 w-20 rounded-full bg-gradient-to-br from-[#F0E9FF] to-white flex items-center justify-center">
@@ -237,20 +359,22 @@ export function ProjectTasks() {
             </div>
           </Card>
         ) : (
-          getFilteredTasks().map((task) => (
-            <div 
-              key={task.id} 
+          filteredTasks.map((task) => (
+            <div
+              key={task.id}
               className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg hover:shadow-xl transition-all"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-4 flex-1">
-                  <div className="mt-1">
-                    {getStatusIcon(task.status)}
-                  </div>
+                  <div className="mt-1">{getStatusIcon(task.status)}</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className="font-semibold text-[#200B43] text-lg">{task.title}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(task.priority)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(
+                          task.priority
+                        )}`}
+                      >
                         {task.priority.toUpperCase()}
                       </span>
                       {task.category === "daily" && (
@@ -259,32 +383,45 @@ export function ProjectTasks() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#5A4079] mb-2">{task.description}</p>
-                    <div className="flex items-center gap-4 text-sm text-[#5A4079]">
+                    {task.description && (
+                      <p className="text-sm text-[#5A4079] mb-2">{task.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-[#5A4079] flex-wrap">
                       <span className="flex items-center gap-1">
                         <Briefcase className="h-4 w-4" />
                         {task.assignedTo}
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        Due: {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        Due: {formatDate(task.dueDate)}
                       </span>
                     </div>
                   </div>
                 </div>
-                <Badge 
-                  className={`${
-                    task.status === "completed" 
-                      ? "bg-green-100 text-green-700" 
-                      : task.status === "in-progress" 
-                      ? "bg-yellow-100 text-yellow-700" 
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {task.status === "in-progress" ? "In Progress" : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    className={`${
+                      task.status === "completed"
+                        ? "bg-green-100 text-green-700"
+                        : task.status === "in-progress"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {statusLabel(task.rawStatus)}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 hover:text-red-700 border-red-200"
+                    onClick={() => handleDeleteTask(task)}
+                    disabled={busyId === task.id}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
- 
+
               {task.status !== "completed" && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
@@ -292,93 +429,74 @@ export function ProjectTasks() {
                     <span className="font-medium text-[#200B43]">{task.completion}%</span>
                   </div>
                   <div className="w-full bg-[#F0E9FF] rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-[#422462] to-[#937CB4] h-2 rounded-full transition-all" 
+                    <div
+                      className="bg-gradient-to-r from-[#422462] to-[#937CB4] h-2 rounded-full transition-all"
                       style={{ width: `${task.completion}%` }}
                     />
                   </div>
                 </div>
               )}
- 
+
               <div className="w-full space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium text-[#200B43]">Status:</span>
-                      <span className="text-[#5A4079]">
-                        {task.status === "in-progress" ? "In Progress" : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                      </span>
+                      <span className="text-[#5A4079]">{statusLabel(task.rawStatus)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-[#200B43]">Assigned By:</span>
-                      <span className="text-[#5A4079]">Project Manager</span>
+                      <span className="font-medium text-[#200B43]">Assigned To:</span>
+                      <span className="text-[#5A4079]">{task.assignedTo}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium text-[#200B43]">Created:</span>
-                      <span className="text-[#5A4079]">{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="text-[#5A4079]">{formatDate(task.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium text-[#200B43]">Category:</span>
-                      <span className="text-[#5A4079]">{task.category === "daily" ? "Daily Task" : "Regular Task"}</span>
+                      <span className="text-[#5A4079]">
+                        {task.category === "daily" ? "Daily Task" : "Regular Task"}
+                      </span>
                     </div>
                   </div>
                 </div>
-                
-                {task.status !== "completed" && (
-                  <div className="pt-2 border-t border-[#937CB4]/20">
-                    <p className="text-sm font-medium text-[#200B43] mb-2">Task Requirements:</p>
-                    <ul className="text-sm text-[#5A4079] space-y-1 list-disc list-inside">
-                      <li>Review all necessary documents and information</li>
-                      <li>Complete all required checkpoints before deadline</li>
-                      <li>Update progress status regularly</li>
-                      <li>Notify team members upon completion</li>
-                    </ul>
- 
-                    {task.status === "pending" && (
-                      <div className="mt-4">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleMarkInProgress(task.id)}
-                          className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
-                        >
-                          <PlayCircle className="mr-2 h-4 w-4" />
-                          Start Task
-                        </Button>
-                      </div>
-                    )}
- 
-                    {task.status === "in-progress" && (
-                      <div className="mt-4">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800"
-                        >
-                          <Check className="mr-2 h-4 w-4" />
-                          Mark Complete
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {task.status === "completed" && (
-                  <div className="pt-2 border-t border-[#937CB4]/20">
-                    <div className="flex items-center gap-2 text-sm text-green-600 mb-4">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span className="font-medium">Task completed successfully on {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
 
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleSubmitTask(task.id)}
+                {task.status === "pending" && (
+                  <div className="pt-2 border-t border-[#937CB4]/20">
+                    <Button
+                      size="sm"
+                      onClick={() => updateStatus(task, "In Progress")}
+                      disabled={busyId === task.id}
                       className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
                     >
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit Task
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      Start Task
                     </Button>
+                  </div>
+                )}
+
+                {task.status === "in-progress" && (
+                  <div className="pt-2 border-t border-[#937CB4]/20">
+                    <Button
+                      size="sm"
+                      onClick={() => updateStatus(task, "Completed")}
+                      disabled={busyId === task.id}
+                      className="bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800"
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Mark Complete
+                    </Button>
+                  </div>
+                )}
+
+                {task.status === "completed" && (
+                  <div className="pt-2 border-t border-[#937CB4]/20">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="font-medium">Task completed</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -386,7 +504,7 @@ export function ProjectTasks() {
           ))
         )}
       </div>
- 
+
       {showNewTaskModal && (
         <div className="fixed inset-0 lg:left-64 top-[73px] bg-[#200B43]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[60]">
@@ -402,11 +520,13 @@ export function ProjectTasks() {
               </Button>
             </div>
             <div className="p-6">
-              <form className="space-y-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Task Title</label>
                   <input
                     type="text"
+                    value={form.task_name}
+                    onChange={(e) => setField("task_name", e.target.value)}
                     className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none"
                     placeholder="Enter task title"
                   />
@@ -415,6 +535,8 @@ export function ProjectTasks() {
                   <label className="block text-sm font-medium text-[#200B43] mb-2">Description</label>
                   <textarea
                     rows={3}
+                    value={form.task_description}
+                    onChange={(e) => setField("task_description", e.target.value)}
                     className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none resize-none"
                     placeholder="Enter task description"
                   />
@@ -422,7 +544,11 @@ export function ProjectTasks() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#200B43] mb-2">Priority</label>
-                    <select className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none">
+                    <select
+                      value={form.priority}
+                      onChange={(e) => setField("priority", e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none"
+                    >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
                       <option value="low">Low</option>
@@ -430,7 +556,11 @@ export function ProjectTasks() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#200B43] mb-2">Category</label>
-                    <select className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none">
+                    <select
+                      value={form.category}
+                      onChange={(e) => setField("category", e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none"
+                    >
                       <option value="regular">Regular Task</option>
                       <option value="daily">Daily Task</option>
                     </select>
@@ -438,21 +568,26 @@ export function ProjectTasks() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#200B43] mb-2">Assign To</label>
+                    <label className="block text-sm font-medium text-[#200B43] mb-2">Duration</label>
                     <input
                       type="text"
+                      value={form.duration}
+                      onChange={(e) => setField("duration", e.target.value)}
                       className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none"
-                      placeholder="Team member name"
+                      placeholder="e.g. 2 days"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#200B43] mb-2">Due Date</label>
                     <input
                       type="date"
+                      value={form.due_date}
+                      onChange={(e) => setField("due_date", e.target.value)}
                       className="w-full px-4 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none"
                     />
                   </div>
                 </div>
+                <p className="text-xs text-[#5A4079]">This task will be assigned to you.</p>
                 <div className="flex gap-3 justify-end pt-4">
                   <Button
                     type="button"
@@ -463,13 +598,15 @@ export function ProjectTasks() {
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
+                    type="button"
+                    onClick={handleCreate}
+                    disabled={isSaving}
                     className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
                   >
-                    Create Task
+                    {isSaving ? "Saving…" : "Create Task"}
                   </Button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         </div>

@@ -106,6 +106,16 @@ const getTaskbyEmployee = async (req, res) => {
   }
 }
 
+const getAllTasksByEmployee = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const tasks = await taskService.getAllTasksByEmployee(id);
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const updateTask = async (req, res) => {
   try {
     const id = req.params.id;
@@ -212,5 +222,6 @@ module.exports = {
   removeEmployee,
   updateTaskViaReAssignEmp,
   getTaskbyEmployee,
+  getAllTasksByEmployee,
   tlupdatetask
 };

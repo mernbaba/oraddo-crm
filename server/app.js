@@ -89,6 +89,7 @@ const couponsRoutes = require("./api/routes/couponsRoutes");
 const projectDetailedRoutes = require("./api/routes/projectDetailedRoutes");
 const groupChatRoutes = require("./api/routes/groupChatRoute");
 const chatRoutes = require("./api/routes/chatRoute");
+const supportRoutes = require("./api/routes/supportRoute");
 
 
 require("dotenv").config();
@@ -625,6 +626,7 @@ app.use('/api', fcmTokenRoute);
 app.use("/api", projectDetailedRoutes);
 app.use("/api", groupChatRoutes);
 app.use("/api", chatRoutes);
+app.use("/api", supportRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");

@@ -82,6 +82,33 @@ export function Profile() {
     return String(v);
   };
 
+  // Normalize any date value (ISO timestamp or "yyyy-MM-dd") into the
+  // "yyyy-MM-dd" string an <input type="date"> expects. "" if blank/invalid.
+  const toDateInput = (v: string): string => {
+    if (!v) return "";
+    const m = /^\d{4}-\d{2}-\d{2}/.exec(v);
+    if (m) return m[0];
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Human-readable date for display; shows an em dash when missing/invalid
+  // (prevents the "Invalid Date" text that new Date("") produces).
+  const formatDate = (v: string): string => {
+    const iso = toDateInput(v);
+    if (!iso) return "—";
+    const [y, mo, da] = iso.split("-").map(Number);
+    return new Date(y, mo - 1, da).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   // Map an Employee API row into the local profile shape
   const mapEmployeeToProfile = (emp: any, fallbackName: string, fallbackInitials: string, fallbackPosition: string) => {
     const name = emp.emp_name || fallbackName;
@@ -182,7 +209,10 @@ export function Profile() {
       employeeService
         .getEmployeeById(employeeId)
         .then((res) => {
-          const emp = res?.data;
+          // GET /api/employees/:id responds with { employee, totalCounts, leaveCreation },
+          // so the actual record lives under res.data.employee. Fall back to res.data
+          // in case the endpoint is ever changed to return the row directly.
+          const emp = res?.data?.employee ?? res?.data;
           if (emp) {
             const mapped = mapEmployeeToProfile(emp, displayName, displayInitials, displayPosition);
             setProfileData(mapped);
@@ -208,6 +238,7 @@ export function Profile() {
         // Map the form fields back to the API's snake_case model.
         // Only fields the backend's updateEmployeeProfile accepts are sent.
         const payload = {
+          emp_name: editData.name,
           contact_number: editData.phone,
           alternative_number: editData.alternatePhone,
           date_of_birth: editData.dateOfBirth,
@@ -373,11 +404,7 @@ export function Profile() {
                   <div className="flex-1">
                     <p className="text-xs text-[#5A4079]">Join Date</p>
                     <p className="font-semibold text-[#200B43]">
-                      {new Date(profileData.joiningDate).toLocaleDateString('en-IN', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
+                      {formatDate(profileData.joiningDate)}
                     </p>
                   </div>
                 </div>
@@ -449,17 +476,13 @@ export function Profile() {
                 {isEditing ? (
                   <Input 
                     type="date"
-                    value={editData.dateOfBirth}
+                    value={toDateInput(editData.dateOfBirth)}
                     onChange={(e) => setEditData({...editData, dateOfBirth: e.target.value})}
                     className="border-[#937CB4]/30 text-sm"
                   />
                 ) : (
                   <p className="font-semibold text-[#200B43]">
-                    {new Date(profileData.dateOfBirth).toLocaleDateString('en-IN', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                    {formatDate(profileData.dateOfBirth)}
                   </p>
                 )}
               </div>
@@ -477,7 +500,7 @@ export function Profile() {
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="Others">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
@@ -702,17 +725,13 @@ export function Profile() {
                 {isEditing ? (
                   <Input 
                     type="date"
-                    value={editData.joiningDate}
+                    value={toDateInput(editData.joiningDate)}
                     onChange={(e) => setEditData({...editData, joiningDate: e.target.value})}
                     className="border-[#937CB4]/30 text-sm"
                   />
                 ) : (
                   <p className="font-semibold text-[#200B43]">
-                    {new Date(profileData.joiningDate).toLocaleDateString('en-IN', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                    {formatDate(profileData.joiningDate)}
                   </p>
                 )}
               </div>
@@ -728,9 +747,8 @@ export function Profile() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Full-Time">Full-Time</SelectItem>
-                      <SelectItem value="Contract">Contract</SelectItem>
-                      <SelectItem value="Part-Time">Part-Time</SelectItem>
+                      <SelectItem value="Internship">Internship</SelectItem>
+                      <SelectItem value="Permanent">Permanent</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
@@ -739,20 +757,14 @@ export function Profile() {
               </div>
 
               <div className="p-3 rounded-lg bg-[#F0E9FF]/30">
-                <p className="text-xs text-[#5A4079] mb-1">Work From Home</p>
+                <p className="text-xs text-[#5A4079] mb-1">Work From Home (Days/Week)</p>
                 {isEditing ? (
-                  <Select
+                  <Input
+                    type="number"
                     value={editData.workFromHome}
-                    onValueChange={(value) => setEditData({...editData, workFromHome: value})}
-                  >
-                    <SelectTrigger className="border-[#937CB4]/30 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yes">Yes</SelectItem>
-                      <SelectItem value="No">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setEditData({...editData, workFromHome: e.target.value})}
+                    className="border-[#937CB4]/30 text-sm"
+                  />
                 ) : (
                   <p className="font-semibold text-[#200B43]">{profileData.workFromHome}</p>
                 )}
@@ -779,15 +791,7 @@ export function Profile() {
 
               <div className="p-3 rounded-lg bg-[#F0E9FF]/30">
                 <p className="text-xs text-[#5A4079] mb-1">Reporting To</p>
-                {isEditing ? (
-                  <Input 
-                    value={editData.reportingTo}
-                    onChange={(e) => setEditData({...editData, reportingTo: e.target.value})}
-                    className="border-[#937CB4]/30 text-sm"
-                  />
-                ) : (
-                  <p className="font-semibold text-[#200B43]">{profileData.reportingTo}</p>
-                )}
+                <p className="font-semibold text-[#200B43]">{profileData.reportingTo}</p>
               </div>
 
               <div className="p-3 rounded-lg bg-[#F0E9FF]/30">
@@ -811,16 +815,7 @@ export function Profile() {
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-[#F0E9FF]/30">
                 <p className="text-xs text-[#5A4079] mb-1">User Email</p>
-                {isEditing ? (
-                  <Input 
-                    type="email"
-                    value={editData.email}
-                    onChange={(e) => setEditData({...editData, email: e.target.value})}
-                    className="border-[#937CB4]/30 text-sm"
-                  />
-                ) : (
-                  <p className="font-semibold text-[#200B43]">{profileData.email}</p>
-                )}
+                <p className="font-semibold text-[#200B43]">{profileData.email}</p>
               </div>
 
               <div className="p-3 rounded-lg bg-[#F0E9FF]/30">

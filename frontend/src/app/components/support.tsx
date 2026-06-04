@@ -1,11 +1,21 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Headphones, AlertCircle, CheckCircle2, Clock, Send, HelpCircle, MessageSquare, Paperclip, ArrowLeft, User } from "lucide-react";
-import { useState } from "react";
+import { Headphones, AlertCircle, CheckCircle2, Clock, Send, HelpCircle, MessageSquare, Paperclip, ArrowLeft, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal } from "./ui/modal";
+import {
+  supportService,
+  SupportTicket,
+  TicketPriority,
+  TicketStatus,
+} from "../services/supportService";
 
+// UI-level message/ticket shapes. The server stores timestamps as ISO
+// strings and identifies tickets by a numeric `id` plus a human-facing
+// `ticketCode` (e.g. "TECH-1001"); the UI keeps the code for display and the
+// numeric `ticketId` for API calls, and converts timestamps to Date objects.
 interface Message {
   id: string;
   sender: "user" | "support";
@@ -16,13 +26,14 @@ interface Message {
 }
 
 interface Ticket {
-  id: string;
+  id: string;            // display code, e.g. "TECH-1001"
+  ticketId: number;      // server numeric id (used for API calls)
   name: string;
   email: string;
   subject: string;
   issueType: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  status: "open" | "in-progress" | "resolved" | "closed";
+  priority: TicketPriority;
+  status: TicketStatus;
   description: string;
   stepsToReproduce: string;
   browserInfo: string;
@@ -30,182 +41,185 @@ interface Ticket {
   messages: Message[];
 }
 
+const PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
+const STATUSES: TicketStatus[] = ["open", "in-progress", "resolved", "closed"];
+
+function getCurrentUser(): {
+  id?: number;
+  fullName?: string;
+  email?: string;
+  organizationId?: number;
+} | null {
+  try {
+    const raw = sessionStorage.getItem("userData");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Map a server ticket into the UI shape, normalizing enums and timestamps.
+function toUITicket(t: SupportTicket): Ticket {
+  const priority: TicketPriority = PRIORITIES.includes(t.priority)
+    ? t.priority
+    : "medium";
+  const status: TicketStatus = STATUSES.includes(t.status) ? t.status : "open";
+  const messages: Message[] = (t.messages ?? []).map((m) => ({
+    id: String(m.id),
+    sender: m.sender === "support" ? "support" : "user",
+    senderName: m.senderName || (m.sender === "support" ? "Support Team" : t.name),
+    content: m.content,
+    timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
+    attachments: m.attachments ?? [],
+  }));
+  return {
+    id: t.ticketCode || `TECH-${1000 + t.id}`,
+    ticketId: t.id,
+    name: t.name,
+    email: t.email,
+    subject: t.subject,
+    issueType: t.issueType,
+    priority,
+    status,
+    description: t.description,
+    stepsToReproduce: t.stepsToReproduce || "",
+    browserInfo: t.browserInfo || "",
+    createdAt: t.createdAt ? new Date(t.createdAt) : new Date(),
+    messages,
+  };
+}
+
 export function Support() {
+  const currentUser = useMemo(() => getCurrentUser(), []);
+  const employeeId = currentUser?.id;
+  const organizationId = currentUser?.organizationId;
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [tickets, setTickets] = useState<Ticket[]>([
-    {
-      id: "TECH-1001",
-      name: "Haritha Sree",
-      email: "haritha.sree@company.com",
-      subject: "Dashboard widgets not loading",
-      issueType: "Bug/Error",
-      priority: "high",
-      status: "in-progress",
-      description: "The dashboard widgets are showing loading state indefinitely and not displaying any data.",
-      stepsToReproduce: "1. Navigate to Dashboard\n2. Wait for widgets to load\n3. Widgets remain in loading state",
-      browserInfo: "Chrome 120, Windows 11",
-      createdAt: new Date("2026-02-15T10:30:00"),
-      messages: [
-        {
-          id: "msg-1",
-          sender: "user",
-          senderName: "Haritha Sree",
-          content: "The dashboard widgets are showing loading state indefinitely and not displaying any data.",
-          timestamp: new Date("2026-02-15T10:30:00"),
-        },
-        {
-          id: "msg-2",
-          sender: "support",
-          senderName: "Support Team",
-          content: "Thank you for reporting this issue. We're looking into it. Can you please try clearing your browser cache and let us know if the issue persists?",
-          timestamp: new Date("2026-02-15T14:20:00"),
-        },
-        {
-          id: "msg-3",
-          sender: "user",
-          senderName: "Haritha Sree",
-          content: "I cleared the cache but the issue is still there. Also tried in incognito mode with the same result.",
-          timestamp: new Date("2026-02-15T15:45:00"),
-        },
-        {
-          id: "msg-4",
-          sender: "support",
-          senderName: "Support Team",
-          content: "Thank you for the update. We've identified the issue and our development team is working on a fix. We'll update you once it's deployed.",
-          timestamp: new Date("2026-02-16T09:15:00"),
-        }
-      ]
-    },
-    {
-      id: "TECH-1002",
-      name: "Admin User",
-      email: "admin@company.com",
-      subject: "Export feature not working",
-      issueType: "Feature Not Working",
-      priority: "medium",
-      status: "resolved",
-      description: "Unable to export reports to PDF format. The button doesn't respond when clicked.",
-      stepsToReproduce: "1. Go to Reports section\n2. Click Export to PDF\n3. Nothing happens",
-      browserInfo: "Firefox 122, macOS",
-      createdAt: new Date("2026-02-10T11:20:00"),
-      messages: [
-        {
-          id: "msg-5",
-          sender: "user",
-          senderName: "Admin User",
-          content: "Unable to export reports to PDF format. The button doesn't respond when clicked.",
-          timestamp: new Date("2026-02-10T11:20:00"),
-        },
-        {
-          id: "msg-6",
-          sender: "support",
-          senderName: "Support Team",
-          content: "We've identified and fixed this issue. Please refresh your browser and try again. Let us know if you still experience any problems.",
-          timestamp: new Date("2026-02-11T10:30:00"),
-        },
-        {
-          id: "msg-7",
-          sender: "user",
-          senderName: "Admin User",
-          content: "Works perfectly now! Thank you for the quick fix.",
-          timestamp: new Date("2026-02-11T14:15:00"),
-        },
-        {
-          id: "msg-8",
-          sender: "support",
-          senderName: "Support Team",
-          content: "Great! I'm marking this ticket as resolved. Feel free to reopen if you need any further assistance.",
-          timestamp: new Date("2026-02-11T14:30:00"),
-        }
-      ]
-    }
-  ]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    name: currentUser?.fullName ?? "",
+    email: currentUser?.email ?? "",
     subject: "",
     issueType: "Bug/Error",
-    priority: "medium" as "low" | "medium" | "high" | "urgent",
+    priority: "medium" as TicketPriority,
     description: "",
     stepsToReproduce: "",
     browserInfo: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newTicket: Ticket = {
-      id: `TECH-${1000 + tickets.length + 1}`,
-      name: formData.name,
-      email: formData.email,
-      subject: formData.subject,
-      issueType: formData.issueType,
-      priority: formData.priority,
-      status: "open",
-      description: formData.description,
-      stepsToReproduce: formData.stepsToReproduce,
-      browserInfo: formData.browserInfo,
-      createdAt: new Date(),
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          sender: "user",
-          senderName: formData.name,
-          content: formData.description,
-          timestamp: new Date(),
-        }
-      ]
-    };
-
-    setTickets([newTicket, ...tickets]);
-    setShowCreateModal(false);
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      subject: "",
-      issueType: "Bug/Error",
-      priority: "medium",
-      description: "",
-      stepsToReproduce: "",
-      browserInfo: ""
-    });
-
- 
-    setTimeout(() => setSelectedTicket(newTicket), 300);
+  // ── Load tickets from the API on mount ────────────────────────────────────
+  const fetchTickets = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await supportService.getTickets(
+        employeeId != null ? { employeeId } : undefined
+      );
+      const raw: SupportTicket[] = Array.isArray(res.data) ? res.data : [];
+      setTickets(raw.map(toUITicket));
+    } catch (err: any) {
+      console.error("Failed to load support tickets", err);
+      setError(
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to load support tickets. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedTicket) return;
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
 
-    const updatedTickets = tickets.map(ticket => {
-      if (ticket.id === selectedTicket.id) {
-        const newMsg: Message = {
-          id: `msg-${Date.now()}`,
-          sender: "user",
-          senderName: ticket.name,
-          content: newMessage,
-          timestamp: new Date(),
-        };
-        
-        const updatedTicket = {
-          ...ticket,
-          messages: [...ticket.messages, newMsg]
-        };
-        
-        setSelectedTicket(updatedTicket);
-        return updatedTicket;
-      }
-      return ticket;
-    });
+    try {
+      const res = await supportService.createTicket({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        issueType: formData.issueType,
+        priority: formData.priority,
+        description: formData.description,
+        stepsToReproduce: formData.stepsToReproduce,
+        browserInfo: formData.browserInfo,
+        employeeId,
+        organizationId,
+      });
 
-    setTickets(updatedTickets);
-    setNewMessage("");
+      const created = toUITicket(res.data as SupportTicket);
+      setTickets((prev) => [created, ...prev]);
+      setShowCreateModal(false);
+
+      // Reset form (keep the logged-in user's name/email prefilled).
+      setFormData({
+        name: currentUser?.fullName ?? "",
+        email: currentUser?.email ?? "",
+        subject: "",
+        issueType: "Bug/Error",
+        priority: "medium",
+        description: "",
+        stepsToReproduce: "",
+        browserInfo: ""
+      });
+
+      setTimeout(() => setSelectedTicket(created), 300);
+    } catch (err: any) {
+      console.error("Failed to create support ticket", err);
+      setError(
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to create ticket. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedTicket || sending) return;
+
+    setSending(true);
+    setError(null);
+    try {
+      const res = await supportService.addMessage(selectedTicket.ticketId, {
+        content: newMessage.trim(),
+        sender: "user",
+        senderName: selectedTicket.name,
+      });
+
+      const updated = toUITicket(res.data as SupportTicket);
+      setSelectedTicket(updated);
+      setTickets((prev) =>
+        prev.map((t) => (t.ticketId === updated.ticketId ? updated : t))
+      );
+      setNewMessage("");
+    } catch (err: any) {
+      console.error("Failed to send message", err);
+      setError(
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to send message. Please try again."
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -229,7 +243,7 @@ export function Support() {
     closed: "bg-gray-100 text-gray-800",
   };
 
- 
+
   if (!selectedTicket) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
@@ -248,7 +262,7 @@ export function Support() {
           </p>
         </div>
 
- 
+
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="border-[#937CB4]/20 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
@@ -296,9 +310,9 @@ export function Support() {
           </Card>
         </div>
 
- 
+
         <div className="text-center py-4">
-          <Button 
+          <Button
             onClick={() => setShowCreateModal(true)}
             className="bg-gradient-to-r from-[#422462] to-[#5A4079] hover:from-[#5A4079] hover:to-[#422462] shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-lg"
           >
@@ -306,16 +320,31 @@ export function Support() {
             Create New Support Ticket
           </Button>
         </div>
- 
+
         <div>
           <h3 className="text-xl font-bold text-[#200B43] mb-4">My Support Tickets</h3>
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="space-y-3">
-            {tickets.length === 0 ? (
+            {loading ? (
+              <Card className="border-[#937CB4]/20">
+                <CardContent className="pt-6 text-center py-12">
+                  <Loader2 className="h-8 w-8 text-[#937CB4] mx-auto mb-4 animate-spin" />
+                  <p className="text-[#5A4079]">Loading your tickets…</p>
+                </CardContent>
+              </Card>
+            ) : tickets.length === 0 ? (
               <Card className="border-[#937CB4]/20">
                 <CardContent className="pt-6 text-center py-12">
                   <MessageSquare className="h-12 w-12 text-[#937CB4] mx-auto mb-4 opacity-50" />
                   <p className="text-[#5A4079] mb-4">No support tickets yet</p>
-                  <Button 
+                  <Button
                     onClick={() => setShowCreateModal(true)}
                     variant="outline"
                     className="border-[#937CB4]"
@@ -326,8 +355,8 @@ export function Support() {
               </Card>
             ) : (
               tickets.map((ticket) => (
-                <Card 
-                  key={ticket.id} 
+                <Card
+                  key={ticket.id}
                   className="border-[#937CB4]/20 hover:shadow-lg transition-all cursor-pointer"
                   onClick={() => setSelectedTicket(ticket)}
                 >
@@ -362,7 +391,7 @@ export function Support() {
             )}
           </div>
         </div>
- 
+
         <Card className="border-[#937CB4]/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -393,7 +422,7 @@ export function Support() {
             </div>
           </CardContent>
         </Card>
- 
+
         <Modal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -409,6 +438,13 @@ export function Support() {
                 </p>
               </div>
             </div>
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -541,19 +577,30 @@ export function Support() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-[#937CB4]/20">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowCreateModal(false)}
+                disabled={submitting}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
+                disabled={submitting}
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079] hover:from-[#5A4079] hover:to-[#422462]"
               >
-                <Send className="mr-2 h-4 w-4" />
-                Submit Ticket
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Submit Ticket
+                  </>
+                )}
               </Button>
             </div>
           </form>
@@ -562,11 +609,11 @@ export function Support() {
     );
   }
 
- 
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex flex-col h-[calc(100vh-200px)]">
- 
+
         <div className="mb-4">
           <Button
             variant="ghost"
@@ -614,7 +661,7 @@ export function Support() {
             </CardHeader>
           </Card>
         </div>
- 
+
         <Card className="border-[#937CB4]/20 flex-1 flex flex-col">
           <CardHeader className="border-b border-[#937CB4]/20">
             <CardTitle className="flex items-center gap-2">
@@ -622,7 +669,7 @@ export function Support() {
               Conversation
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="flex-1 overflow-y-auto p-6 space-y-4">
             {selectedTicket.messages.map((message) => (
               <div
@@ -634,7 +681,7 @@ export function Support() {
                     {message.sender === "support" ? "ST" : message.senderName.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 <div className={`flex-1 max-w-[70%] ${message.sender === "user" ? "text-right" : ""}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-sm font-medium text-[#200B43] ${message.sender === "user" ? "ml-auto" : ""}`}>
@@ -644,10 +691,10 @@ export function Support() {
                       {message.timestamp.toLocaleString()}
                     </span>
                   </div>
-                  
+
                   <div className={`rounded-2xl px-4 py-3 ${
-                    message.sender === "user" 
-                      ? "bg-gradient-to-r from-[#422462] to-[#5A4079] text-white ml-auto" 
+                    message.sender === "user"
+                      ? "bg-gradient-to-r from-[#422462] to-[#5A4079] text-white ml-auto"
                       : "bg-[#F0E9FF] text-[#200B43]"
                   }`}>
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -656,14 +703,21 @@ export function Support() {
               </div>
             ))}
           </CardContent>
- 
+
           <div className="border-t border-[#937CB4]/20 p-4">
+            {error && (
+              <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <form onSubmit={handleSendMessage} className="flex gap-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your message..."
+                disabled={sending}
                 className="flex-1 px-4 py-3 border border-[#937CB4]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#937CB4]"
               />
               <Button
@@ -675,16 +729,20 @@ export function Support() {
               </Button>
               <Button
                 type="submit"
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() || sending}
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079] hover:from-[#5A4079] hover:to-[#422462]"
               >
-                <Send className="mr-2 h-4 w-4" />
+                {sending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
                 Send
               </Button>
             </form>
           </div>
         </Card>
- 
+
         <Card className="border-[#937CB4]/20 mt-4">
           <CardHeader>
             <CardTitle className="text-base">Ticket Details</CardTitle>
@@ -693,7 +751,7 @@ export function Support() {
             <div>
               <label className="text-sm font-medium text-[#5A4079]">Steps to Reproduce:</label>
               <p className="text-sm text-[#200B43] whitespace-pre-wrap mt-1 bg-[#F0E9FF]/30 p-3 rounded-lg">
-                {selectedTicket.stepsToReproduce}
+                {selectedTicket.stepsToReproduce || "Not specified"}
               </p>
             </div>
           </CardContent>

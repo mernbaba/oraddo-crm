@@ -48,8 +48,21 @@ const HrPanel = require("../models/HrPanel");
 const EmployeeLetter = require('../models/EmployeeDocumentationModel');
 const Announcement = require("../models/announcement");
 const GroupMessage = require("../models/GroupMessages");
+const SupportTicket = require("../models/supportTicket");
+const SupportMessage = require("../models/supportMessage");
 
 const defineAssociations = () => {
+
+  // Support ticket ↔ conversation messages
+  SupportTicket.hasMany(SupportMessage, {
+    foreignKey: "ticketId",
+    as: "messages",
+    onDelete: "CASCADE",
+  });
+  SupportMessage.belongsTo(SupportTicket, {
+    foreignKey: "ticketId",
+    as: "ticket",
+  });
 
   Emp_onboarding.hasMany(EmployeeLetter, {
     foreignKey: "emp_id",
