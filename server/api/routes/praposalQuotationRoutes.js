@@ -3,7 +3,7 @@ const praposalController = require("../controllers/proposalQuotationController")
 const { Middleware } = require("../middleware/authMiddleware");
 
 const router = express.Router();
-console.log("routessssss");
+// console.log("routessssss");
 
 router.post("/praposals", praposalController.createPraposal);
 router.post('/updateServcies', praposalController.updateService);

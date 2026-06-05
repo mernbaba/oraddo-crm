@@ -34,7 +34,7 @@ function initializeFirebase() {
     };
 
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    console.log('✅ Firebase Admin initialized successfully');
+    // console.log('✅ Firebase Admin initialized successfully');
   } catch (err) {
     console.error('❌ Failed to initialize Firebase Admin:', err.message || err);
   }

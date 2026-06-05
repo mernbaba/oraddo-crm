@@ -2,7 +2,7 @@
 const sequelize = require("./database");
 const defineAssociations = require("../api/association/association");
 
-require('../api/models/Emp_onboarding');
+require("../api/models/Emp_onboarding");
 require("../api/models/OrganizationModule");
 require("../api/routes/employeeRoutes");
 require("../api/routes/chatRoute");
@@ -93,7 +93,7 @@ require("../api/routes/shareNoteRoute");
 defineAssociations();
 
 sequelize
-  .sync({ force: true })
+  .sync({ alter: true })
   .then(() => {
     console.log("Database & tables created!");
   })

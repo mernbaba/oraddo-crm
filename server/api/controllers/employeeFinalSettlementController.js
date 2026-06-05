@@ -1,5 +1,5 @@
 const FinalSettlementService = require("../services/employeeFinalSettlementService");
-console.log("entre in Controller");
+// console.log("entre in Controller");
 
 const CreateFinalSettlements = async (req,res)=>{
    

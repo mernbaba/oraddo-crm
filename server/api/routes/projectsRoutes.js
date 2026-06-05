@@ -1,7 +1,7 @@
 const express = require("express");
 const projectController = require("../controllers/projectsController");
 // const { Middleware } = require('../middleware/authMiddleware');
-console.log(projectController, "ajhhjhjhj");
+// console.log(projectController, "ajhhjhjhj");
 const router = express.Router();
 
 router.post("/projects", projectController.createProject);

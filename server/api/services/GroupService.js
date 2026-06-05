@@ -25,7 +25,7 @@ function getAllFuncs(toCheck) {
     console.log("errorrrrr", error);
   }
 }
-console.log(getAllFuncs, "getOwnMethods");
+// console.log(getAllFuncs, "getOwnMethods");
 
 
 // Handle single file upload

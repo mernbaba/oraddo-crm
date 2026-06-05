@@ -3,7 +3,7 @@ const employeeFinalSettlemetController = require('../controllers/employeeFinalSe
 
 const router = express.Router();
 
-console.log("error..");
+// console.log("error..");
 
 router.post('/employeeFinalSettlemet',employeeFinalSettlemetController.CreateFinalSettlements);
 router.get('/employeeFinalSettlemet',employeeFinalSettlemetController.getFinalSettlements);

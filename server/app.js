@@ -1,12 +1,12 @@
 const express = require("express");
 const crypto = require("crypto");
+const fs = require("fs");
 const defineAssociations = require("./api/association/association");
 const bodyParser = require("body-parser");
 const sequelize = require("./config/database");
 const cors = require("cors");
 const cron = require("node-cron");
 const userRoutes = require("./api/routes/employeeRoutes");
-
 const reportSubmissionRoutes = require("./api/routes/reportSubmissionRoutes");
 const salaryManagementRoutes = require("./api/routes/salaryManagementRoutes");
 const salaryAdvanceRoutes = require("./api/routes/salary_advanceRoutes");
