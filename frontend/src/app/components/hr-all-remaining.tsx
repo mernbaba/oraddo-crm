@@ -1,6 +1,7 @@
  
-import { useState } from "react";
-import { FileText, Calendar, Clock, Sparkles, Plus, Users, TrendingUp, DollarSign, Award, Target, Download, CreditCard, Wallet, Receipt, LogOut, X, Send, Upload, Check, AlertCircle, ClipboardList, Info, MessageSquare, Code2, Copy } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Calendar, Clock, Sparkles, Plus, Users, TrendingUp, DollarSign, Award, Target, Download, CreditCard, Wallet, Receipt, LogOut, X, Send, Upload, Check, AlertCircle, ClipboardList, Info, MessageSquare, Code2, Copy, Loader2 } from "lucide-react";
+import { resignationService } from "../services/resignationService";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Input } from "./ui/input";
@@ -1451,17 +1452,77 @@ export function HRResignation() {
   });
 
  
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [empId, setEmpId] = useState<number | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [resignation, setResignation] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [letterFile, setLetterFile] = useState<File | null>(null);
+
+  // ── Read the logged-in employee from the session, then load their resignation ──
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) { setLoading(false); return; }
+    try {
+      const u = JSON.parse(raw);
+      const id = u?.id != null ? Number(u.id) : null;
+      setEmpId(id);
+      setOrgId(u?.organizationId != null ? Number(u.organizationId) : null);
+      setUserEmail(u?.email || u?.personal_email || "");
+      if (id == null) {
+        setError("Could not identify your account. Please log in again.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Could not read your session. Please log in again.");
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (empId == null) return;
+    loadResignation(empId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empId]);
+
+  const loadResignation = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await resignationService.getByEmployee(id);
+      const record = res.data?.emp_Resignation ?? null;
+      setResignation(record);
+      setHasResignation(!!record);
+    } catch (e) {
+      console.error("Failed to load resignation", e);
+      setError("Failed to load your resignation status. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deriveStatus = (rec: any): string => {
+    if (!rec) return "submitted";
+    if ([rec.hr_status, rec.manager_status, rec.team_lead_status].includes("Declined")) return "rejected";
+    if (rec.hr_status === "Approved") return "approved";
+    return "submitted";
+  };
+
+  const r = resignation;
   const resignationData = {
-    submittedDate: "2024-01-15",
-    status: "approved",
-    resignationType: "Voluntary",
-    reason: "Career Growth",
-    lastWorkingDate: "2024-03-15",
-    noticePeriod: "60 days",
-    managerComments: "We wish you all the best for your future endeavors. Your contributions have been valuable.",
-    hrComments: "Please ensure all exit formalities are completed before last working day.",
-    approvedBy: "Sarah Johnson (Manager)",
-    approvedDate: "2024-01-17"
+    submittedDate: r?.resignation_date || r?.createdAt || "",
+    status: deriveStatus(r),
+    resignationType: r?.resignation_type || "—",
+    reason: r?.resignation_reason || "—",
+    lastWorkingDate: r?.last_working_date || "",
+    noticePeriod: r?.notice_period ? `${r.notice_period} days` : "—",
+    managerComments: r?.manager_comments || "",
+    hrComments: r?.hr_comments || "",
+    approvedBy: "",
+    approvedDate: r?.updatedAt || "",
+    resignationLetter: r?.resignation_letter || null,
   };
 
  
@@ -1493,16 +1554,77 @@ export function HRResignation() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Resignation submitted:", formData);
-    setHasResignation(true);
-    setShowForm(false);
+  const REASON_LABELS: Record<string, string> = {
+    "career-growth": "Career Growth",
+    "higher-education": "Higher Education",
+    "better-opportunity": "Better Opportunity",
+    "relocation": "Relocation",
+    "personal": "Personal Reasons",
+    "work-life-balance": "Work-Life Balance",
+    "health": "Health Reasons",
+    "other": "Other",
+  };
+  const TYPE_LABELS: Record<string, string> = {
+    voluntary: "Voluntary",
+    retirement: "Retirement",
+    relocation: "Relocation",
+    personal: "Personal Reasons",
+    other: "Other",
   };
 
-  const handleWithdraw = () => {
-    if (confirm("Are you sure you want to withdraw your resignation?")) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (empId == null) { alert("Could not identify your account. Please log in again."); return; }
+    if (!formData.reason) { alert("Please select a primary reason for your resignation."); return; }
+    if (!formData.lastWorkingDate) { alert("Please choose your intended last working date."); return; }
+    if (!userEmail) { alert("No email is associated with your account. Please contact HR."); return; }
+
+    setSubmitting(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await resignationService.create({
+        emp_onboarding_id: empId,
+        personal_email_address: userEmail,
+        resignation_reason: REASON_LABELS[formData.reason] || formData.reason,
+        resignation_type: TYPE_LABELS[formData.resignationType] || formData.resignationType,
+        notice_period: formData.noticePeriod,
+        last_working_date: formData.lastWorkingDate,
+        resignation_date: today,
+        employee_comments: formData.comments,
+        exit_interview_preference: formData.exitInterviewPreference,
+        organizationID: orgId ?? undefined,
+        hr_status: "Pending",
+        team_lead_status: "Pending",
+        manager_status: "Pending",
+        resignation_letter: letterFile,
+      });
+      // The server returns a 201 with { success:false } when the employee has an
+      // open salary loan, so treat that as a validation failure, not a success.
+      if (res.data?.success === false) {
+        alert(res.data.message || "Unable to submit resignation.");
+        return;
+      }
+      setShowForm(false);
+      setLetterFile(null);
+      await loadResignation(empId);
+    } catch (err) {
+      console.error("Failed to submit resignation", err);
+      alert("Failed to submit your resignation. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!resignation?.id) return;
+    if (!confirm("Are you sure you want to withdraw your resignation?")) return;
+    try {
+      await resignationService.remove(resignation.id);
+      setResignation(null);
       setHasResignation(false);
+    } catch (e) {
+      console.error("Failed to withdraw resignation", e);
+      alert("Failed to withdraw your resignation. Please try again.");
     }
   };
 
@@ -1517,7 +1639,7 @@ export function HRResignation() {
             <p className="text-[#5A4079]">Manage your resignation and exit formalities</p>
           </div>
         </div>
-        {!hasResignation && !showForm && (
+        {!loading && !error && !hasResignation && !showForm && (
           <Button
             onClick={() => setShowForm(true)}
             className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462] shadow-lg"
@@ -1527,8 +1649,34 @@ export function HRResignation() {
           </Button>
         )}
       </div>
- 
-      {!hasResignation && !showForm && (
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+          {empId != null && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              onClick={() => loadResignation(empId)}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-[#937CB4]/20 bg-white/80 px-4 py-3 text-sm text-[#5A4079]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading your resignation status…</span>
+        </div>
+      )}
+
+      {!loading && !error && !hasResignation && !showForm && (
         <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-12 shadow-lg text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="h-20 w-20 rounded-full bg-gradient-to-br from-[#F0E9FF] to-white flex items-center justify-center">
@@ -1662,11 +1810,19 @@ export function HRResignation() {
               <label className="block text-sm font-medium text-[#200B43] mb-2">
                 Upload Resignation Letter (Optional)
               </label>
-              <div className="border-2 border-dashed border-[#937CB4]/30 rounded-lg p-6 text-center hover:border-[#422462] transition-all cursor-pointer">
+              <label className="block border-2 border-dashed border-[#937CB4]/30 rounded-lg p-6 text-center hover:border-[#422462] transition-all cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => setLetterFile(e.target.files?.[0] ?? null)}
+                />
                 <Upload className="h-8 w-8 text-[#5A4079] mx-auto mb-2" />
-                <p className="text-sm text-[#5A4079]">Click to upload or drag and drop</p>
+                <p className="text-sm text-[#5A4079]">
+                  {letterFile ? letterFile.name : "Click to upload or drag and drop"}
+                </p>
                 <p className="text-xs text-[#958CA7] mt-1">PDF, DOC, DOCX (Max 5MB)</p>
-              </div>
+              </label>
             </div>
  
             <div className="flex gap-3 justify-end pt-4">
@@ -1680,10 +1836,11 @@ export function HRResignation() {
               </Button>
               <Button
                 type="submit"
+                disabled={submitting}
                 className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462] shadow-lg"
               >
-                <Send className="mr-2 h-4 w-4" />
-                Submit Resignation
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {submitting ? "Submitting..." : "Submit Resignation"}
               </Button>
             </div>
           </form>
@@ -1764,7 +1921,7 @@ export function HRResignation() {
                       </div>
                       <div className="flex-1 pb-4">
                         <p className="font-medium text-[#200B43]">{resignationData.status === "approved" ? "Resignation Approved" : "Resignation Rejected"}</p>
-                        <p className="text-sm text-[#5A4079]">{resignationData.approvedBy} • {new Date(resignationData.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        <p className="text-sm text-[#5A4079]">{resignationData.approvedBy ? `${resignationData.approvedBy} • ` : ""}{new Date(resignationData.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                     </div>
                   )}
@@ -1872,16 +2029,22 @@ export function HRResignation() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-[#200B43]">Resignation Letter</p>
-                    <p className="text-xs text-[#5A4079]">Uploaded on Jan 15, 2024</p>
+                    <p className="text-xs text-[#5A4079]">
+                      {resignationData.submittedDate
+                        ? `Uploaded on ${new Date(resignationData.submittedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : "No letter uploaded"}
+                    </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
+                  disabled={!resignationData.resignationLetter}
+                  onClick={() => resignationData.resignationLetter && window.open(resignationData.resignationLetter, "_blank")}
+                  className="w-full border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="mr-2 h-3 w-3" />
-                  Download
+                  {resignationData.resignationLetter ? "Download" : "Not Available"}
                 </Button>
               </div>
  

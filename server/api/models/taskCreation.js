@@ -152,6 +152,60 @@ const Tasks = sequelize.define("Tasks", {
     },
     allowNull: true, // Allow null if a task does not belong to a project
   },
+
+  // ── Sprint Kanban Board fields ─────────────────────────────────────────────
+  // All nullable/additive so existing rows and the legacy task flow keep working.
+  // `kanban_column` is the source of truth for board placement
+  // ("todo" | "inprogress" | "review" | "done"); the ENUM `status` above is kept
+  // loosely in sync (todo→Pending, inprogress/review→In Progress, done→Completed)
+  // so other views that read `status` still make sense.
+  kanban_column: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  priority: {
+    type: DataTypes.STRING, // "High" | "Medium" | "Low"
+    allowNull: true,
+  },
+  assignee_name: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  avatar: {
+    type: DataTypes.STRING, // initials shown on the card
+    allowNull: true,
+  },
+  due_date: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  story_points: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  tags: {
+    type: DataTypes.STRING, // comma-separated tags
+    allowNull: true,
+  },
+  subtasks_completed: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
+  subtasks_total: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
+  comments_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
+  SprintId: {
+    type: DataTypes.INTEGER, // links a card to a Sprint (plain reference, no FK constraint)
+    allowNull: true,
+  },
 });
 
 module.exports = Tasks;

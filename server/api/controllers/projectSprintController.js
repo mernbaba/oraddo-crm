@@ -18,9 +18,8 @@ const createSprint = async (req, res) => {
 
 const getSprints = async (req, res) => {
   try {
-    const page = req.query.page;
-    const limit = req.query.limit;
-    const sprints = await sprintService.getSprints();
+    const { organizationID } = req.query;
+    const sprints = await sprintService.getSprints(organizationID);
     res.status(200).json(sprints);
   } catch (error) {
     res.status(500).json({ error: error.message });

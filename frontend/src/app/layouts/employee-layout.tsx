@@ -22,13 +22,10 @@ import {
   CreditCard, 
   CalendarDays, 
   ListChecks, 
-  Calendar, 
-  Check, 
-  ClipboardList, 
-  Headphones, 
+  Check,
+  Headphones,
   BarChart3, 
-  LogOut, 
-  Briefcase,
+  LogOut,
   DollarSign,
   Video
 } from "lucide-react";
@@ -262,11 +259,13 @@ export default function EmployeeLayout() {
 
             <div className={`overflow-hidden transition-all duration-300 ${hrMenuExpanded ? 'max-h-[1000px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
               <div className="ml-2 space-y-1">
+                {/* Attendance — not needed in the individual employee view
                 <Link to="/employee/hr/attendance" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button variant="ghost" size="sm" className={`w-full justify-start ${isActive("/employee/hr/attendance") ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white' : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#200B43]'}`}>
                     <Calendar className="mr-2 h-4 w-4" /><span className="text-sm">Attendance</span>
                   </Button>
                 </Link>
+                */}
                 <Link to="/employee/hr/performance-metrics" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button variant="ghost" size="sm" className={`w-full justify-start ${isActive("/employee/hr/performance-metrics") ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white' : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#200B43]'}`}>
                     <BarChart3 className="mr-2 h-4 w-4" /><span className="text-sm">My Performance Metrics</span>
@@ -282,16 +281,20 @@ export default function EmployeeLayout() {
                     <LogOut className="mr-2 h-4 w-4" /><span className="text-sm">Resignation Process</span>
                   </Button>
                 </Link>
+                {/* Job Management — HR/recruiter feature, not needed in the individual employee view
                 <Link to="/employee/hr/job-management" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button variant="ghost" size="sm" className={`w-full justify-start ${isActive('/employee/hr/job-management') ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white' : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#200B43]'}`}>
                     <Briefcase className="mr-2 h-4 w-4" /><span className="text-sm">Job Management</span>
                   </Button>
                 </Link>
+                */}
+                {/* Expenses — not needed in the individual employee view
                 <Link to="/employee/hr/expenses" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
                   <Button variant="ghost" size="sm" className={`w-full justify-start ${isActive('/employee/hr/expenses') ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white' : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#200B43]'}`}>
                     <ClipboardList className="mr-2 h-4 w-4" /><span className="text-sm">Expenses</span>
                   </Button>
                 </Link>
+                */}
               </div>
             </div>
           </div>

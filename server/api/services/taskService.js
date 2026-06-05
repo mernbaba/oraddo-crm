@@ -817,9 +817,19 @@ const deleteTask = async (id) => {
 
 const scheduleTasks = async () => {
   // Fetch tasks that need to be scheduled
-  const tasks = await Tasks.findAll({
-    where: { repeat_active: true }
-  });
+  let tasks;
+  try {
+    tasks = await Tasks.findAll({
+      where: { repeat_active: true }
+    });
+  } catch (error) {
+    // On boot the Tasks table may be mid-migration (app.js runs
+    // sync({ alter: true }) which adds newer columns). This module-level
+    // scheduler can fire before that finishes, so skip scheduling rather than
+    // crashing the whole process — it runs normally on the next restart.
+    console.error("scheduleTasks: skipping recurring-task scheduling —", error.message);
+    return;
+  }
 
   console.log(tasks, "Fetched tasks for scheduling");
 
@@ -1010,13 +1020,19 @@ const scheduleTasks = async () => {
 
 // Initialize Scheduler
 const initializeScheduler = async () => {
-  await scheduleTasks();
+  try {
+    await scheduleTasks();
+  } catch (error) {
+    console.error("initializeScheduler error:", error.message);
+  }
 };
 
 // Synchronize database and start scheduler
 sequelize.sync().then(() => {
   console.log("Database connected");
   initializeScheduler(); // Start the scheduler
+}).catch((err) => {
+  console.error("Scheduler bootstrap failed:", err.message);
 });
 
 module.exports = {

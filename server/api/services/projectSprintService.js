@@ -10,15 +10,20 @@ const createSprint = async (data) => {
   }
 };
 
-const getSprints = async () => {
+const getSprints = async (organizationID) => {
   try {
+    // When an organizationID is supplied, scope the sprints to that org.
+    // Without it, behaviour is unchanged (returns every sprint).
+    const where = organizationID ? { organizationID } : {};
     const sprints = await Sprints.findAll({
+      where,
       include: [
         {
           model: Emp_onboarding,
           as: 'SprintsCreation', // Ensure alias matches the association
         }
       ],
+      order: [['createdAt', 'DESC']],
     });
     return sprints;
   } catch (error) {

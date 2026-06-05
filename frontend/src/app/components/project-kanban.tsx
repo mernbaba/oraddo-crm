@@ -1,9 +1,11 @@
-import { LayoutGrid, Plus, User, Calendar, Tag, Sparkles, TrendingUp, Target, Zap, Clock, Users, CheckCircle2, AlertCircle, MoreVertical, Flame, Award, Activity, X, Edit2, Trash2, MessageSquare, ListChecks, ArrowRight } from "lucide-react";
+import { LayoutGrid, Plus, User, Calendar, Tag, Sparkles, TrendingUp, Target, Zap, Clock, Users, CheckCircle2, AlertCircle, MoreVertical, Flame, Award, Activity, X, Edit2, Trash2, MessageSquare, ListChecks, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { taskService } from "../services/taskService";
+import { sprintService } from "../services/sprintService";
 
 interface Task {
   id: number;
@@ -18,10 +20,12 @@ interface Task {
   comments: number;
   columnId: string;
   description?: string;
+  SprintId?: number | null;
 }
 
 interface Sprint {
   id: string;
+  backendId: number | null;
   name: string;
   startDate: string;
   endDate: string;
@@ -35,8 +39,130 @@ interface Sprint {
   status: string;
 }
 
+// ── Mapping helpers between the board's vocabulary and the API ────────────────
+// Board columns drive `kanban_column`; the ENUM `status` is kept loosely in sync
+// so legacy views that read `status` still make sense (no ENUM alteration needed).
+const COLUMN_TO_STATUS: Record<string, string> = {
+  todo: "Pending",
+  inprogress: "In Progress",
+  review: "In Progress",
+  done: "Completed",
+};
+
+const statusToColumn = (status?: string): string => {
+  switch (status) {
+    case "Pending": return "todo";
+    case "In Progress": return "inprogress";
+    case "Completed":
+    case "Achieved": return "done";
+    case "Overdue": return "todo";
+    default: return "todo";
+  }
+};
+
+// Board status <-> Sprint ENUM. The board's real status lives in `kanban_status`;
+// the required ENUM just needs a valid value.
+const KANBAN_TO_SPRINT_STATUS: Record<string, string> = {
+  active: "On Going",
+  planned: "Pending",
+  completed: "Pending",
+};
+
+const sprintStatusToKanban = (status?: string): string => {
+  switch (status) {
+    case "On Going": return "active";
+    case "Next Sprint": return "planned";
+    case "Pending": return "planned";
+    default: return "planned";
+  }
+};
+
+const initials = (name?: string): string => {
+  if (!name) return "UN";
+  return (
+    name.trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "UN"
+  );
+};
+
+const fmtDate = (d?: string | null): string => {
+  if (!d) return "—";
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const mapTask = (t: any): Task => {
+  const name = t.assignee_name || t.taskOfEmploye?.emp_name || "Unassigned";
+  const priority = ["High", "Medium", "Low"].includes(t.priority) ? t.priority : "Medium";
+  return {
+    id: t.id,
+    title: t.task_name ?? "Untitled",
+    description: t.task_description ?? "",
+    priority: priority as Task["priority"],
+    assignee: name,
+    avatar: t.avatar || initials(name),
+    dueDate: t.due_date || t.duration || "—",
+    tags: t.tags ? String(t.tags).split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+    storyPoints: Number(t.story_points ?? t.reward_points ?? 0),
+    subtasks: {
+      completed: Number(t.subtasks_completed ?? 0),
+      total: Number(t.subtasks_total ?? 0),
+    },
+    comments: Number(t.comments_count ?? 0),
+    columnId: t.kanban_column || statusToColumn(t.status),
+    SprintId: t.SprintId ?? null,
+  };
+};
+
+const mapSprint = (s: any): Sprint => {
+  const start = s.duration_from ? new Date(s.duration_from) : null;
+  const end = s.duration_to ? new Date(s.duration_to) : null;
+  const dayMs = 1000 * 60 * 60 * 24;
+  const totalDays =
+    start && end ? Math.max(0, Math.round((end.getTime() - start.getTime()) / dayMs)) : 0;
+  const now = new Date();
+  const daysRemaining = end ? Math.max(0, Math.ceil((end.getTime() - now.getTime()) / dayMs)) : 0;
+  return {
+    id: `sprint-${s.id}`,
+    backendId: s.id,
+    name: s.title || "Untitled Sprint",
+    startDate: fmtDate(s.duration_from),
+    endDate: fmtDate(s.duration_to),
+    daysRemaining,
+    totalDays,
+    progress: 0,
+    velocity: 0,
+    capacity: Number(s.capacity ?? 50),
+    completed: 0,
+    total: 0,
+    status: s.kanban_status || sprintStatusToKanban(s.status),
+  };
+};
+
+const EMPTY_SPRINT: Sprint = {
+  id: "",
+  backendId: null,
+  name: "No Sprint Selected",
+  startDate: "—",
+  endDate: "—",
+  daysRemaining: 0,
+  totalDays: 0,
+  progress: 0,
+  velocity: 0,
+  capacity: 0,
+  completed: 0,
+  total: 0,
+  status: "planned",
+};
+
 export function ProjectKanban() {
-  const [selectedSprint, setSelectedSprint] = useState("sprint-3");
+  const [selectedSprint, setSelectedSprint] = useState("");
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [empId, setEmpId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
   const [showSprintModal, setShowSprintModal] = useState(false);
@@ -45,179 +171,7 @@ export function ProjectKanban() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
  
-  const [sprints, setSprints] = useState<Sprint[]>([
-    {
-      id: "sprint-3",
-      name: "Sprint 3 - Q1 2026",
-      startDate: "Feb 1, 2026",
-      endDate: "Feb 14, 2026",
-      daysRemaining: 12,
-      totalDays: 14,
-      progress: 42,
-      velocity: 38,
-      capacity: 50,
-      completed: 12,
-      total: 28,
-      status: "active"
-    },
-    {
-      id: "sprint-2",
-      name: "Sprint 2 - Q1 2026",
-      startDate: "Jan 15, 2026",
-      endDate: "Jan 31, 2026",
-      daysRemaining: 0,
-      totalDays: 17,
-      progress: 100,
-      velocity: 45,
-      capacity: 45,
-      completed: 45,
-      total: 45,
-      status: "completed"
-    },
-    {
-      id: "sprint-1",
-      name: "Sprint 1 - Q1 2026",
-      startDate: "Jan 1, 2026",
-      endDate: "Jan 14, 2026",
-      daysRemaining: 0,
-      totalDays: 14,
-      progress: 100,
-      velocity: 42,
-      capacity: 45,
-      completed: 42,
-      total: 42,
-      status: "completed"
-    },
-  ]);
- 
-  const [tasks, setTasks] = useState<Task[]>([
-    { 
-      id: 1, 
-      title: "Design new landing page", 
-      priority: "High", 
-      assignee: "Sarah J.", 
-      avatar: "SJ",
-      dueDate: "Feb 15", 
-      tags: ["Design", "UI/UX"],
-      storyPoints: 8,
-      subtasks: { completed: 0, total: 5 },
-      comments: 3,
-      columnId: "todo",
-      description: "Create a modern landing page with hero section and features"
-    },
-    { 
-      id: 2, 
-      title: "API integration", 
-      priority: "Medium", 
-      assignee: "Mike C.", 
-      avatar: "MC",
-      dueDate: "Feb 18", 
-      tags: ["Backend"],
-      storyPoints: 5,
-      subtasks: { completed: 0, total: 3 },
-      comments: 2,
-      columnId: "todo",
-      description: "Integrate third-party payment API"
-    },
-    { 
-      id: 3, 
-      title: "Database optimization", 
-      priority: "Low", 
-      assignee: "David P.", 
-      avatar: "DP",
-      dueDate: "Feb 22", 
-      tags: ["Database"],
-      storyPoints: 3,
-      subtasks: { completed: 0, total: 2 },
-      comments: 1,
-      columnId: "todo",
-      description: "Optimize database queries for better performance"
-    },
-    { 
-      id: 4, 
-      title: "User authentication flow", 
-      priority: "High", 
-      assignee: "John D.", 
-      avatar: "JD",
-      dueDate: "Feb 12", 
-      tags: ["Security", "Frontend"],
-      storyPoints: 13,
-      subtasks: { completed: 3, total: 6 },
-      comments: 8,
-      columnId: "inprogress",
-      description: "Implement secure user login and registration"
-    },
-    { 
-      id: 5, 
-      title: "Payment gateway setup", 
-      priority: "High", 
-      assignee: "Emily R.", 
-      avatar: "ER",
-      dueDate: "Feb 14", 
-      tags: ["Payment"],
-      storyPoints: 8,
-      subtasks: { completed: 2, total: 4 },
-      comments: 5,
-      columnId: "inprogress",
-      description: "Configure Stripe payment gateway"
-    },
-    { 
-      id: 6, 
-      title: "Dashboard analytics", 
-      priority: "Medium", 
-      assignee: "Sarah J.", 
-      avatar: "SJ",
-      dueDate: "Feb 11", 
-      tags: ["Analytics"],
-      storyPoints: 5,
-      subtasks: { completed: 4, total: 4 },
-      comments: 12,
-      columnId: "review",
-      description: "Build analytics dashboard with charts"
-    },
-    { 
-      id: 7, 
-      title: "Email templates", 
-      priority: "Low", 
-      assignee: "Mike C.", 
-      avatar: "MC",
-      dueDate: "Feb 13", 
-      tags: ["Marketing"],
-      storyPoints: 3,
-      subtasks: { completed: 2, total: 2 },
-      comments: 4,
-      columnId: "review",
-      description: "Design responsive email templates"
-    },
-    { 
-      id: 8, 
-      title: "Project setup", 
-      priority: "High", 
-      assignee: "John D.", 
-      avatar: "JD",
-      dueDate: "Feb 05", 
-      tags: ["Setup"],
-      storyPoints: 5,
-      subtasks: { completed: 4, total: 4 },
-      comments: 6,
-      columnId: "done",
-      description: "Initial project configuration and setup"
-    },
-    { 
-      id: 9, 
-      title: "Initial wireframes", 
-      priority: "Medium", 
-      assignee: "Emily R.", 
-      avatar: "ER",
-      dueDate: "Feb 08", 
-      tags: ["Design"],
-      storyPoints: 8,
-      subtasks: { completed: 5, total: 5 },
-      comments: 10,
-      columnId: "done",
-      description: "Create initial wireframes for all pages"
-    },
-  ]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
  
   const [formData, setFormData] = useState({
     title: "",
@@ -239,7 +193,101 @@ export function ProjectKanban() {
     status: "planned" as "active" | "planned" | "completed"
   });
 
-  const currentSprint = sprints.find(s => s.id === selectedSprint) || sprints[0];
+  // ── Load org/employee context from the logged-in session ───────────────────
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      const org = u?.organizationId != null ? Number(u.organizationId) : null;
+      setEmpId(u?.id != null ? Number(u.id) : null);
+      setOrgId(org);
+      if (org == null) {
+        setError("No organization is linked to your account. Please log in again.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Could not read your session. Please log in again.");
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch sprints + tasks once we know the organization.
+  useEffect(() => {
+    if (orgId == null) return;
+    loadData(orgId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  const loadData = async (organizationId: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [sprintRes, taskRes] = await Promise.all([
+        sprintService.getSprints(organizationId),
+        taskService.getTasksByOrg(organizationId),
+      ]);
+      const mappedSprints: Sprint[] = (Array.isArray(sprintRes.data) ? sprintRes.data : []).map(mapSprint);
+      const mappedTasks: Task[] = (Array.isArray(taskRes.data) ? taskRes.data : []).map(mapTask);
+      setSprints(mappedSprints);
+      setAllTasks(mappedTasks);
+      setSelectedSprint((prev) => {
+        if (prev && mappedSprints.some((s) => s.id === prev)) return prev;
+        const active = mappedSprints.find((s) => s.status === "active");
+        return active ? active.id : mappedSprints[0]?.id ?? "";
+      });
+    } catch (e) {
+      console.error("Failed to load kanban board", e);
+      setError("Failed to load the board. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refetchTasks = async () => {
+    if (orgId == null) return;
+    try {
+      const taskRes = await taskService.getTasksByOrg(orgId);
+      setAllTasks((Array.isArray(taskRes.data) ? taskRes.data : []).map(mapTask));
+    } catch (e) {
+      console.error("Failed to refresh tasks", e);
+    }
+  };
+
+  const currentSprint = sprints.find((s) => s.id === selectedSprint) || sprints[0] || EMPTY_SPRINT;
+  const currentSprintBackendId = currentSprint.backendId;
+
+  // Tasks shown on the board: those belonging to the selected sprint, plus any
+  // not yet assigned to a sprint (so legacy/backlog cards stay visible).
+  const tasks =
+    currentSprintBackendId == null
+      ? allTasks
+      : allTasks.filter((t) => t.SprintId == null || t.SprintId === currentSprintBackendId);
+
+  const buildTaskPayload = () => ({
+    task_name: formData.title.trim(),
+    task_description: formData.description || "",
+    duration: formData.dueDate || "N/A", // required by the Tasks model
+    segment: "Kanban", // required by the Tasks model
+    status: COLUMN_TO_STATUS[formData.columnId] || "Pending",
+    kanban_column: formData.columnId,
+    priority: formData.priority,
+    assignee_name: formData.assignee || "Unassigned",
+    avatar: formData.avatar || initials(formData.assignee),
+    due_date: formData.dueDate || "",
+    story_points: Number(formData.storyPoints) || 0,
+    reward_points: Number(formData.storyPoints) || 0,
+    tags: formData.tags || "",
+    subtasks_completed: 0,
+    subtasks_total: 0,
+    comments_count: 0,
+    organizationID: orgId ?? undefined,
+    empOnboardingId: empId ?? null,
+    SprintId: currentSprintBackendId ?? null,
+  });
 
   const columns = [
     { id: "todo", title: "To Do", color: "#937CB4", gradient: "from-[#937CB4]/20 to-[#937CB4]/5" },
@@ -257,66 +305,85 @@ export function ProjectKanban() {
     });
   };
  
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!formData.title.trim()) return;
+    if (orgId == null) {
+      alert("No organization found for your session. Please log in again.");
+      return;
+    }
 
-    const newTask: Task = {
-      id: Date.now(),
-      title: formData.title,
-      description: formData.description,
-      priority: formData.priority,
-      assignee: formData.assignee || "Unassigned",
-      avatar: formData.avatar || "UN",
-      dueDate: formData.dueDate || "TBD",
-      tags: formData.tags ? formData.tags.split(",").map(t => t.trim()) : [],
-      storyPoints: formData.storyPoints,
-      subtasks: { completed: 0, total: 0 },
-      comments: 0,
-      columnId: formData.columnId
-    };
-
-    setTasks([...tasks, newTask]);
-    resetForm();
-    setShowTaskModal(false);
-  };
- 
-  const handleUpdateTask = () => {
-    if (!editingTask || !formData.title.trim()) return;
-
-    setTasks(tasks.map(task => 
-      task.id === editingTask.id 
-        ? {
-            ...task,
-            title: formData.title,
-            description: formData.description,
-            priority: formData.priority,
-            assignee: formData.assignee,
-            avatar: formData.avatar,
-            dueDate: formData.dueDate,
-            tags: formData.tags ? formData.tags.split(",").map(t => t.trim()) : [],
-            storyPoints: formData.storyPoints,
-            columnId: formData.columnId
-          }
-        : task
-    ));
-
-    resetForm();
-    setEditingTask(null);
-    setShowTaskModal(false);
-  };
-
- 
-  const handleDeleteTask = (taskId: number) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      setTasks(tasks.filter(task => task.id !== taskId));
-      setShowTaskDetailModal(false);
+    setSaving(true);
+    try {
+      await taskService.createTask(buildTaskPayload());
+      await refetchTasks();
+      resetForm();
+      setShowTaskModal(false);
+    } catch (e) {
+      console.error("Failed to create task", e);
+      alert("Failed to create task. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
- 
-  const handleMoveTask = (taskId: number, newColumnId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, columnId: newColumnId } : task
-    ));
+
+  const handleUpdateTask = async () => {
+    if (!editingTask || !formData.title.trim()) return;
+
+    setSaving(true);
+    try {
+      await taskService.saveTaskFields(editingTask.id, {
+        task_name: formData.title.trim(),
+        task_description: formData.description || "",
+        priority: formData.priority,
+        assignee_name: formData.assignee,
+        avatar: formData.avatar || initials(formData.assignee),
+        due_date: formData.dueDate,
+        duration: formData.dueDate || "N/A",
+        story_points: Number(formData.storyPoints) || 0,
+        reward_points: Number(formData.storyPoints) || 0,
+        tags: formData.tags || "",
+        kanban_column: formData.columnId,
+        status: COLUMN_TO_STATUS[formData.columnId] || "Pending",
+      });
+      await refetchTasks();
+      resetForm();
+      setEditingTask(null);
+      setShowTaskModal(false);
+    } catch (e) {
+      console.error("Failed to update task", e);
+      alert("Failed to update task. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    try {
+      await taskService.deleteTask(taskId);
+      setShowTaskDetailModal(false);
+      await refetchTasks();
+    } catch (e) {
+      console.error("Failed to delete task", e);
+      alert("Failed to delete task. Please try again.");
+    }
+  };
+
+  const handleMoveTask = async (taskId: number, newColumnId: string) => {
+    // Optimistic update so the board feels instant; revert on failure.
+    setAllTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? { ...task, columnId: newColumnId } : task))
+    );
+    try {
+      await taskService.saveTaskFields(taskId, {
+        kanban_column: newColumnId,
+        status: COLUMN_TO_STATUS[newColumnId] || "Pending",
+      });
+    } catch (e) {
+      console.error("Failed to move task", e);
+      await refetchTasks();
+    }
   };
  
   const handleEditTask = (task: Task) => {
@@ -340,10 +407,20 @@ export function ProjectKanban() {
     setShowTaskDetailModal(true);
   };
  
-  const handleUpdateSubtasks = (taskId: number, completed: number, total: number) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, subtasks: { completed, total } } : task
-    ));
+  const handleUpdateSubtasks = async (taskId: number, completed: number, total: number) => {
+    // Optimistic update; persist in the background.
+    setAllTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? { ...task, subtasks: { completed, total } } : task))
+    );
+    try {
+      await taskService.saveTaskFields(taskId, {
+        subtasks_completed: completed,
+        subtasks_total: total,
+      });
+    } catch (e) {
+      console.error("Failed to update subtasks", e);
+      await refetchTasks();
+    }
   };
  
   const resetForm = () => {
@@ -370,33 +447,38 @@ export function ProjectKanban() {
     });
   };
  
-  const handleAddSprint = () => {
+  const handleAddSprint = async () => {
     if (!sprintFormData.name.trim() || !sprintFormData.startDate || !sprintFormData.endDate) {
       alert("Please fill in all required fields");
       return;
     }
-
-    const newSprint: Sprint = {
-      id: `sprint-${Date.now()}`,
-      name: sprintFormData.name,
-      startDate: sprintFormData.startDate,
-      endDate: sprintFormData.endDate,
-      daysRemaining: sprintFormData.status === "active" ? 14 : 0,
-      totalDays: 14,
-      progress: 0,
-      velocity: 0,
-      capacity: sprintFormData.capacity,
-      completed: 0,
-      total: 0,
-      status: sprintFormData.status
-    };
-
-    setSprints([newSprint, ...sprints]);
-    if (sprintFormData.status === "active") {
-      setSelectedSprint(newSprint.id);
+    if (orgId == null) {
+      alert("No organization found for your session. Please log in again.");
+      return;
     }
-    resetSprintForm();
-    setShowSprintModal(false);
+
+    setSaving(true);
+    try {
+      const res = await sprintService.createSprint({
+        title: sprintFormData.name.trim(),
+        duration_from: sprintFormData.startDate,
+        duration_to: sprintFormData.endDate,
+        status: KANBAN_TO_SPRINT_STATUS[sprintFormData.status] || "Pending",
+        kanban_status: sprintFormData.status,
+        capacity: Number(sprintFormData.capacity) || 0,
+        organizationID: orgId,
+      });
+      const newId = res?.data?.id;
+      await loadData(orgId);
+      if (newId != null) setSelectedSprint(`sprint-${newId}`);
+      resetSprintForm();
+      setShowSprintModal(false);
+    } catch (e) {
+      console.error("Failed to create sprint", e);
+      alert("Failed to create sprint. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getPriorityConfig = (priority: string) => {
@@ -434,7 +516,33 @@ export function ProjectKanban() {
 
   return (
     <div className="space-y-6">
- 
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+          {orgId != null && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              onClick={() => loadData(orgId)}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-[#937CB4]/30 bg-white/80 px-4 py-3 text-sm text-[#5A4079]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading board…</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -944,10 +1052,12 @@ export function ProjectKanban() {
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   className="bg-gradient-to-r from-[#200B43] to-[#422462] text-white hover:from-[#1A0936] hover:to-[#200B43]"
                   onClick={editingTask ? handleUpdateTask : handleAddTask}
+                  disabled={saving}
                 >
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {editingTask ? "Update Task" : "Create Task"}
                 </Button>
               </div>
@@ -1206,7 +1316,7 @@ export function ProjectKanban() {
  
               <div>
                 <label className="block text-sm font-medium text-[#422462] mb-2">Status</label>
-                <Select value={sprintFormData.status} onValueChange={(value) => setSprintFormData({...sprintFormData, status: value})}>
+                <Select value={sprintFormData.status} onValueChange={(value) => setSprintFormData({...sprintFormData, status: value as "active" | "planned" | "completed"})}>
                   <SelectTrigger className="border-[#937CB4]/30">
                     <SelectValue />
                   </SelectTrigger>
@@ -1229,10 +1339,12 @@ export function ProjectKanban() {
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   className="bg-gradient-to-r from-[#200B43] to-[#422462] text-white hover:from-[#1A0936] hover:to-[#200B43]"
                   onClick={handleAddSprint}
+                  disabled={saving}
                 >
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Create Sprint
                 </Button>
               </div>

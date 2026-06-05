@@ -169,6 +169,23 @@ const Resignation_Process = sequelize.define("Emp_Resignation_Process", {
   organizationID:{
     type:DataTypes.INTEGER,
     allowNull:true
+  },
+  // ── Fields captured by the employee resignation form (additive / nullable) ──
+  resignation_type:{
+    type: DataTypes.STRING, // "Voluntary" | "Retirement" | "Relocation" | ...
+    allowNull: true
+  },
+  notice_period:{
+    type: DataTypes.STRING, // notice period in days
+    allowNull: true
+  },
+  employee_comments:{
+    type: DataTypes.TEXT, // the employee's own additional comments
+    allowNull: true
+  },
+  exit_interview_preference:{
+    type: DataTypes.STRING, // "yes" | "no"
+    allowNull: true
   }
   // emp_onboarding_id:{
   //   type:DataTypes.STRING,
