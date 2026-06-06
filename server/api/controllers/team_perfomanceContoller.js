@@ -51,6 +51,17 @@ const getTeamPerformancesByOrganizationId = async (req, res) => {
   }
 };
 
+const getPerformancesByEmployee = async (req, res) => {
+  try {
+    const performances = await teamPerformanceService.getPerformancesByEmployee(
+      req.params.empId
+    );
+    res.status(200).json(performances);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getTeamPerformanceById = async (req, res) => {
   try {
     const performance = await teamPerformanceService.getTeamPerformanceById(
@@ -133,6 +144,7 @@ console.log(month, "month");
 module.exports = {
   createTeamPerformance,
   getTeamPerformances,
+  getPerformancesByEmployee,
   getTeamPerformanceById,
   updateTeamPerformance,
   deleteTeamPerformance,

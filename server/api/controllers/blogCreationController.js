@@ -3,22 +3,30 @@ const blogServices = require("../services/bolgCreationService");
 const cookieParser = require("cookie-parser");
 
 const createBlog = async (req, res) => {
-  const payload = await parseRequestFiles(req);
-  console.log(payload, "blogPaload");
-
-  req.body = {};
-  for (const [key, value] of Object.entries(payload.fields)) {
-    req.body[key] = value[0];
-  }
-  req.files = payload.files;
-  const { body, files } = req;
-  const data = req.body;
-  console.log(data, "controllData");
   try {
+    let data;
+    let files = {};
+
+    // For multipart/form-data (file upload) requests, parse with formidable.
+    // For JSON/urlencoded requests the body is already parsed by body-parser,
+    // so reading req directly avoids the drained-stream conflict.
+    if (req.is("multipart/form-data")) {
+      const payload = await parseRequestFiles(req);
+      data = {};
+      for (const [key, value] of Object.entries(payload.fields)) {
+        data[key] = Array.isArray(value) ? value[0] : value;
+      }
+      files = payload.files;
+    } else {
+      data = req.body;
+    }
+
+    console.log(data, "controllData");
     const blogResponse = await blogServices.blogCreation(data, files);
     res.status(201).json(blogResponse);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Failed to create blog" });
   }
 };
 
@@ -92,24 +100,27 @@ const blogsIdData = async (req, res) => {
 
 const blogUpdate = async (req, res) => {
   const { id } = req.params;
-  // const data = req.body;
-  const payload = await parseRequestFiles(req);
-  console.log(payload, "blogPaload");
-
-  req.body = {};
-  for (const [key, value] of Object.entries(payload.fields)) {
-    req.body[key] = value[0];
-  }
-  req.files = payload.files;
-  const { body, files } = req;
-  const data = req.body;
-  console.log(data, "controllData");
-
   try {
+    let data;
+    let files = {};
+
+    if (req.is("multipart/form-data")) {
+      const payload = await parseRequestFiles(req);
+      data = {};
+      for (const [key, value] of Object.entries(payload.fields)) {
+        data[key] = Array.isArray(value) ? value[0] : value;
+      }
+      files = payload.files;
+    } else {
+      data = req.body;
+    }
+
+    console.log(data, "controllData");
     const updateRes = await blogServices.updateBlog(id, data, files);
     res.status(200).json(updateRes);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Failed to update blog" });
   }
 };
 

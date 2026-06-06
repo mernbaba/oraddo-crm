@@ -12,6 +12,8 @@ router.get("/team-performances", teamPerformanceController.getTeamPerformances);
 
 router.get("/team-performancesbyorganization/:id", teamPerformanceController.getTeamPerformancesByOrganizationId);
 
+router.get("/performancesByEmployee/:empId", teamPerformanceController.getPerformancesByEmployee);
+
 router.get(
   "/team-performances/:id",
   teamPerformanceController.getTeamPerformanceById

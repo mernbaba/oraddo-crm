@@ -9,6 +9,7 @@ router.get("/salaries", salaryManagementController.getSalaries);
 router.get("/salariesbyorganization/:id", salaryManagementController.getSalariesByOrganization);
 router.get("/salariesyearsbyorganization/:id", salaryManagementController.getSalariesYearsByOrganization);
 router.get("/salariesForPreviousMonth/:id", salaryManagementController.salariesForPreviousMonth);
+router.get("/salariesByEmployee/:empId", salaryManagementController.getSalariesByEmployee);
 router.get("/salaries/:id", salaryManagementController.getSalaryById);
 router.get("/getEmployeesWithoutSalaries/:id/:date", salaryManagementController.getEmployeesWithoutSalaries);
 router.put("/salaries/:id", salaryManagementController.updateSalary);

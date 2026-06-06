@@ -424,6 +424,24 @@ const getSalaryById = async (id) => {
   }
 };
 
+const getSalariesByEmployee = async (empId) => {
+  try {
+    const salaries = await Salary_Management.findAll({
+      where: { empOnboardingId: empId },
+      order: [["salary_date", "ASC"]],
+      include: [
+        {
+          model: Emp_Details,
+          as: "salary_management",
+        },
+      ],
+    });
+    return salaries;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getEmployeesWithoutSalaries = async (id, date) => {
   // Extract year and month from the date
   if (!date || !/^\d{4}-\d{2}$/.test(date)) {
@@ -1063,6 +1081,7 @@ module.exports = {
   getSalaries,
   getSalaryByOrgId,
   getSalaryById,
+  getSalariesByEmployee,
   updateSalary,
   deleteSalary,
   getSalariesByOrganization,

@@ -208,6 +208,24 @@ const getTeamPerformancesByOrganizationId = async (id, page, pageSize, year, mon
   }
 };
 
+const getPerformancesByEmployee = async (empId) => {
+  try {
+    const performances = await team_perfomance.findAll({
+      where: { empOnboardingId: empId },
+      order: [["date", "DESC"]],
+      include: [
+        {
+          model: Emp_onboarding,
+          as: "teamPerformance",
+        },
+      ],
+    });
+    return performances;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getTeamPerformanceById = async (id) => {
   try {
     const teamLead = await Emp_onboarding.findOne(
@@ -348,6 +366,7 @@ const getEmployeesWithoutPerformance = async (id, selectedYear, selectedMonth) =
 module.exports = {
   createTeamPerformance,
   getTeamPerformances,
+  getPerformancesByEmployee,
   getTeamPerformanceById,
   updateTeamPerformance,
   deleteTeamPerformance,

@@ -1,7 +1,9 @@
  
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Clock, Sparkles, Plus, Users, TrendingUp, DollarSign, Award, Target, Download, CreditCard, Wallet, Receipt, LogOut, X, Send, Upload, Check, AlertCircle, ClipboardList, Info, MessageSquare, Code2, Copy, Loader2 } from "lucide-react";
+import { FileText, Calendar, Clock, Sparkles, Plus, Users, TrendingUp, TrendingDown, DollarSign, Award, Target, Download, CreditCard, Wallet, Receipt, LogOut, X, Send, Upload, Check, AlertCircle, ClipboardList, Info, MessageSquare, Code2, Copy, Loader2 } from "lucide-react";
 import { resignationService } from "../services/resignationService";
+import { salaryService, SalaryRecord } from "../services/salaryService";
+import { performanceService, PerformanceRecord } from "../services/performanceService";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Input } from "./ui/input";
@@ -795,87 +797,101 @@ export function HRHolidayList() {
 }
   
 export function HRPerformanceMetrics() {
-  const [selectedMonth, setSelectedMonth] = useState("February 2026");
-  
-  const months = [
-    "February 2026", "January 2026", "December 2025", "November 2025", 
-    "October 2025", "September 2025"
-  ];
- 
-  const performanceMetrics = [
-    {
-      category: "Attendance & Punctuality",
-      score: 92,
-      target: 95,
-      color: "from-[#422462] to-[#5A4079]",
-      icon: Clock,
-      details: [
-        { label: "Present Days", value: "20/22" },
-        { label: "Late Arrivals", value: "2" },
-        { label: "Early Departures", value: "0" },
-      ]
-    },
-    {
-      category: "Work Quality",
-      score: 88,
-      target: 85,
-      color: "from-[#5A4079] to-[#937CB4]",
-      icon: Target,
-      details: [
-        { label: "Tasks Completed", value: "45/48" },
-        { label: "Error Rate", value: "2%" },
-        { label: "Client Satisfaction", value: "4.5/5" },
-      ]
-    },
-    {
-      category: "Productivity",
-      score: 95,
-      target: 90,
-      color: "from-[#937CB4] to-[#422462]",
-      icon: TrendingUp,
-      details: [
-        { label: "Tasks on Time", value: "42/45" },
-        { label: "Efficiency Rate", value: "95%" },
-        { label: "Output vs Target", value: "110%" },
-      ]
-    },
-    {
-      category: "Collaboration & Team Work",
-      score: 90,
-      target: 85,
-      color: "from-[#422462] to-[#937CB4]",
-      icon: Users,
-      details: [
-        { label: "Team Meetings", value: "12/12" },
-        { label: "Peer Feedback", value: "4.6/5" },
-        { label: "Knowledge Sharing", value: "8 sessions" },
-      ]
-    },
-    {
-      category: "Professional Development",
-      score: 85,
-      target: 80,
-      color: "from-[#5A4079] to-[#422462]",
-      icon: Award,
-      details: [
-        { label: "Training Completed", value: "3/4" },
-        { label: "Skills Enhanced", value: "5" },
-        { label: "Certifications", value: "1" },
-      ]
-    },
-  ];
- 
-  const monthlyHistory = {
-    "February 2026": { overall: 90, trend: "up" },
-    "January 2026": { overall: 88, trend: "up" },
-    "December 2025": { overall: 85, trend: "up" },
-    "November 2025": { overall: 82, trend: "down" },
-    "October 2025": { overall: 87, trend: "up" },
-    "September 2025": { overall: 84, trend: "up" },
+  const [loading, setLoading] = useState(false);
+  const [empId, setEmpId] = useState<number | null>(null);
+  const [records, setRecords] = useState<PerformanceRecord[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (raw) {
+      try {
+        const u = JSON.parse(raw);
+        if (u?.id != null) setEmpId(Number(u.id));
+      } catch {
+        // ignore malformed session
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (empId == null) return;
+    fetchPerformance(empId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empId]);
+
+  const fetchPerformance = async (id: number) => {
+    setLoading(true);
+    try {
+      const res = await performanceService.getByEmployee(id);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setRecords(list);
+      setSelectedId(list.length ? list[0].id : null);
+    } catch (error) {
+      console.error("Error fetching performance records:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentMonthData = monthlyHistory[selectedMonth as keyof typeof monthlyHistory];
-  const overallScore = currentMonthData?.overall || 90;
+  const formatPeriod = (date?: string) => {
+    if (!date) return "—";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    return d.toLocaleString("default", { month: "long", year: "numeric" });
+  };
+
+  // Rating fields may hold a numeric score ("85") or a text label; parse defensively.
+  const parseScore = (v?: string): number | null => {
+    if (v == null || v === "") return null;
+    const n = parseFloat(String(v));
+    return isNaN(n) ? null : Math.max(0, Math.min(100, n));
+  };
+
+  const selectedRecord = records.find((r) => r.id === selectedId) || null;
+
+  const METRIC_DEFS: { key: keyof PerformanceRecord; category: string; color: string; icon: any }[] = [
+    { key: "work_perfomance", category: "Work Performance", color: "from-[#422462] to-[#5A4079]", icon: Target },
+    { key: "availability", category: "Availability", color: "from-[#5A4079] to-[#937CB4]", icon: Clock },
+    { key: "behaviour", category: "Behaviour", color: "from-[#937CB4] to-[#422462]", icon: Users },
+    { key: "team_performance1", category: "Team Performance I", color: "from-[#422462] to-[#937CB4]", icon: TrendingUp },
+    { key: "team_performance2", category: "Team Performance II", color: "from-[#5A4079] to-[#422462]", icon: Award },
+  ];
+
+  const performanceMetrics = selectedRecord
+    ? METRIC_DEFS.map((def) => ({
+        category: def.category,
+        color: def.color,
+        icon: def.icon,
+        rawValue: (selectedRecord[def.key] as string) || "",
+        score: parseScore(selectedRecord[def.key] as string),
+        target: 80,
+      })).filter((m) => m.rawValue !== "")
+    : [];
+
+  const numericScores = performanceMetrics
+    .map((m) => m.score)
+    .filter((s): s is number => s != null);
+  const overallScore = numericScores.length
+    ? Math.round(numericScores.reduce((a, b) => a + b, 0) / numericScores.length)
+    : 0;
+
+  // Trend = this record's overall vs the next (older) record in the list.
+  const selectedIndex = records.findIndex((r) => r.id === selectedId);
+  const prevRecord =
+    selectedIndex >= 0 && selectedIndex < records.length - 1
+      ? records[selectedIndex + 1]
+      : null;
+  const prevScores = prevRecord
+    ? METRIC_DEFS.map((d) => parseScore(prevRecord[d.key] as string)).filter(
+        (s): s is number => s != null
+      )
+    : [];
+  const prevOverall = prevScores.length
+    ? Math.round(prevScores.reduce((a, b) => a + b, 0) / prevScores.length)
+    : null;
+  const trend: "up" | "down" =
+    prevOverall == null || overallScore >= prevOverall ? "up" : "down";
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600";
@@ -884,16 +900,9 @@ export function HRPerformanceMetrics() {
     return "text-red-600";
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 90) return "from-green-500 to-emerald-600";
-    if (score >= 75) return "from-blue-500 to-cyan-600";
-    if (score >= 60) return "from-yellow-500 to-orange-600";
-    return "from-red-500 to-pink-600";
-  };
-
   return (
     <div className="space-y-6">
- 
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -906,203 +915,183 @@ export function HRPerformanceMetrics() {
           </div>
         </div>
 
- 
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-[#422462]">Period:</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-[#937CB4]/30 bg-white/90 text-[#422462] font-medium focus:outline-none focus:ring-2 focus:ring-[#937CB4]/50"
-          >
-            {months.map((month) => (
-              <option key={month} value={month}>{month}</option>
-            ))}
-          </select>
-        </div>
+        {records.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-[#422462]">Period:</label>
+            <select
+              value={selectedId ?? ""}
+              onChange={(e) => setSelectedId(Number(e.target.value))}
+              className="px-4 py-2 rounded-lg border border-[#937CB4]/30 bg-white/90 text-[#422462] font-medium focus:outline-none focus:ring-2 focus:ring-[#937CB4]/50"
+            >
+              {records.map((r) => (
+                <option key={r.id} value={r.id}>{formatPeriod(r.date)}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
- 
-      <div className="relative overflow-hidden rounded-2xl border border-[#937CB4]/30 bg-gradient-to-br from-white via-[#F0E9FF]/20 to-white backdrop-blur-xl shadow-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5"></div>
-        <div className="relative p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-[#200B43] mb-2">Overall Performance Score</h3>
-              <p className="text-2xl font-bold text-[#200B43]">{selectedMonth}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className={`text-5xl font-bold ${getScoreColor(overallScore)}`}>
-                  {overallScore}
-                  <span className="text-2xl">/100</span>
-                </div>
-                <div className="flex items-center gap-1 mt-2 justify-center">
-                  {currentMonthData?.trend === "up" ? (
-                    <>
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-600 font-medium">Improving</span>
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
-                      <span className="text-xs text-red-600 font-medium">Declining</span>
-                    </>
+
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-10 w-10 text-[#422462] animate-spin" />
+        </div>
+      )}
+
+      {!loading && records.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-dashed border-[#937CB4]/20">
+          <div className="bg-[#F0E9FF] p-4 rounded-full mb-4">
+            <TrendingUp className="h-12 w-12 text-[#5A4079] opacity-50" />
+          </div>
+          <h3 className="text-xl font-bold text-[#200B43] mb-2">No performance records yet</h3>
+          <p className="text-[#5A4079] max-w-sm">
+            Your performance reviews will appear here once your manager publishes them.
+          </p>
+        </div>
+      )}
+
+      {!loading && selectedRecord && (
+        <>
+          <div className="relative overflow-hidden rounded-2xl border border-[#937CB4]/30 bg-gradient-to-br from-white via-[#F0E9FF]/20 to-white backdrop-blur-xl shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4]/5 via-transparent to-[#422462]/5"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#200B43] mb-2">Overall Performance Score</h3>
+                  <p className="text-2xl font-bold text-[#200B43]">{formatPeriod(selectedRecord.date)}</p>
+                  {(selectedRecord.position || selectedRecord.department) && (
+                    <p className="text-sm text-[#5A4079] mt-1">
+                      {[selectedRecord.position, selectedRecord.department].filter(Boolean).join(" • ")}
+                    </p>
                   )}
                 </div>
-              </div>
-              <div className="relative h-32 w-32">
-                <svg className="transform -rotate-90" width="128" height="128">
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
-                    stroke="#F0E9FF"
-                    strokeWidth="12"
-                    fill="none"
-                  />
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
-                    stroke="url(#gradient)"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeDasharray={`${(overallScore / 100) * 351.68} 351.68`}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000"
-                  />
-                  <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#422462" />
-                      <stop offset="100%" stopColor="#937CB4" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-[#422462] animate-pulse-glow" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
- 
-      <div className="grid grid-cols-3 gap-6">
-        {performanceMetrics.map((metric, index) => {
-          const Icon = metric.icon;
-          const percentage = (metric.score / 100) * 100;
-          const isAboveTarget = metric.score >= metric.target;
-          const monthlyChange = metric.score >= 75 ? `+${Math.floor(Math.random() * 8 + 2)}` : `-${Math.floor(Math.random() * 5 + 1)}`;
-          const isPositiveTrend = monthlyChange.startsWith('+');
-          
-          return (
-            <div
-              key={index}
-              className="relative overflow-hidden rounded-2xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#F0E9FF]/30 via-transparent to-[#F0E9FF]/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              
-              <div className="relative p-8">
- 
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${metric.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="h-8 w-8 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className={`text-5xl font-bold ${getScoreColor(overallScore)}`}>
+                      {overallScore}
+                      <span className="text-2xl">/100</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-[#200B43] text-xl mb-1">{metric.category}</h3>
-                      <p className="text-sm text-[#5A4079]">Target: {metric.target}%</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-4xl font-bold ${getScoreColor(metric.score)}`}>
-                      {metric.score}
-                    </div>
-                    <div className="text-sm text-[#5A4079]">/ 100</div>
-                  </div>
-                </div>
- 
-                <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-[#F0E9FF]/50 to-transparent border border-[#937CB4]/10">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#5A4079]">Monthly Trend</span>
-                    <div className="flex items-center gap-2">
-                      {isPositiveTrend ? (
+                    <div className="flex items-center gap-1 mt-2 justify-center">
+                      {trend === "up" ? (
                         <>
-                          <TrendingUp className="h-5 w-5 text-green-600" />
-                          <span className="text-base font-bold text-green-600">{monthlyChange}%</span>
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                          <span className="text-xs text-green-600 font-medium">Improving</span>
                         </>
                       ) : (
                         <>
-                          <TrendingDown className="h-5 w-5 text-orange-600" />
-                          <span className="text-base font-bold text-orange-600">{monthlyChange}%</span>
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                          <span className="text-xs text-red-600 font-medium">Declining</span>
                         </>
                       )}
                     </div>
                   </div>
-                </div>
- 
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-[#5A4079]">Performance</span>
-                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${isAboveTarget ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
-                      {isAboveTarget ? '✓ Above Target' : '⚠ Below Target'}
-                    </span>
-                  </div>
-                  <div className="h-4 bg-[#F0E9FF]/50 rounded-full overflow-hidden shadow-inner">
-                    <div
-                      className={`h-full bg-gradient-to-r ${metric.color} transition-all duration-1000 rounded-full relative`}
-                      style={{ width: `${percentage}%` }}
-                    >
-                      <div className="absolute inset-0 bg-white/20 animate-shimmer"></div>
+                  <div className="relative h-32 w-32">
+                    <svg className="transform -rotate-90" width="128" height="128">
+                      <circle cx="64" cy="64" r="56" stroke="#F0E9FF" strokeWidth="12" fill="none" />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="url(#gradient)"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${(overallScore / 100) * 351.68} 351.68`}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000"
+                      />
+                      <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#422462" />
+                          <stop offset="100%" stopColor="#937CB4" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles className="h-8 w-8 text-[#422462] animate-pulse-glow" />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
- 
-      <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-white to-[#F0E9FF]/30 backdrop-blur-xl p-6 shadow-lg">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#937CB4]/10 rounded-full blur-3xl"></div>
-        <div className="relative">
-          <h3 className="text-xl font-bold text-[#200B43] mb-4">Performance Insights</h3>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
-              <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-white text-xs font-bold">✓</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-green-800">Strong Performance Areas</p>
-                <p className="text-xs text-green-700 mt-1">
-                  Excellent productivity and work quality. Keep up the great work on meeting deadlines and maintaining high standards.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-white text-xs font-bold">i</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-blue-800">Areas for Improvement</p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Focus on punctuality to reach the 95% target. Consider adjusting your morning routine to ensure timely arrivals.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
-              <div className="h-6 w-6 rounded-full bg-[#422462] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Target className="h-3 w-3 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#422462]">Next Month Goals</p>
-                <p className="text-xs text-[#5A4079] mt-1">
-                  Complete the remaining training module, maintain 95%+ attendance, and continue exceeding productivity targets.
-                </p>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {performanceMetrics.map((metric, index) => {
+              const Icon = metric.icon;
+              const hasScore = metric.score != null;
+              const isAboveTarget = hasScore && (metric.score as number) >= metric.target;
+              return (
+                <div
+                  key={index}
+                  className="relative overflow-hidden rounded-2xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-300 group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#F0E9FF]/30 via-transparent to-[#F0E9FF]/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative p-8">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${metric.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                          <Icon className="h-8 w-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-[#200B43] text-xl mb-1">{metric.category}</h3>
+                          {hasScore && <p className="text-sm text-[#5A4079]">Target: {metric.target}%</p>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {hasScore ? (
+                          <>
+                            <div className={`text-4xl font-bold ${getScoreColor(metric.score as number)}`}>
+                              {metric.score}
+                            </div>
+                            <div className="text-sm text-[#5A4079]">/ 100</div>
+                          </>
+                        ) : (
+                          <div className="px-3 py-1 rounded-full text-sm font-medium bg-[#F0E9FF] text-[#422462] border border-[#937CB4]/30">
+                            {metric.rawValue}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {hasScore && (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-[#5A4079]">Performance</span>
+                          <span className={`text-sm font-bold px-3 py-1 rounded-full ${isAboveTarget ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                            {isAboveTarget ? '✓ Above Target' : '⚠ Below Target'}
+                          </span>
+                        </div>
+                        <div className="h-4 bg-[#F0E9FF]/50 rounded-full overflow-hidden shadow-inner">
+                          <div
+                            className={`h-full bg-gradient-to-r ${metric.color} transition-all duration-1000 rounded-full relative`}
+                            style={{ width: `${metric.score}%` }}
+                          >
+                            <div className="absolute inset-0 bg-white/20 animate-shimmer"></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {selectedRecord.comments && (
+            <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-gradient-to-br from-white to-[#F0E9FF]/30 backdrop-blur-xl p-6 shadow-lg">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#937CB4]/10 rounded-full blur-3xl"></div>
+              <div className="relative">
+                <h3 className="text-xl font-bold text-[#200B43] mb-4">Reviewer Comments</h3>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                  <div className="h-6 w-6 rounded-full bg-[#422462] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MessageSquare className="h-3 w-3 text-white" />
+                  </div>
+                  <p className="text-sm text-[#5A4079]">{selectedRecord.comments}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -1167,39 +1156,106 @@ export function HRSalaryAdvance() {
 
 export function HRSalaryStructure() {
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [empId, setEmpId] = useState<number | null>(null);
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
   const [advanceFormData, setAdvanceFormData] = useState({
     amount: '',
     reason: '',
     repaymentMonths: '3',
     urgency: 'normal'
   });
- 
-  const salaryData = [
-    { month: 'Jan', salary: 75000, netPay: 68500, deductions: 6500 },
-    { month: 'Feb', salary: 75000, netPay: 68500, deductions: 6500 },
-    { month: 'Mar', salary: 75000, netPay: 68500, deductions: 6500 },
-    { month: 'Apr', salary: 78000, netPay: 71200, deductions: 6800 },
-    { month: 'May', salary: 78000, netPay: 71200, deductions: 6800 },
-    { month: 'Jun', salary: 78000, netPay: 71200, deductions: 6800 },
-    { month: 'Jul', salary: 78000, netPay: 71200, deductions: 6800 },
-    { month: 'Aug', salary: 80000, netPay: 73000, deductions: 7000 },
-    { month: 'Sep', salary: 80000, netPay: 73000, deductions: 7000 },
-    { month: 'Oct', salary: 80000, netPay: 73000, deductions: 7000 },
-    { month: 'Nov', salary: 80000, netPay: 73000, deductions: 7000 },
-    { month: 'Dec', salary: 80000, netPay: 73000, deductions: 7000 }
-  ];
 
-  const handleAdvanceSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (raw) {
+      try {
+        const u = JSON.parse(raw);
+        if (u?.id != null) setEmpId(Number(u.id));
+        if (u?.organizationId != null) setOrgId(Number(u.organizationId));
+      } catch {
+        // ignore malformed session
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (empId == null) return;
+    fetchSalaries(empId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empId]);
+
+  const fetchSalaries = async (id: number) => {
+    setLoading(true);
+    try {
+      const res = await salaryService.getByEmployee(id);
+      setSalaries(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error("Error fetching salaries:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const num = (v: any) => {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const salaryData = salaries.map((s) => {
+    const d = s.salary_date ? new Date(s.salary_date) : null;
+    const label = d && !isNaN(d.getTime())
+      ? `${MONTHS_SHORT[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`
+      : "—";
+    const gross = num(s.gross_pay) || num(s.basic);
+    const net = num(s.net_pay);
+    const deductions = num(s.gross_deduction) || Math.max(0, gross - net);
+    return { month: label, salary: gross, netPay: net, deductions, record: s };
+  });
+
+  const totalEarnings = salaryData.reduce((sum, i) => sum + i.salary, 0);
+  const totalNetPay = salaryData.reduce((sum, i) => sum + i.netPay, 0);
+  const totalDeductions = salaryData.reduce((sum, i) => sum + i.deductions, 0);
+
+  const latestNet = salaryData.length ? salaryData[salaryData.length - 1].netPay : 0;
+  const maxAdvance = Math.round(latestNet * 0.5);
+
+  const lastDate = salaries.length ? salaries[salaries.length - 1].salary_date : null;
+  const currentYear = lastDate && !isNaN(new Date(lastDate).getTime())
+    ? new Date(lastDate).getFullYear()
+    : new Date().getFullYear();
+
+  const handleAdvanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Salary Advance Request:', advanceFormData);
-    setShowAdvanceModal(false);
-    setAdvanceFormData({
-      amount: '',
-      reason: '',
-      repaymentMonths: '3',
-      urgency: 'normal'
-    });
+    if (!advanceFormData.amount || !advanceFormData.reason) {
+      alert("Please enter an amount and a reason.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await salaryService.createAdvance({
+        amount_request: parseFloat(advanceFormData.amount),
+        reason: advanceFormData.reason,
+        request_type: "Salary Advance",
+        status: "Pending",
+        date_of_request: new Date().toISOString(),
+        comments: `Repayment: ${advanceFormData.repaymentMonths} month(s); Urgency: ${advanceFormData.urgency}`,
+        empOnboardingId: empId ?? undefined,
+        organizationId: orgId ?? undefined,
+      });
+      alert("Salary advance request submitted! 💸");
+      setShowAdvanceModal(false);
+      setAdvanceFormData({ amount: '', reason: '', repaymentMonths: '3', urgency: 'normal' });
+    } catch (error) {
+      console.error("Error submitting advance request:", error);
+      alert("Failed to submit salary advance request.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleAdvanceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -1207,18 +1263,37 @@ export function HRSalaryStructure() {
     setAdvanceFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const downloadPayslip = (month: string) => {
-    console.log(`Downloading payslip for ${month}`);
- 
+  const downloadPayslip = (item: { month: string; salary: number; netPay: number; deductions: number; record: SalaryRecord }) => {
+    const r = item.record;
+    const rows: [string, string | number][] = [
+      ["Period", item.month],
+      ["Basic", num(r.basic)],
+      ["Gross Pay", item.salary],
+      ["HRA", num(r.HRA_allowances || r.house_rent_allowance)],
+      ["Travel Allowance", num(r.travel_allowances)],
+      ["Medical Allowance", num(r.medical_allowances)],
+      ["Special Allowance", num(r.special_allowance)],
+      ["Professional Tax", num(r.profetional_tax)],
+      ["PF (Employee)", num(r.pf_emp_contribution)],
+      ["Gross Deductions", item.deductions],
+      ["Net Pay", item.netPay],
+      ["Amount in Words", r.amount_in_words || ""],
+      ["Working Days", r.working_days || ""],
+      ["Status", r.isApproved ? "Approved" : "Pending"],
+    ];
+    const csv = "Payslip - " + item.month + "\n" + rows.map(([k, v]) => `"${k}","${v}"`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payslip-${item.month.replace(/\s+/g, "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
- 
-  const totalEarnings = salaryData.reduce((sum, item) => sum + item.salary, 0);
-  const totalNetPay = salaryData.reduce((sum, item) => sum + item.netPay, 0);
-  const totalDeductions = salaryData.reduce((sum, item) => sum + item.deductions, 0);
 
   return (
     <div className="space-y-6">
- 
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <DollarSign className="h-8 w-8 text-[#422462] animate-pulse-glow" />
@@ -1235,96 +1310,110 @@ export function HRSalaryStructure() {
           Salary Advance
         </Button>
       </div>
- 
-      <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-[#200B43] mb-2">Monthly Salary Overview - 2026</h3>
-          <p className="text-sm text-[#5A4079]">Click on any bar to view and download that month's payslip</p>
-        </div>
 
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={salaryData}>
-              <defs>
-                <linearGradient id="salaryColorGross" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#422462" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#5A4079" stopOpacity={0.8} />
-                </linearGradient>
-                <linearGradient id="salaryColorNet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#937CB4" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#5A4079" stopOpacity={0.6} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
-              <XAxis 
-                dataKey="month" 
-                stroke="#5A4079"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="#5A4079"
-                style={{ fontSize: '12px' }}
-                tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(240, 233, 255, 0.95)', 
-                  border: '1px solid #937CB4',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                }}
-                formatter={(value: number) => [`₹${value.toLocaleString()}`, '']}
-              />
-              <Bar 
-                dataKey="salary" 
-                name="Gross Salary"
-                fill="url(#salaryColorGross)" 
-                radius={[8, 8, 0, 0]}
-              />
-              <Bar 
-                dataKey="netPay" 
-                name="Net Salary"
-                fill="url(#salaryColorNet)" 
-                radius={[8, 8, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
- 
-        <div className="mt-2 flex justify-between items-center" style={{ paddingLeft: '48px', paddingRight: '48px' }}>
-          {salaryData.map((monthData, index) => (
-            <button
-              key={index}
-              onClick={() => downloadPayslip(monthData.month)}
-              className="group flex items-center justify-center p-2 rounded-lg hover:bg-gradient-to-br hover:from-[#F0E9FF] hover:to-white transition-all duration-300 hover:shadow-lg"
-              title={`Download ${monthData.month} payslip`}
-            >
-              <FileText className="h-5 w-5 text-[#422462] group-hover:text-[#5A4079] transition-colors" />
-            </button>
+      {!loading && salaries.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: "Total Gross (YTD)", value: totalEarnings, gradient: "from-[#422462] to-[#5A4079]" },
+            { label: "Total Net Pay (YTD)", value: totalNetPay, gradient: "from-[#5A4079] to-[#937CB4]" },
+            { label: "Total Deductions (YTD)", value: totalDeductions, gradient: "from-[#937CB4] to-[#5A4079]" },
+          ].map((c, i) => (
+            <div key={i} className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
+              <div className={`absolute inset-0 bg-gradient-to-br ${c.gradient} opacity-5`}></div>
+              <p className="text-sm text-[#5A4079] mb-1 relative z-10">{c.label}</p>
+              <h3 className="text-2xl font-bold text-[#200B43] relative z-10">₹{c.value.toLocaleString()}</h3>
+            </div>
           ))}
         </div>
- 
-        <div className="mt-4 flex items-center justify-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-4 rounded" style={{
-              background: 'linear-gradient(to bottom, #422462 0%, rgba(90, 64, 121, 0.8) 100%)'
-            }}></div>
-            <span className="text-sm text-[#5A4079] font-medium">Gross Salary</span>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-10 w-10 text-[#422462] animate-spin" />
+        </div>
+      )}
+
+      {!loading && salaries.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-dashed border-[#937CB4]/20">
+          <div className="bg-[#F0E9FF] p-4 rounded-full mb-4">
+            <DollarSign className="h-12 w-12 text-[#5A4079] opacity-50" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-4 rounded" style={{
-              background: 'linear-gradient(to bottom, #937CB4 0%, rgba(90, 64, 121, 0.6) 100%)'
-            }}></div>
-            <span className="text-sm text-[#5A4079] font-medium">Net Salary</span>
+          <h3 className="text-xl font-bold text-[#200B43] mb-2">No salary records yet</h3>
+          <p className="text-[#5A4079] max-w-sm">
+            Your monthly payslips will appear here once HR processes your salary.
+          </p>
+        </div>
+      )}
+
+      {!loading && salaries.length > 0 && (
+        <div className="relative overflow-hidden rounded-xl border border-[#937CB4]/20 bg-white/90 backdrop-blur-xl p-6 shadow-lg">
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-[#200B43] mb-2">Monthly Salary Overview - {currentYear}</h3>
+            <p className="text-sm text-[#5A4079]">Click any month below to download that month's payslip</p>
+          </div>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salaryData}>
+                <defs>
+                  <linearGradient id="salaryColorGross" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#422462" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#5A4079" stopOpacity={0.8} />
+                  </linearGradient>
+                  <linearGradient id="salaryColorNet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#937CB4" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#5A4079" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
+                <XAxis dataKey="month" stroke="#5A4079" style={{ fontSize: '12px' }} />
+                <YAxis stroke="#5A4079" style={{ fontSize: '12px' }} tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'rgba(240, 233, 255, 0.95)', border: '1px solid #937CB4', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, '']}
+                />
+                <Bar dataKey="salary" name="Gross Salary" fill="url(#salaryColorGross)" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="netPay" name="Net Salary" fill="url(#salaryColorNet)" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${salaryData.length}, minmax(0, 1fr))` }}>
+            {salaryData.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => downloadPayslip(item)}
+                className="group flex flex-col items-center justify-center gap-1 p-2 rounded-lg hover:bg-gradient-to-br hover:from-[#F0E9FF] hover:to-white transition-all duration-300 hover:shadow-lg"
+                title={`Download ${item.month} payslip`}
+              >
+                <Download className="h-4 w-4 text-[#422462] group-hover:text-[#5A4079] transition-colors" />
+                <span className="text-[10px] text-[#5A4079]">{item.month}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-4 rounded" style={{ background: 'linear-gradient(to bottom, #422462 0%, rgba(90, 64, 121, 0.8) 100%)' }}></div>
+              <span className="text-sm text-[#5A4079] font-medium">Gross Salary</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-4 rounded" style={{ background: 'linear-gradient(to bottom, #937CB4 0%, rgba(90, 64, 121, 0.6) 100%)' }}></div>
+              <span className="text-sm text-[#5A4079] font-medium">Net Salary</span>
+            </div>
           </div>
         </div>
-      </div>
- 
+      )}
+
       <Modal isOpen={showAdvanceModal} onClose={() => setShowAdvanceModal(false)} title="Apply for Salary Advance / Loan" size="lg">
         <form onSubmit={handleAdvanceSubmit} className="space-y-4">
           <div className="bg-[#F0E9FF] p-4 rounded-lg mb-4">
             <p className="text-sm text-[#5A4079]">
-              <strong className="text-[#422462]">Note:</strong> Maximum advance amount is 50% of your monthly salary (₹36,500). Approval time: 2-3 business days.
+              <strong className="text-[#422462]">Note:</strong>{" "}
+              {maxAdvance > 0
+                ? `Maximum advance amount is 50% of your latest net salary (₹${maxAdvance.toLocaleString()}).`
+                : "Your request will be reviewed against your salary details by HR."}{" "}
+              Approval time: 2-3 business days.
             </p>
           </div>
 
@@ -1336,7 +1425,7 @@ export function HRSalaryStructure() {
               type="number"
               value={advanceFormData.amount}
               onChange={handleAdvanceChange}
-              placeholder="Enter amount (Max: ₹36,500)"
+              placeholder={maxAdvance > 0 ? `Enter amount (Max: ₹${maxAdvance.toLocaleString()})` : "Enter advance amount"}
               className="border-[#937CB4]/30"
             />
           </div>
@@ -1390,9 +1479,9 @@ export function HRSalaryStructure() {
             <div className="p-4 bg-gradient-to-br from-[#F0E9FF] to-white rounded-lg border border-[#937CB4]/30">
               <h4 className="font-semibold text-[#422462] mb-2">Repayment Summary</h4>
               <div className="space-y-1 text-sm text-[#5A4079]">
-                <p>Requested Amount: ₹{parseFloat(advanceFormData.amount).toLocaleString()}</p>
+                <p>Requested Amount: ₹{parseFloat(advanceFormData.amount || "0").toLocaleString()}</p>
                 <p>Repayment Period: {advanceFormData.repaymentMonths} month(s)</p>
-                <p>Monthly Deduction: ₹{Math.ceil(parseFloat(advanceFormData.amount) / parseInt(advanceFormData.repaymentMonths)).toLocaleString()}</p>
+                <p>Monthly Deduction: ₹{Math.ceil(parseFloat(advanceFormData.amount || "0") / parseInt(advanceFormData.repaymentMonths)).toLocaleString()}</p>
               </div>
             </div>
           )}
@@ -1408,9 +1497,10 @@ export function HRSalaryStructure() {
             </Button>
             <Button
               type="submit"
+              disabled={submitting}
               className="flex-1 bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#5A4079] hover:to-[#422462]"
             >
-              Submit Request
+              {submitting ? "Submitting..." : "Submit Request"}
             </Button>
           </div>
         </form>

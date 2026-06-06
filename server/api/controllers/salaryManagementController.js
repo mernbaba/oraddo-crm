@@ -113,6 +113,17 @@ const getSalaryById = async (req, res) => {
   }
 };
 
+const getSalariesByEmployee = async (req, res) => {
+  try {
+    const salaries = await salaryManagementService.getSalariesByEmployee(
+      req.params.empId
+    );
+    res.status(200).json(salaries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getEmployeesWithoutSalaries = async (req, res) => {
   console.log("getEmployeesWithoutSalaries controller called...", req);
   const { id, date } = req.params;
@@ -343,6 +354,7 @@ module.exports = {
   getSalaries,
   // getSalariesByOrgId,
   getSalaryById,
+  getSalariesByEmployee,
   updateSalary,
   deleteSalary,
   getSalariesByOrganization,
