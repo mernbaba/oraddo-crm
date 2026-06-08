@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { 
@@ -37,7 +37,34 @@ import {
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [userInfo, setUserInfo] = useState({ fullName: "User", role: "User" });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Current user derived from sessionStorage (replaces hardcoded "Haritha Sree / HS")
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("userData");
+    const storedType = sessionStorage.getItem("userType");
+
+    if (!storedUser) return;
+
+    try {
+      const parsed = JSON.parse(storedUser);
+      const displayRole =
+        parsed?.role ||
+        (storedType === "admin"
+          ? "Admin"
+          : storedType === "organization"
+          ? "Organization Admin"
+          : "User");
+
+      setUserInfo({
+        fullName: parsed?.fullName || parsed?.emp_name || "User",
+        role: displayRole,
+      });
+    } catch (error) {
+      console.error("Failed to parse userData from sessionStorage", error);
+    }
+  }, []);
   const [hrMenuExpanded, setHrMenuExpanded] = useState(false);
   const [bizDevExpanded, setBizDevExpanded] = useState(false);
   const [marketingExpanded, setMarketingExpanded] = useState(false);
@@ -163,11 +190,16 @@ export default function AppLayout() {
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#422462]/10 to-[#5A4079]/10 border border-[#937CB4]/20 cursor-pointer hover:bg-[#F0E9FF]/50 transition-colors" onClick={() => navigate("/app/profile")}>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#422462] to-[#5A4079] flex items-center justify-center text-white font-bold text-sm">
-                HS
+                {userInfo.fullName
+                  .split(" ")
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0]?.toUpperCase())
+                  .join("") || "U"}
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-semibold text-[#200B43]">Haritha Sree</p>
-                <p className="text-xs text-[#5A4079]">Admin</p>
+                <p className="text-sm font-semibold text-[#200B43]">{userInfo.fullName}</p>
+                <p className="text-xs text-[#5A4079]">{userInfo.role}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-[#5A4079]" />
             </div>
@@ -205,11 +237,11 @@ export default function AppLayout() {
               onClick={() => setBizDevExpanded(!bizDevExpanded)}
             >
               <TrendingUp className="mr-3 h-5 w-5" />
-              <span className="relative z-10 flex-1 text-left">Business Development</span>
+              <span className="relative z-10 flex-1 text-left min-w-0 truncate">Business Development</span>
               {bizDevExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
               )}
             </Button>
 
@@ -223,7 +255,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/business-development/proposal") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -240,7 +272,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/business-development/invoice") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -257,7 +289,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/business-development/billing") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -282,11 +314,11 @@ export default function AppLayout() {
               onClick={() => setMarketingExpanded(!marketingExpanded)}
             >
               <Megaphone className="mr-3 h-5 w-5" />
-              <span className="relative z-10 flex-1 text-left">Marketing</span>
+              <span className="relative z-10 flex-1 text-left min-w-0 truncate">Marketing</span>
               {marketingExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
               )}
             </Button>
 
@@ -300,7 +332,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/marketing/calendar") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -317,7 +349,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/marketing/strategies") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -334,7 +366,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/marketing/blogs") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -351,7 +383,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/marketing/meetings") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -376,11 +408,11 @@ export default function AppLayout() {
               onClick={() => setHrMenuExpanded(!hrMenuExpanded)}
             >
               <Users className="mr-3 h-5 w-5" />
-              <span className="relative z-10 flex-1 text-left">Human Resources</span>
+              <span className="relative z-10 flex-1 text-left min-w-0 truncate">Human Resources</span>
               {hrMenuExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
               )}
             </Button>
 
@@ -396,7 +428,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/hr/attendance") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -413,7 +445,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/hr/performance-metrics") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -430,7 +462,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/hr/salary-structure") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -447,7 +479,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/hr/resignation") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -464,7 +496,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive('/app/hr/job-management') 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -481,7 +513,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive('/app/hr/expenses') 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -498,17 +530,17 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${location.pathname.includes('/hr/organization') 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                     onClick={() => setOrgMgmtExpanded(!orgMgmtExpanded)}
                   >
                     <Shield className="mr-2 h-4 w-4" />
-                    <span className="text-sm flex-1 text-left">Organization Management</span>
+                    <span className="text-sm flex-1 text-left min-w-0 truncate">Organization Management</span>
                     {orgMgmtExpanded ? (
-                      <ChevronDown className="h-3 w-3" />
+                      <ChevronDown className="h-3 w-3 shrink-0" />
                     ) : (
-                      <ChevronRight className="h-3 w-3" />
+                      <ChevronRight className="h-3 w-3 shrink-0" />
                     )}
                   </Button>
 
@@ -522,7 +554,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/resignation-management') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -538,7 +570,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/hr-panel') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -554,7 +586,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/leave-management') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -570,7 +602,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/attendance-management') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -586,7 +618,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/onboarding') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -602,7 +634,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/salaries') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -618,7 +650,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/team-performance') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -634,7 +666,7 @@ export default function AppLayout() {
                             w-full justify-start text-xs transition-all duration-300
                             ${isActive('/app/hr/organization/salary-advance') 
                               ? 'bg-[#F0E9FF] text-[#422462]' 
-                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50'
+                              : 'text-[#5A4079] hover:bg-[#F0E9FF]/50 hover:text-[#422462]'
                             }
                           `}
                         >
@@ -661,11 +693,11 @@ export default function AppLayout() {
               onClick={() => setFinanceExpanded(!financeExpanded)}
             >
               <DollarSign className="mr-3 h-5 w-5" />
-              <span className="relative z-10 flex-1 text-left">Finance</span>
+              <span className="relative z-10 flex-1 text-left min-w-0 truncate">Finance</span>
               {financeExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
               )}
             </Button>
 
@@ -679,7 +711,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/finance/expense") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -696,7 +728,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/finance/financial") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -713,7 +745,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/finance/revenue") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -738,11 +770,11 @@ export default function AppLayout() {
               onClick={() => setProjectExpanded(!projectExpanded)}
             >
               <FolderKanban className="mr-3 h-5 w-5" />
-              <span className="relative z-10 flex-1 text-left">Project Management</span>
+              <span className="relative z-10 flex-1 text-left min-w-0 truncate">Project Management</span>
               {projectExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 shrink-0" />
               )}
             </Button>
 
@@ -756,7 +788,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/project/kanban") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -773,7 +805,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/project/completed") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >
@@ -790,7 +822,7 @@ export default function AppLayout() {
                       w-full justify-start transition-all duration-300 group relative overflow-hidden
                       ${isActive("/app/project/tasks") 
                         ? 'bg-gradient-to-r from-[#937CB4] to-[#5A4079] text-white hover:from-[#937CB4] hover:to-[#5A4079] shadow-md' 
-                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70'
+                        : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#422462]'
                       }
                     `}
                   >

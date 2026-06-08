@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   DollarSign,
   Clock,
   CheckCircle2,
   XCircle,
-  Sparkles,
   Plus,
   Search,
-  Filter,
   Download,
   Eye,
   FileText,
@@ -16,285 +14,219 @@ import {
   TrendingUp,
   Upload,
   X,
+  Loader2,
+  AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Modal } from "./ui/modal";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
+import { expenseService } from "../services/expenseService";
+import { employeeService } from "../services/employeeService";
+
+type UIStatus = "approved" | "pending" | "declined";
+
+interface UIExpense {
+  id: number;
+  code: string; // synthesized display id, e.g. EXP-0001
+  submittedBy: string;
+  employeeId: number | null;
+  employeeCode: string; // synthesized, e.g. EMP-1
+  category: string; // model has no category column; expenseTitle doubles as it
+  description: string; // notes
+  amount: number;
+  date: string; // ISO
+  status: UIStatus;
+  hasReceipt: boolean;
+  receiptUrl: string | null;
+  raw: any;
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const CATEGORIES = [
+  "Travel & Transportation",
+  "Software & Subscriptions",
+  "Office Supplies",
+  "Meals & Entertainment",
+  "Training & Development",
+  "Equipment & Hardware",
+  "Utilities & Rent",
+  "Marketing & Advertising",
+  "Professional Services",
+  "Other",
+];
+
+// DB ENUM ("Pending"|"Approved"|"Declined") <-> the lowercase keys this UI uses.
+const toUIStatus = (s?: string): UIStatus =>
+  s === "Approved" ? "approved" : s === "Declined" ? "declined" : "pending";
+const toDbStatus = (s: UIStatus): "Pending" | "Approved" | "Declined" =>
+  s === "approved" ? "Approved" : s === "declined" ? "Declined" : "Pending";
+
+// Map an employee_expenses row from the API into the table's shape.
+const mapExpense = (e: any): UIExpense => {
+  const emp = e.employee || {};
+  const empId = e.employeeid ?? emp.id ?? null;
+  return {
+    id: e.id,
+    code: `EXP-${String(e.id).padStart(4, "0")}`,
+    submittedBy: emp.emp_name || "—",
+    employeeId: empId,
+    employeeCode: empId != null ? `EMP-${empId}` : "—",
+    category: e.expenseTitle || "Uncategorized",
+    description: e.notes || "",
+    amount: Number(e.amount) || 0,
+    date: e.date || e.createdAt || "",
+    status: toUIStatus(e.status),
+    hasReceipt: Boolean(e.receipt) || (Array.isArray(e.expensesdocuments) && e.expensesdocuments.length > 0),
+    receiptUrl: e.receipt || null,
+    raw: e,
+  };
+};
+
+const yearOf = (d: string): string => {
+  const x = new Date(d);
+  return isNaN(x.getTime()) ? "" : String(x.getFullYear());
+};
+const monthOf = (d: string): string => {
+  const x = new Date(d);
+  return isNaN(x.getTime()) ? "" : MONTHS[x.getMonth()];
+};
 
 export function FinanceExpense() {
-  const [selectedYear, setSelectedYear] = useState("2026");
-  const [selectedMonth, setSelectedMonth] = useState("February");
+  const [orgId, setOrgId] = useState<number | null>(null);
+
+  const [expenses, setExpenses] = useState<UIExpense[]>([]);
+  const [employees, setEmployees] = useState<{ id: number; emp_name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(() => MONTHS[new Date().getMonth()]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [selectedExpense, setSelectedExpense] = useState<UIExpense | null>(null);
 
   const [newExpense, setNewExpense] = useState({
     category: "",
     description: "",
     amount: "",
     date: new Date().toISOString().split("T")[0],
-    submittedBy: "",
+    employeeId: "",
     receipt: null as File | null,
   });
 
-  const years = ["2026", "2025", "2024"];
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  // ── Read org context from the logged-in session ──────────────────────────
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) {
+      setLoading(false);
+      setError("You are not logged in.");
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      const org = u?.organizationId ?? u?.organizationID;
+      if (org != null && org !== "") {
+        setOrgId(Number(org));
+      } else {
+        setLoading(false);
+        setError("No organization is linked to your account.");
+      }
+    } catch {
+      setLoading(false);
+      setError("Could not read your session. Please log in again.");
+    }
+  }, []);
 
-  const categories = [
-    "Travel & Transportation",
-    "Software & Subscriptions",
-    "Office Supplies",
-    "Meals & Entertainment",
-    "Training & Development",
-    "Equipment & Hardware",
-    "Utilities & Rent",
-    "Marketing & Advertising",
-    "Professional Services",
-    "Other",
-  ];
+  useEffect(() => {
+    if (orgId == null) return;
+    loadExpenses(orgId);
+    loadEmployees(orgId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
 
-  const [expenses] = useState([
-    {
-      id: "EXP-2026-001",
-      submittedBy: "John Anderson",
-      employeeId: "EMP-2024-001",
-      category: "Travel & Transportation",
-      description: "Flight tickets and hotel accommodation for client meeting in San Francisco",
-      amount: 2450,
-      date: "2026-02-15",
-      month: "February",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-02-16",
-      receiptUrl: "receipt-001.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-002",
-      submittedBy: "Emily Chen",
-      employeeId: "EMP-2024-002",
-      category: "Software & Subscriptions",
-      description: "Adobe Creative Cloud annual subscription for design team",
-      amount: 599,
-      date: "2026-02-12",
-      month: "February",
-      year: "2026",
-      status: "pending",
-      receiptUrl: "receipt-002.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-003",
-      submittedBy: "Michael Davis",
-      employeeId: "EMP-2024-003",
-      category: "Meals & Entertainment",
-      description: "Business lunch with prospective client and stakeholders",
-      amount: 185,
-      date: "2026-02-18",
-      month: "February",
-      year: "2026",
-      status: "declined",
-      declinedBy: "Sarah Mitchell (CFO)",
-      declinedDate: "2026-02-19",
-      declinedReason: "Missing itemized receipt. Please resubmit with detailed invoice.",
-      receiptUrl: null,
-      hasReceipt: false,
-    },
-    {
-      id: "EXP-2026-004",
-      submittedBy: "Sarah Williams",
-      employeeId: "EMP-2024-004",
-      category: "Training & Development",
-      description: "AWS Cloud Practitioner Certification exam fee and study materials",
-      amount: 850,
-      date: "2026-02-10",
-      month: "February",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-02-11",
-      receiptUrl: "receipt-004.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-005",
-      submittedBy: "David Brown",
-      employeeId: "EMP-2024-005",
-      category: "Equipment & Hardware",
-      description: "Ergonomic desk chair and dual monitor stand for home office",
-      amount: 425,
-      date: "2026-02-14",
-      month: "February",
-      year: "2026",
-      status: "pending",
-      receiptUrl: "receipt-005.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-006",
-      submittedBy: "Lisa Martinez",
-      employeeId: "EMP-2024-006",
-      category: "Travel & Transportation",
-      description: "Uber rides for multiple client site visits throughout the city",
-      amount: 145,
-      date: "2026-02-17",
-      month: "February",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-02-18",
-      receiptUrl: "receipt-006.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-007",
-      submittedBy: "James Wilson",
-      employeeId: "EMP-2024-007",
-      category: "Office Supplies",
-      description: "Laptop accessories, wireless mouse, and keyboard",
-      amount: 230,
-      date: "2026-02-16",
-      month: "February",
-      year: "2026",
-      status: "pending",
-      receiptUrl: "receipt-007.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-008",
-      submittedBy: "Amanda Taylor",
-      employeeId: "EMP-2024-008",
-      category: "Utilities & Rent",
-      description: "Monthly office internet and phone service charges",
-      amount: 295,
-      date: "2026-02-13",
-      month: "February",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-02-14",
-      receiptUrl: "receipt-008.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-009",
-      submittedBy: "Robert Lee",
-      employeeId: "EMP-2024-009",
-      category: "Marketing & Advertising",
-      description: "Google Ads campaign for Q1 product launch",
-      amount: 1850,
-      date: "2026-02-11",
-      month: "February",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-02-12",
-      receiptUrl: "receipt-009.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-010",
-      submittedBy: "Jennifer Garcia",
-      employeeId: "EMP-2024-010",
-      category: "Professional Services",
-      description: "Legal consultation for contract review and compliance",
-      amount: 750,
-      date: "2026-02-09",
-      month: "February",
-      year: "2026",
-      status: "declined",
-      declinedBy: "Sarah Mitchell (CFO)",
-      declinedDate: "2026-02-10",
-      declinedReason: "Requires prior approval from management. Please get authorization before incurring such expenses.",
-      receiptUrl: "receipt-010.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-011",
-      submittedBy: "John Anderson",
-      employeeId: "EMP-2024-001",
-      category: "Travel & Transportation",
-      description: "Hotel accommodation for tech conference in Boston",
-      amount: 980,
-      date: "2026-01-22",
-      month: "January",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-01-23",
-      receiptUrl: "receipt-011.pdf",
-      hasReceipt: true,
-    },
-    {
-      id: "EXP-2026-012",
-      submittedBy: "Emily Chen",
-      employeeId: "EMP-2024-002",
-      category: "Software & Subscriptions",
-      description: "Figma Professional team subscription",
-      amount: 144,
-      date: "2026-01-15",
-      month: "January",
-      year: "2026",
-      status: "approved",
-      approvedBy: "Sarah Mitchell (CFO)",
-      approvedDate: "2026-01-16",
-      receiptUrl: "receipt-012.pdf",
-      hasReceipt: true,
-    },
-  ]);
+  const loadExpenses = async (organizationId: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await expenseService.getByOrg(organizationId, { page: 0, pageSize: 1000 });
+      const rows = res.data?.employeeExpenses ?? (Array.isArray(res.data) ? res.data : []);
+      setExpenses((Array.isArray(rows) ? rows : []).map(mapExpense));
+    } catch (e) {
+      console.error("Failed to load expenses", e);
+      setError("Failed to load expenses. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredExpenses = expenses.filter((exp) => {
-    const matchesMonth = exp.month === selectedMonth;
-    const matchesYear = exp.year === selectedYear;
-    const matchesSearch =
-      exp.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exp.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exp.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exp.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || exp.status === filterStatus;
-    const matchesCategory = filterCategory === "all" || exp.category === filterCategory;
+  const loadEmployees = async (organizationId: number) => {
+    try {
+      const res = await employeeService.getEmployeesByOrg(organizationId);
+      const rows = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setEmployees(
+        (rows as any[]).map((r) => ({ id: r.id, emp_name: r.emp_name || `Employee #${r.id}` }))
+      );
+    } catch (e) {
+      console.error("Failed to load employees", e);
+    }
+  };
 
-    return matchesMonth && matchesYear && matchesSearch && matchesStatus && matchesCategory;
-  });
+  // ── Derived: filters, stats ───────────────────────────────────────────────
+  const filteredExpenses = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return expenses.filter((exp) => {
+      const matchesMonth = monthOf(exp.date) === selectedMonth;
+      const matchesYear = yearOf(exp.date) === selectedYear;
+      const matchesSearch =
+        !q ||
+        exp.code.toLowerCase().includes(q) ||
+        exp.submittedBy.toLowerCase().includes(q) ||
+        exp.category.toLowerCase().includes(q) ||
+        exp.description.toLowerCase().includes(q);
+      const matchesStatus = filterStatus === "all" || exp.status === filterStatus;
+      const matchesCategory = filterCategory === "all" || exp.category === filterCategory;
+      return matchesMonth && matchesYear && matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [expenses, selectedMonth, selectedYear, searchQuery, filterStatus, filterCategory]);
 
-  const monthlyTotal = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const approvedTotal = filteredExpenses
-    .filter((exp) => exp.status === "approved")
-    .reduce((sum, exp) => sum + exp.amount, 0);
-  const pendingTotal = filteredExpenses
-    .filter((exp) => exp.status === "pending")
-    .reduce((sum, exp) => sum + exp.amount, 0);
-  const declinedTotal = filteredExpenses
-    .filter((exp) => exp.status === "declined")
-    .reduce((sum, exp) => sum + exp.amount, 0);
+  const sum = (list: UIExpense[]) => list.reduce((s, e) => s + e.amount, 0);
+  const monthlyTotal = sum(filteredExpenses);
+  const approvedList = filteredExpenses.filter((e) => e.status === "approved");
+  const pendingList = filteredExpenses.filter((e) => e.status === "pending");
+  const declinedList = filteredExpenses.filter((e) => e.status === "declined");
+  const approvedTotal = sum(approvedList);
+  const pendingTotal = sum(pendingList);
+  const declinedTotal = sum(declinedList);
 
-  const approvedCount = filteredExpenses.filter((exp) => exp.status === "approved").length;
-  const pendingCount = filteredExpenses.filter((exp) => exp.status === "pending").length;
-  const declinedCount = filteredExpenses.filter((exp) => exp.status === "declined").length;
+  const yearlyTotal = useMemo(
+    () => sum(expenses.filter((e) => yearOf(e.date) === selectedYear)),
+    [expenses, selectedYear]
+  );
 
-  const yearlyTotal = expenses
-    .filter((exp) => exp.year === selectedYear)
-    .reduce((sum, exp) => sum + exp.amount, 0);
+  // Year dropdown: every year present in the data, plus the current year.
+  const years = useMemo(() => {
+    const set = new Set<string>();
+    expenses.forEach((e) => {
+      const y = yearOf(e.date);
+      if (y) set.add(y);
+    });
+    set.add(String(new Date().getFullYear()));
+    return Array.from(set).sort((a, b) => Number(b) - Number(a));
+  }, [expenses]);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: UIStatus) => {
     switch (status) {
       case "approved":
         return (
@@ -317,23 +249,95 @@ export function FinanceExpense() {
             Declined
           </span>
         );
-      default:
-        return null;
     }
   };
 
-  const handleCreateExpense = () => {
-    console.log("Creating expense:", newExpense);
-    setShowCreateModal(false);
-
+  const resetForm = () =>
     setNewExpense({
       category: "",
       description: "",
       amount: "",
       date: new Date().toISOString().split("T")[0],
-      submittedBy: "",
+      employeeId: "",
       receipt: null,
     });
+
+  const handleCreateExpense = async () => {
+    if (orgId == null) {
+      alert("No organization found for your session. Please log in again.");
+      return;
+    }
+    // Validate with clear feedback instead of silently disabling the button.
+    if (!newExpense.category) {
+      alert("Please select a category.");
+      return;
+    }
+    if (!newExpense.amount || Number(newExpense.amount) <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    if (!newExpense.employeeId) {
+      alert("Please select who submitted this expense.");
+      return;
+    }
+    if (!newExpense.description.trim()) {
+      alert("Please enter a description.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await expenseService.create({
+        expenseTitle: newExpense.category,
+        notes: newExpense.description,
+        amount: Number(newExpense.amount) || 0,
+        date: newExpense.date,
+        status: "Pending",
+        organizationID: orgId,
+        // Required for the row to appear: the org list inner-joins `employee`.
+        employeeid: Number(newExpense.employeeId),
+        // Receipts aren't stored server-side yet; keep the filename as a marker.
+        receipt: newExpense.receipt ? newExpense.receipt.name : undefined,
+      });
+      setShowCreateModal(false);
+      resetForm();
+      await loadExpenses(orgId);
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Could not create the expense.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangeStatus = async (exp: UIExpense, status: UIStatus) => {
+    setBusyId(exp.id);
+    // Optimistic update; revert on failure.
+    const previous = expenses;
+    setExpenses((list) => list.map((e) => (e.id === exp.id ? { ...e, status } : e)));
+    setSelectedExpense((cur) => (cur && cur.id === exp.id ? { ...cur, status } : cur));
+    try {
+      await expenseService.update(exp.id, { status: toDbStatus(status) });
+    } catch (e) {
+      console.error("Failed to update expense status", e);
+      setExpenses(previous);
+      alert("Could not update the expense status. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDeleteExpense = async (exp: UIExpense) => {
+    if (!confirm(`Delete expense ${exp.code}? This cannot be undone.`)) return;
+    setBusyId(exp.id);
+    try {
+      await expenseService.remove(exp.id);
+      setShowDetailsModal(false);
+      setSelectedExpense(null);
+      if (orgId != null) await loadExpenses(orgId);
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Could not delete the expense.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,9 +346,35 @@ export function FinanceExpense() {
     }
   };
 
-  const handleViewReceipt = (expense: any) => {
-    console.log("Viewing receipt for:", expense.id);
-    alert(`Viewing receipt: ${expense.receiptUrl}`);
+  const handleViewReceipt = (expense: UIExpense) => {
+    if (expense.receiptUrl && /^https?:\/\//.test(expense.receiptUrl)) {
+      window.open(expense.receiptUrl, "_blank");
+    } else {
+      alert(expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : "No receipt available.");
+    }
+  };
+
+  const handleExport = () => {
+    const rows = [
+      ["Expense ID", "Submitted By", "Category", "Description", "Amount", "Date", "Status"],
+      ...filteredExpenses.map((e) => [
+        e.code,
+        e.submittedBy,
+        e.category,
+        `"${e.description.replace(/"/g, '""')}"`,
+        e.amount,
+        e.date ? new Date(e.date).toLocaleDateString() : "",
+        e.status,
+      ]),
+    ];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses-${selectedMonth}-${selectedYear}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -365,13 +395,35 @@ export function FinanceExpense() {
           </div>
         </div>
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            resetForm();
+            setShowCreateModal(true);
+          }}
           className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462] shadow-lg"
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Expense
         </Button>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+          {orgId != null && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              onClick={() => loadExpenses(orgId)}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -395,7 +447,7 @@ export function FinanceExpense() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {months.map((month) => (
+            {MONTHS.map((month) => (
               <SelectItem key={month} value={month}>
                 {month}
               </SelectItem>
@@ -414,9 +466,7 @@ export function FinanceExpense() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs text-[#5A4079] font-medium">Monthly Total</p>
-              <p className="text-2xl font-bold text-[#200B43] mt-1">
-                ${monthlyTotal.toLocaleString()}
-              </p>
+              <p className="text-2xl font-bold text-[#200B43] mt-1">${monthlyTotal.toLocaleString()}</p>
               <p className="text-xs text-[#5A4079] mt-1">{filteredExpenses.length} expenses</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center shadow-lg">
@@ -429,10 +479,8 @@ export function FinanceExpense() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs text-green-600 font-medium">Approved</p>
-              <p className="text-2xl font-bold text-green-700 mt-1">
-                ${approvedTotal.toLocaleString()}
-              </p>
-              <p className="text-xs text-green-600 mt-1">{approvedCount} expenses</p>
+              <p className="text-2xl font-bold text-green-700 mt-1">${approvedTotal.toLocaleString()}</p>
+              <p className="text-xs text-green-600 mt-1">{approvedList.length} expenses</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
               <CheckCircle2 className="h-6 w-6 text-white" />
@@ -444,10 +492,8 @@ export function FinanceExpense() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs text-yellow-600 font-medium">Pending</p>
-              <p className="text-2xl font-bold text-yellow-700 mt-1">
-                ${pendingTotal.toLocaleString()}
-              </p>
-              <p className="text-xs text-yellow-600 mt-1">{pendingCount} expenses</p>
+              <p className="text-2xl font-bold text-yellow-700 mt-1">${pendingTotal.toLocaleString()}</p>
+              <p className="text-xs text-yellow-600 mt-1">{pendingList.length} expenses</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center shadow-lg">
               <Clock className="h-6 w-6 text-white" />
@@ -459,10 +505,8 @@ export function FinanceExpense() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs text-red-600 font-medium">Declined</p>
-              <p className="text-2xl font-bold text-red-700 mt-1">
-                ${declinedTotal.toLocaleString()}
-              </p>
-              <p className="text-xs text-red-600 mt-1">{declinedCount} expenses</p>
+              <p className="text-2xl font-bold text-red-700 mt-1">${declinedTotal.toLocaleString()}</p>
+              <p className="text-xs text-red-600 mt-1">{declinedList.length} expenses</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
               <XCircle className="h-6 w-6 text-white" />
@@ -498,7 +542,7 @@ export function FinanceExpense() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((cat) => (
+            {CATEGORIES.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
@@ -508,6 +552,8 @@ export function FinanceExpense() {
         <Button
           variant="outline"
           className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
+          onClick={handleExport}
+          disabled={filteredExpenses.length === 0}
         >
           <Download className="mr-2 h-4 w-4" />
           Export
@@ -520,92 +566,99 @@ export function FinanceExpense() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-[#200B43] to-[#422462]">
               <tr>
-                <th className="text-left py-3 px-4 text-white font-semibold text-xs">
-                  Expense ID
-                </th>
+                <th className="text-left py-3 px-4 text-white font-semibold text-xs">Expense ID</th>
                 <th className="text-left py-3 px-4 text-white font-semibold text-xs">Submitted By</th>
                 <th className="text-left py-3 px-4 text-white font-semibold text-xs">Category</th>
-                <th className="text-left py-3 px-4 text-white font-semibold text-xs">
-                  Description
-                </th>
+                <th className="text-left py-3 px-4 text-white font-semibold text-xs">Description</th>
                 <th className="text-left py-3 px-4 text-white font-semibold text-xs">Amount</th>
                 <th className="text-left py-3 px-4 text-white font-semibold text-xs">Date</th>
                 <th className="text-left py-3 px-4 text-white font-semibold text-xs">Status</th>
-                <th className="text-center py-3 px-4 text-white font-semibold text-xs">
-                  Receipt
-                </th>
+                <th className="text-center py-3 px-4 text-white font-semibold text-xs">Receipt</th>
                 <th className="text-center py-3 px-4 text-white font-semibold text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredExpenses.map((expense, idx) => (
-                <tr
-                  key={expense.id}
-                  className={`border-b border-[#937CB4]/10 hover:bg-gradient-to-r hover:from-[#F0E9FF]/40 hover:to-transparent transition-all ${
-                    idx % 2 === 0 ? "bg-white/40" : "bg-[#F0E9FF]/10"
-                  }`}
-                >
-                  <td className="py-3 px-4">
-                    <p className="text-xs font-semibold text-[#422462]">{expense.id}</p>
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="py-16 text-center text-[#5A4079]">
+                    <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                    Loading expenses…
                   </td>
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="text-xs font-semibold text-[#200B43]">{expense.submittedBy}</p>
-                      <p className="text-[10px] text-[#5A4079]">{expense.employeeId}</p>
-                    </div>
+                </tr>
+              ) : filteredExpenses.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-16 text-center text-[#5A4079]">
+                    {expenses.length === 0
+                      ? "No expenses yet. Create your first expense to get started."
+                      : `No expenses for ${selectedMonth} ${selectedYear}.`}
                   </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs px-2 py-1 rounded-full bg-[#F0E9FF] text-[#422462] font-medium">
-                      {expense.category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="text-xs text-[#200B43] line-clamp-2 max-w-xs">
-                      {expense.description}
-                    </p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="text-sm font-bold text-[#200B43]">
-                      ${expense.amount.toLocaleString()}
-                    </p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="text-xs text-[#5A4079]">
-                      {new Date(expense.date).toLocaleDateString()}
-                    </p>
-                  </td>
-                  <td className="py-3 px-4">{getStatusBadge(expense.status)}</td>
-                  <td className="py-3 px-4 text-center">
-                    {expense.hasReceipt ? (
+                </tr>
+              ) : (
+                filteredExpenses.map((expense, idx) => (
+                  <tr
+                    key={expense.id}
+                    className={`border-b border-[#937CB4]/10 hover:bg-gradient-to-r hover:from-[#F0E9FF]/40 hover:to-transparent transition-all ${
+                      idx % 2 === 0 ? "bg-white/40" : "bg-[#F0E9FF]/10"
+                    }`}
+                  >
+                    <td className="py-3 px-4">
+                      <p className="text-xs font-semibold text-[#422462]">{expense.code}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div>
+                        <p className="text-xs font-semibold text-[#200B43]">{expense.submittedBy}</p>
+                        <p className="text-[10px] text-[#5A4079]">{expense.employeeCode}</p>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-[#F0E9FF] text-[#422462] font-medium">
+                        {expense.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-xs text-[#200B43] line-clamp-2 max-w-xs">{expense.description}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-sm font-bold text-[#200B43]">${expense.amount.toLocaleString()}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-xs text-[#5A4079]">
+                        {expense.date ? new Date(expense.date).toLocaleDateString() : "—"}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">{getStatusBadge(expense.status)}</td>
+                    <td className="py-3 px-4 text-center">
+                      {expense.hasReceipt ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewReceipt(expense)}
+                          className="text-[#422462] hover:bg-[#F0E9FF] h-7 px-2"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-red-500">No receipt</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleViewReceipt(expense)}
-                        className="text-[#422462] hover:bg-[#F0E9FF] h-7 px-2"
+                        onClick={() => {
+                          setSelectedExpense(expense);
+                          setShowDetailsModal(true);
+                        }}
+                        className="text-[#422462] hover:bg-[#F0E9FF] h-7 px-2 text-xs"
                       >
-                        <FileText className="h-3 w-3 mr-1" />
-                        View
+                        <Eye className="h-3 w-3 mr-1" />
+                        Details
                       </Button>
-                    ) : (
-                      <span className="text-xs text-red-500">No receipt</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedExpense(expense);
-                        setShowDetailsModal(true);
-                      }}
-                      className="text-[#422462] hover:bg-[#F0E9FF] h-7 px-2 text-xs"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Details
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -615,14 +668,7 @@ export function FinanceExpense() {
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
-          setNewExpense({
-            category: "",
-            description: "",
-            amount: "",
-            date: new Date().toISOString().split("T")[0],
-            submittedBy: "",
-            receipt: null,
-          });
+          resetForm();
         }}
         title="Create New Expense"
         size="lg"
@@ -636,7 +682,7 @@ export function FinanceExpense() {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {CATEGORIES.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
                     </SelectItem>
@@ -671,13 +717,21 @@ export function FinanceExpense() {
             </div>
             <div>
               <label className="block text-sm font-medium text-[#422462] mb-2">Submitted By *</label>
-              <Input
-                type="text"
-                placeholder="Employee name"
-                value={newExpense.submittedBy}
-                onChange={(e) => setNewExpense({ ...newExpense, submittedBy: e.target.value })}
-                className="border-[#937CB4]/30 focus:border-[#422462]"
-              />
+              <Select
+                value={newExpense.employeeId}
+                onValueChange={(val) => setNewExpense({ ...newExpense, employeeId: val })}
+              >
+                <SelectTrigger className="border-[#937CB4]/30 focus:border-[#422462]">
+                  <SelectValue placeholder={employees.length ? "Select employee" : "No employees found"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={String(emp.id)}>
+                      {emp.emp_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -693,16 +747,12 @@ export function FinanceExpense() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#422462] mb-2">
-              Upload Receipt/Invoice *
-            </label>
+            <label className="block text-sm font-medium text-[#422462] mb-2">Upload Receipt/Invoice</label>
             <div className="border-2 border-dashed border-[#937CB4]/30 rounded-lg p-6 text-center hover:border-[#422462] transition-colors">
               {newExpense.receipt ? (
                 <div className="flex items-center justify-center gap-2">
                   <FileText className="h-5 w-5 text-[#422462]" />
-                  <span className="text-sm text-[#200B43] font-medium">
-                    {newExpense.receipt.name}
-                  </span>
+                  <span className="text-sm text-[#200B43] font-medium">{newExpense.receipt.name}</span>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -715,9 +765,7 @@ export function FinanceExpense() {
               ) : (
                 <label className="cursor-pointer">
                   <Upload className="h-8 w-8 text-[#5A4079] mx-auto mb-2" />
-                  <p className="text-sm text-[#5A4079] mb-1">
-                    Click to upload or drag and drop
-                  </p>
+                  <p className="text-sm text-[#5A4079] mb-1">Click to upload or drag and drop</p>
                   <p className="text-xs text-[#5A4079]">PDF, PNG, JPG (max. 5MB)</p>
                   <input
                     type="file"
@@ -735,14 +783,7 @@ export function FinanceExpense() {
               variant="outline"
               onClick={() => {
                 setShowCreateModal(false);
-                setNewExpense({
-                  category: "",
-                  description: "",
-                  amount: "",
-                  date: new Date().toISOString().split("T")[0],
-                  submittedBy: "",
-                  receipt: null,
-                });
+                resetForm();
               }}
               className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
             >
@@ -750,16 +791,10 @@ export function FinanceExpense() {
             </Button>
             <Button
               onClick={handleCreateExpense}
-              disabled={
-                !newExpense.category ||
-                !newExpense.amount ||
-                !newExpense.description ||
-                !newExpense.submittedBy ||
-                !newExpense.receipt
-              }
+              disabled={isSaving}
               className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462]"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
               Create Expense
             </Button>
           </div>
@@ -779,9 +814,9 @@ export function FinanceExpense() {
           <div className="space-y-6">
             <div className="flex items-start justify-between pb-4 border-b border-[#937CB4]/20">
               <div>
-                <h3 className="text-xl font-bold text-[#200B43]">{selectedExpense.id}</h3>
+                <h3 className="text-xl font-bold text-[#200B43]">{selectedExpense.code}</h3>
                 <p className="text-sm text-[#5A4079] mt-1">{selectedExpense.submittedBy}</p>
-                <p className="text-xs text-[#5A4079]">{selectedExpense.employeeId}</p>
+                <p className="text-xs text-[#5A4079]">{selectedExpense.employeeCode}</p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-[#200B43] mb-2">
@@ -799,72 +834,15 @@ export function FinanceExpense() {
               <div className="space-y-1">
                 <p className="text-xs text-[#5A4079] font-medium">Date</p>
                 <p className="text-sm font-semibold text-[#200B43]">
-                  {new Date(selectedExpense.date).toLocaleDateString()}
+                  {selectedExpense.date ? new Date(selectedExpense.date).toLocaleDateString() : "—"}
                 </p>
               </div>
             </div>
 
             <div className="space-y-1">
               <p className="text-xs text-[#5A4079] font-medium">Description</p>
-              <p className="text-sm text-[#200B43]">{selectedExpense.description}</p>
+              <p className="text-sm text-[#200B43]">{selectedExpense.description || "—"}</p>
             </div>
-
-            {selectedExpense.status === "approved" && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <p className="font-semibold text-green-700">Approved</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-xs text-green-600">Approved By</p>
-                    <p className="font-medium text-green-700">{selectedExpense.approvedBy}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-green-600">Approved Date</p>
-                    <p className="font-medium text-green-700">
-                      {new Date(selectedExpense.approvedDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {selectedExpense.status === "pending" && (
-              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-600" />
-                  <p className="font-semibold text-yellow-700">
-                    Pending approval from finance manager
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedExpense.status === "declined" && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="h-5 w-5 text-red-600" />
-                  <p className="font-semibold text-red-700">Declined</p>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-xs text-red-600">Declined By</p>
-                    <p className="font-medium text-red-700">{selectedExpense.declinedBy}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-red-600">Declined Date</p>
-                    <p className="font-medium text-red-700">
-                      {new Date(selectedExpense.declinedDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-red-600">Reason</p>
-                    <p className="font-medium text-red-700">{selectedExpense.declinedReason}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <p className="text-xs text-[#5A4079] font-medium">Receipt/Invoice</p>
@@ -873,10 +851,8 @@ export function FinanceExpense() {
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-[#422462]" />
                     <div>
-                      <p className="text-sm font-medium text-[#200B43]">
-                        {selectedExpense.receiptUrl}
-                      </p>
-                      <p className="text-xs text-[#5A4079]">PDF Document</p>
+                      <p className="text-sm font-medium text-[#200B43]">{selectedExpense.receiptUrl}</p>
+                      <p className="text-xs text-[#5A4079]">Attachment</p>
                     </div>
                   </div>
                   <Button
@@ -895,16 +871,52 @@ export function FinanceExpense() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#937CB4]/20">
               <Button
-                onClick={() => {
-                  setShowDetailsModal(false);
-                  setSelectedExpense(null);
-                }}
-                className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462]"
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50"
+                disabled={busyId === selectedExpense.id}
+                onClick={() => handleDeleteExpense(selectedExpense)}
               >
-                Close
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
               </Button>
+              <div className="flex gap-3">
+                {selectedExpense.status !== "approved" && (
+                  <Button
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800"
+                    disabled={busyId === selectedExpense.id}
+                    onClick={() => handleChangeStatus(selectedExpense, "approved")}
+                  >
+                    {busyId === selectedExpense.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                    )}
+                    Approve
+                  </Button>
+                )}
+                {selectedExpense.status !== "declined" && (
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                    disabled={busyId === selectedExpense.id}
+                    onClick={() => handleChangeStatus(selectedExpense, "declined")}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedExpense(null);
+                  }}
+                  className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462]"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </Modal>

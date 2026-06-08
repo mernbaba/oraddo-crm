@@ -148,15 +148,40 @@ const unifiedSignIn = async (identifier, password) => {
         : password === savedAdminPassword;
 
       if (isAdminPassValid) {
+        // The signup record (OrgSignUp) and the operational Organizations record
+        // are separate tables with different ids. All org-scoped data (employees,
+        // expenses, leads, projects…) is keyed by Organizations.id — which is NOT
+        // the same as OrgSignUp.id — so resolve the real organization (matched by
+        // email/userName/companyName) and scope the session to it. Without this,
+        // the admin's session points at the wrong org id and every list comes back
+        // empty. Fall back to admin.id if no Organizations record is found.
+        const organization = await Organization.findOne({
+          where: {
+            [Op.or]: [
+              { email: admin.email },
+              { userName: admin.email },
+              { companyName: admin.companyName },
+            ],
+          },
+          order: [["id", "ASC"]],
+        });
+        const organizationId = organization ? organization.id : admin.id;
+
         const token = jwt.sign(
-          { userId: admin.id, email: admin.email, role: "organization" },
+          { userId: admin.id, organizationId, email: admin.email, role: "organization" },
           JWT_SECRET,
           { expiresIn: "1d" }
         );
         return {
           token,
           role: "organization",
-          user: { id: admin.id, fullName: admin.fullName, email: admin.email, organizationId: admin.id }
+          user: {
+            id: admin.id,
+            fullName: admin.fullName,
+            email: admin.email,
+            role: "organization",
+            organizationId,
+          },
         };
       }
     }

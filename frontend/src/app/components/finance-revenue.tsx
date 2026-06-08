@@ -1,92 +1,151 @@
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Sparkles, ArrowUpRight, Download, ArrowDownRight, Target, Award } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Sparkles,
+  ArrowUpRight,
+  Download,
+  ArrowDownRight,
+  Target,
+  Award,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, Area } from "recharts";
-import { useState } from "react";
+import {
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ComposedChart,
+  Area,
+} from "recharts";
+import { invoiceService } from "../services/revenueService";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Yearly revenue goal used for the "Target Achievement" card.
+const REVENUE_TARGET = 1_500_000;
+
+interface MonthRow {
+  month: string;
+  revenue: number;
+  invoices: number;
+}
+
+const emptyYear = (): MonthRow[] =>
+  MONTHS.map((m) => ({ month: m, revenue: 0, invoices: 0 }));
 
 export function FinanceRevenue() {
-  const [selectedYear, setSelectedYear] = useState("2026");
+  const navigate = useNavigate();
 
-  const years = ["2026", "2025", "2024"];
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const revenueData: Record<string, any[]> = {
-    "2026": [
-      { 
-        month: "January", 
-        revenue: 125000, 
-        productSales: 52500, 
-        services: 36250, 
-        subscriptions: 22500, 
-        consulting: 13750 
-      },
-      { 
-        month: "February", 
-        revenue: 148000, 
-        productSales: 62160, 
-        services: 42920, 
-        subscriptions: 26640, 
-        consulting: 16280 
-      },
-      { month: "March", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "April", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "May", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "June", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "July", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "August", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "September", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "October", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "November", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-      { month: "December", revenue: 0, productSales: 0, services: 0, subscriptions: 0, consulting: 0 },
-    ],
-    "2025": [
-      { month: "January", revenue: 88000, productSales: 36960, services: 25520, subscriptions: 15840, consulting: 9680 },
-      { month: "February", revenue: 92000, productSales: 38640, services: 26680, subscriptions: 16560, consulting: 10120 },
-      { month: "March", revenue: 95000, productSales: 39900, services: 27550, subscriptions: 17100, consulting: 10450 },
-      { month: "April", revenue: 102000, productSales: 42840, services: 29580, subscriptions: 18360, consulting: 11220 },
-      { month: "May", revenue: 98000, productSales: 41160, services: 28420, subscriptions: 17640, consulting: 10780 },
-      { month: "June", revenue: 105000, productSales: 44100, services: 30450, subscriptions: 18900, consulting: 11550 },
-      { month: "July", revenue: 110000, productSales: 46200, services: 31900, subscriptions: 19800, consulting: 12100 },
-      { month: "August", revenue: 115000, productSales: 48300, services: 33350, subscriptions: 20700, consulting: 12650 },
-      { month: "September", revenue: 108000, productSales: 45360, services: 31320, subscriptions: 19440, consulting: 11880 },
-      { month: "October", revenue: 118000, productSales: 49560, services: 34220, subscriptions: 21240, consulting: 12980 },
-      { month: "November", revenue: 122000, productSales: 51240, services: 35380, subscriptions: 21960, consulting: 13420 },
-      { month: "December", revenue: 130000, productSales: 54600, services: 37700, subscriptions: 23400, consulting: 14300 },
-    ],
-    "2024": [
-      { month: "January", revenue: 75000, productSales: 31500, services: 21750, subscriptions: 13500, consulting: 8250 },
-      { month: "February", revenue: 78000, productSales: 32760, services: 22620, subscriptions: 14040, consulting: 8580 },
-      { month: "March", revenue: 82000, productSales: 34440, services: 23780, subscriptions: 14760, consulting: 9020 },
-      { month: "April", revenue: 85000, productSales: 35700, services: 24650, subscriptions: 15300, consulting: 9350 },
-      { month: "May", revenue: 88000, productSales: 36960, services: 25520, subscriptions: 15840, consulting: 9680 },
-      { month: "June", revenue: 92000, productSales: 38640, services: 26680, subscriptions: 16560, consulting: 10120 },
-      { month: "July", revenue: 89000, productSales: 37380, services: 25810, subscriptions: 16020, consulting: 9790 },
-      { month: "August", revenue: 95000, productSales: 39900, services: 27550, subscriptions: 17100, consulting: 10450 },
-      { month: "September", revenue: 98000, productSales: 41160, services: 28420, subscriptions: 17640, consulting: 10780 },
-      { month: "October", revenue: 102000, productSales: 42840, services: 29580, subscriptions: 18360, consulting: 11220 },
-      { month: "November", revenue: 100000, productSales: 42000, services: 29000, subscriptions: 18000, consulting: 11000 },
-      { month: "December", revenue: 108000, productSales: 45360, services: 31320, subscriptions: 19440, consulting: 11880 },
-    ],
+  const [currentYearData, setCurrentYearData] = useState<MonthRow[]>(emptyYear);
+  const [prevYearRevenue, setPrevYearRevenue] = useState(0);
+  const [hasPrevYear, setHasPrevYear] = useState(false);
+
+  // ── Read org context from the logged-in session ──────────────────────────
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) {
+      setLoading(false);
+      setError("You are not logged in.");
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      const org = u?.organizationId ?? u?.organizationID;
+      if (org != null && org !== "") {
+        setOrgId(Number(org));
+      } else {
+        setLoading(false);
+        setError("No organization is linked to your account.");
+      }
+    } catch {
+      setLoading(false);
+      setError("Could not read your session. Please log in again.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orgId == null) return;
+    load(orgId, Number(selectedYear));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId, selectedYear]);
+
+  // Revenue = Approved invoices (Total) bucketed by month of createdAt. The
+  // previous year is fetched too so we can show YoY growth.
+  const load = async (org: number, yearNum: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [curRes, prevRes] = await Promise.all([
+        invoiceService.getByOrgForFinance(org, yearNum),
+        invoiceService.getByOrgForFinance(org, yearNum - 1),
+      ]);
+
+      const curInvoices = curRes.data?.invoices ?? [];
+      const prevInvoices = prevRes.data?.invoices ?? [];
+
+      const revByMonth = new Array(12).fill(0);
+      const cntByMonth = new Array(12).fill(0);
+      curInvoices.forEach((inv: any) => {
+        const d = new Date(inv.createdAt || inv.Date);
+        if (isNaN(d.getTime())) return;
+        revByMonth[d.getMonth()] += parseFloat(inv.Total) || 0;
+        cntByMonth[d.getMonth()] += 1;
+      });
+
+      setCurrentYearData(
+        MONTHS.map((m, i) => ({ month: m, revenue: revByMonth[i], invoices: cntByMonth[i] }))
+      );
+
+      const prevRev = prevInvoices.reduce(
+        (s: number, inv: any) => s + (parseFloat(inv.Total) || 0),
+        0
+      );
+      setPrevYearRevenue(prevRev);
+      setHasPrevYear(prevInvoices.length > 0);
+    } catch (e) {
+      console.error("Failed to load revenue data", e);
+      setError("Failed to load revenue data. Please try again.");
+      setCurrentYearData(emptyYear());
+      setPrevYearRevenue(0);
+      setHasPrevYear(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentYearData = revenueData[selectedYear];
-
+  // ── Derived figures ────────────────────────────────────────────────────────
   const yearlyRevenue = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
+  const totalInvoices = currentYearData.reduce((sum, m) => sum + m.invoices, 0);
   const monthsWithData = currentYearData.filter((m) => m.revenue > 0);
   const avgMonthlyRevenue = monthsWithData.length > 0 ? yearlyRevenue / monthsWithData.length : 0;
-  const totalProductSales = currentYearData.reduce((sum, m) => sum + m.productSales, 0);
-  const totalServices = currentYearData.reduce((sum, m) => sum + m.services, 0);
-  const totalSubscriptions = currentYearData.reduce((sum, m) => sum + m.subscriptions, 0);
-  const totalConsulting = currentYearData.reduce((sum, m) => sum + m.consulting, 0);
+  const peakMonth =
+    monthsWithData.length > 0
+      ? monthsWithData.reduce((max, m) => (m.revenue > max.revenue ? m : max), monthsWithData[0])
+      : null;
+  const targetAchievement = yearlyRevenue > 0 ? (yearlyRevenue / REVENUE_TARGET) * 100 : 0;
 
-  const previousYear = (parseInt(selectedYear) - 1).toString();
-  const previousYearData = revenueData[previousYear];
-  let yearOverYearGrowth = 0;
-  if (previousYearData) {
-    const prevYearRevenue = previousYearData.reduce((sum, m) => sum + m.revenue, 0);
-    if (prevYearRevenue > 0) {
-      yearOverYearGrowth = ((yearlyRevenue - prevYearRevenue) / prevYearRevenue) * 100;
-    }
-  }
+  const yearOverYearGrowth =
+    hasPrevYear && prevYearRevenue > 0
+      ? ((yearlyRevenue - prevYearRevenue) / prevYearRevenue) * 100
+      : 0;
 
   const monthlyGrowthData = currentYearData.map((month, index) => {
     if (index === 0 || month.revenue === 0) {
@@ -100,32 +159,40 @@ export function FinanceRevenue() {
     return { ...month, growth: parseFloat(growth.toFixed(1)) };
   });
 
-  const revenueStreams = [
-    { 
-      source: "Product Sales", 
-      amount: totalProductSales, 
-      percentage: yearlyRevenue > 0 ? (totalProductSales / yearlyRevenue * 100) : 0, 
-      color: "#422462" 
-    },
-    { 
-      source: "Services", 
-      amount: totalServices, 
-      percentage: yearlyRevenue > 0 ? (totalServices / yearlyRevenue * 100) : 0, 
-      color: "#5A4079" 
-    },
-    { 
-      source: "Subscriptions", 
-      amount: totalSubscriptions, 
-      percentage: yearlyRevenue > 0 ? (totalSubscriptions / yearlyRevenue * 100) : 0, 
-      color: "#937CB4" 
-    },
-    { 
-      source: "Consulting", 
-      amount: totalConsulting, 
-      percentage: yearlyRevenue > 0 ? (totalConsulting / yearlyRevenue * 100) : 0, 
-      color: "#958CA7" 
-    },
-  ];
+  // Year dropdown: current year and the previous four.
+  const years = useMemo(() => {
+    const cy = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => String(cy - i));
+  }, []);
+
+  const handleExportReport = () => {
+    const rows = [
+      ["Month", "Revenue", "Invoices", "Avg / Invoice", "Growth %"],
+      ...monthlyGrowthData.map((m) => [
+        m.month,
+        m.revenue,
+        m.invoices,
+        m.invoices > 0 ? Math.round(m.revenue / m.invoices) : 0,
+        m.growth,
+      ]),
+      [],
+      [
+        `Total ${selectedYear}`,
+        yearlyRevenue,
+        totalInvoices,
+        totalInvoices > 0 ? Math.round(yearlyRevenue / totalInvoices) : 0,
+        yearOverYearGrowth.toFixed(1),
+      ],
+    ];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `revenue-report-${selectedYear}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -145,16 +212,42 @@ export function FinanceRevenue() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462] shadow-lg">
+          <Button
+            onClick={handleExportReport}
+            disabled={yearlyRevenue === 0}
+            className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462] shadow-lg"
+          >
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </Button>
-          <Button className="bg-gradient-to-r from-[#200B43] to-[#422462] text-white hover:from-[#1A0936] hover:to-[#200B43] shadow-lg">
+          <Button
+            onClick={() => navigate("/app/business-development/invoice")}
+            className="bg-gradient-to-r from-[#200B43] to-[#422462] text-white hover:from-[#1A0936] hover:to-[#200B43] shadow-lg"
+          >
             <DollarSign className="mr-2 h-4 w-4" />
             Create Revenue
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+          {orgId != null && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              onClick={() => load(orgId, Number(selectedYear))}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -173,8 +266,14 @@ export function FinanceRevenue() {
             ))}
           </SelectContent>
         </Select>
+        {loading && (
+          <span className="flex items-center gap-2 text-sm text-[#5A4079]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading…
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-2">
-          {yearOverYearGrowth !== 0 && previousYearData && (
+          {yearOverYearGrowth !== 0 && hasPrevYear && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#F0E9FF] to-white border border-[#937CB4]/30">
               {yearOverYearGrowth >= 0 ? (
                 <TrendingUp className="h-4 w-4 text-green-600" />
@@ -231,18 +330,14 @@ export function FinanceRevenue() {
             <div>
               <p className="text-xs text-amber-600 font-medium mb-1">Peak Month</p>
               <p className="text-2xl font-bold text-amber-700">
-                ${Math.max(...monthsWithData.map(m => m.revenue)).toLocaleString()}
+                ${peakMonth ? peakMonth.revenue.toLocaleString() : "0"}
               </p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
               <Award className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-xs text-amber-600">
-            {monthsWithData.length > 0 
-              ? monthsWithData.reduce((max, m) => m.revenue > max.revenue ? m : max, monthsWithData[0]).month
-              : "-"}
-          </p>
+          <p className="text-xs text-amber-600">{peakMonth ? peakMonth.month : "-"}</p>
         </div>
 
         <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-md hover:shadow-lg transition-all">
@@ -250,7 +345,7 @@ export function FinanceRevenue() {
             <div>
               <p className="text-xs text-emerald-600 font-medium mb-1">Target Achievement</p>
               <p className="text-2xl font-bold text-emerald-700">
-                {yearlyRevenue > 0 ? ((yearlyRevenue / 1500000) * 100).toFixed(1) : 0}%
+                {targetAchievement.toFixed(1)}%
               </p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
@@ -258,7 +353,7 @@ export function FinanceRevenue() {
             </div>
           </div>
           <p className="text-xs text-emerald-600">
-            Target: $1,500,000
+            Target: ${REVENUE_TARGET.toLocaleString()}
           </p>
         </div>
       </div>
@@ -277,55 +372,60 @@ export function FinanceRevenue() {
             </div>
             <Sparkles className="h-6 w-6 text-[#937CB4] animate-pulse-glow" />
           </div>
-          <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={currentYearData}>
-              <defs>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#422462" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#422462" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
-              <XAxis
-                dataKey="month"
-                stroke="#5A4079"
-                tick={{ fontSize: 12 }}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis stroke="#5A4079" tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(255, 255, 255, 0.95)",
-                  border: "1px solid #937CB4",
-                  borderRadius: "8px",
-                  backdropFilter: "blur(10px)",
-                }}
-                formatter={(value: any, name: string) => {
-                  if (name === "revenue") return [`$${value.toLocaleString()}`, "Revenue"];
-                  return [value, name];
-                }}
-              />
-              <Legend wrapperStyle={{ paddingTop: "20px" }} />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                fill="url(#revenueGradient)"
-                stroke="#422462"
-                strokeWidth={2}
-                name="Revenue"
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#422462"
-                strokeWidth={3}
-                dot={{ fill: "#422462", r: 5 }}
-                name="Revenue Trend"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          {monthsWithData.length === 0 && !loading ? (
+            <div className="flex flex-col items-center justify-center h-[400px] text-center text-[#5A4079]">
+              <TrendingUp className="h-12 w-12 text-[#937CB4] mb-3" />
+              <p>No revenue recorded for {selectedYear} yet.</p>
+              <p className="text-xs mt-1">Approved invoices are counted as revenue.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <ComposedChart data={currentYearData}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#422462" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#422462" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#937CB4" opacity={0.2} />
+                <XAxis
+                  dataKey="month"
+                  stroke="#5A4079"
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#5A4079" tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid #937CB4",
+                    borderRadius: "8px",
+                    backdropFilter: "blur(10px)",
+                  }}
+                  formatter={(value: any, name: string) => [`$${Number(value).toLocaleString()}`, name]}
+                />
+                <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  fill="url(#revenueGradient)"
+                  stroke="#422462"
+                  strokeWidth={2}
+                  name="Revenue"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#422462"
+                  strokeWidth={3}
+                  dot={{ fill: "#422462", r: 5 }}
+                  name="Revenue Trend"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -334,7 +434,7 @@ export function FinanceRevenue() {
         <div className="relative z-10">
           <div className="p-6 border-b border-[#937CB4]/20">
             <h3 className="text-xl font-bold text-[#200B43]">Monthly Revenue Breakdown - {selectedYear}</h3>
-            <p className="text-sm text-[#5A4079] mt-1">Detailed monthly revenue by source</p>
+            <p className="text-sm text-[#5A4079] mt-1">Approved invoice revenue by month</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -342,16 +442,15 @@ export function FinanceRevenue() {
                 <tr>
                   <th className="text-left py-3 px-4 text-white font-semibold text-sm">Month</th>
                   <th className="text-right py-3 px-4 text-white font-semibold text-sm">Total Revenue</th>
-                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Product Sales</th>
-                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Services</th>
-                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Subscriptions</th>
-                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Consulting</th>
+                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Invoices</th>
+                  <th className="text-right py-3 px-4 text-white font-semibold text-sm">Avg / Invoice</th>
                   <th className="text-right py-3 px-4 text-white font-semibold text-sm">Growth %</th>
                 </tr>
               </thead>
               <tbody>
                 {monthlyGrowthData.map((month, idx) => {
                   const hasData = month.revenue > 0;
+                  const avgInvoice = month.invoices > 0 ? month.revenue / month.invoices : 0;
 
                   return (
                     <tr
@@ -369,23 +468,15 @@ export function FinanceRevenue() {
                         </p>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <p className="text-sm text-green-700">
-                          {hasData ? `$${month.productSales.toLocaleString()}` : "-"}
-                        </p>
-                      </td>
-                      <td className="py-3 px-4 text-right">
                         <p className="text-sm text-blue-700">
-                          {hasData ? `$${month.services.toLocaleString()}` : "-"}
+                          {hasData ? month.invoices.toLocaleString() : "-"}
                         </p>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <p className="text-sm text-purple-700">
-                          {hasData ? `$${month.subscriptions.toLocaleString()}` : "-"}
-                        </p>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <p className="text-sm text-orange-700">
-                          {hasData ? `$${month.consulting.toLocaleString()}` : "-"}
+                          {hasData
+                            ? `$${avgInvoice.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                            : "-"}
                         </p>
                       </td>
                       <td className="py-3 px-4 text-right">
@@ -422,27 +513,19 @@ export function FinanceRevenue() {
                     </p>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    <p className="text-sm font-bold text-green-700">
-                      ${totalProductSales.toLocaleString()}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4 text-right">
                     <p className="text-sm font-bold text-blue-700">
-                      ${totalServices.toLocaleString()}
+                      {totalInvoices.toLocaleString()}
                     </p>
                   </td>
                   <td className="py-4 px-4 text-right">
                     <p className="text-sm font-bold text-purple-700">
-                      ${totalSubscriptions.toLocaleString()}
+                      {totalInvoices > 0
+                        ? `$${(yearlyRevenue / totalInvoices).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        : "-"}
                     </p>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    <p className="text-sm font-bold text-orange-700">
-                      ${totalConsulting.toLocaleString()}
-                    </p>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    {yearOverYearGrowth !== 0 && previousYearData ? (
+                    {yearOverYearGrowth !== 0 && hasPrevYear ? (
                       <div className="flex items-center justify-end gap-1">
                         {yearOverYearGrowth >= 0 ? (
                           <TrendingUp className="h-4 w-4 text-green-600" />
