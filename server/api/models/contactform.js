@@ -5,7 +5,7 @@ const ContactDetails = sequelize.define("ContactDetails", {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primaryKey: true, // Ensures uniqueness and non-null
+    primaryKey: true,
   },
   Name: {
     type: DataTypes.STRING,
@@ -29,8 +29,22 @@ const ContactDetails = sequelize.define("ContactDetails", {
   },
   status: {
     type: DataTypes.ENUM("Converted", "Dead", "Processing"),
-    allowNull: true,
-      },
+    allowNull: true,
+  },
+  priority: {
+    type: DataTypes.ENUM("low", "medium", "high", "urgent"),
+    allowNull: true,
+    defaultValue: "medium",
+  },
+  category: {
+    type: DataTypes.ENUM("technical", "billing", "feature-request", "general"),
+    allowNull: true,
+    defaultValue: "general",
+  },
+  adminResponse: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
 });
 
 module.exports = ContactDetails;

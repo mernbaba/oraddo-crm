@@ -14,7 +14,9 @@ import {
   DollarSign,
   Users,
   Sparkles,
-  Loader2
+  Loader2,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import { couponService, ApiCoupon } from "../../services/couponService";
 
@@ -36,14 +38,17 @@ export function AdminCoupons() {
   });
 
   const [coupons, setCoupons] = useState<ApiCoupon[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCoupons = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await couponService.getAll();
       setCoupons(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
       console.error("Failed to fetch coupons", err);
+      setError(err?.response?.data?.message ?? "Failed to load coupons from server.");
     } finally {
       setLoading(false);
     }
@@ -53,11 +58,15 @@ export function AdminCoupons() {
     fetchCoupons();
   }, []);
 
+  const totalLimit = coupons.reduce((sum, c) => sum + (c.usageLimit ?? 0), 0);
+  const totalUsed = coupons.reduce((sum, c) => sum + (c.usageCount ?? 0), 0);
+  const avgRate = totalLimit > 0 ? `${Math.round((totalUsed / totalLimit) * 100)}%` : "0%";
+
   const stats = [
     { label: "Total Coupons", value: coupons.length, gradient: "from-[#422462] to-[#5A4079]" },
     { label: "Active Coupons", value: coupons.filter(c => c.active).length, gradient: "from-[#5A4079] to-[#937CB4]" },
-    { label: "Total Redemptions", value: coupons.reduce((sum, c) => sum + c.usageCount, 0), gradient: "from-[#937CB4] to-[#5A4079]" },
-    { label: "Avg Redemption Rate", value: "62%", gradient: "from-[#422462] to-[#937CB4]" },
+    { label: "Total Redemptions", value: totalUsed, gradient: "from-[#937CB4] to-[#5A4079]" },
+    { label: "Avg Redemption Rate", value: loading ? "—" : avgRate, gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
   const plans = ["Basic", "Pro", "Enterprise"];
@@ -187,6 +196,19 @@ export function AdminCoupons() {
           </div>
         ))}
       </div>
+
+      {error && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <p className="text-sm flex-1">{error}</p>
+          <button
+            onClick={fetchCoupons}
+            className="flex items-center gap-1 text-sm border border-red-300 px-3 py-1 rounded-lg hover:bg-red-100"
+          >
+            <RefreshCw className="h-3 w-3" /> Retry
+          </button>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button

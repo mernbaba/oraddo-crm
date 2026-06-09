@@ -23,6 +23,7 @@ import {
   Building2
 } from "lucide-react";
 import { orgService, ApiOrg } from "../../services/orgService";
+import { plansService } from "../../services/plansService";
 
 interface User {
   id: number;
@@ -51,7 +52,7 @@ const mapStatusToDB = (status: string): string => {
   return status;
 };
 
-function mapOrgToUser(org: ApiOrg): User {
+function mapOrgToUser(org: ApiOrg, planPriceMap: Record<string, number>): User {
   return {
     id: org.id,
     name: org.fullName ?? org.companyName ?? org.email ?? "Unknown",
@@ -61,7 +62,7 @@ function mapOrgToUser(org: ApiOrg): User {
     status: mapStatusToUI(org.status),
     joinDate: org.createdAt ? org.createdAt.substring(0, 10) : "—",
     lastActive: org.updatedAt ? org.updatedAt.substring(0, 10) : "—",
-    mrr: 0,
+    mrr: planPriceMap[org.selectedPlan ?? "Free"] ?? 0,
     company: org.companyName ?? undefined,
   };
 }
@@ -94,9 +95,21 @@ export function AdminUsers() {
     try {
       setLoading(true);
       setError(null);
-      const res = await orgService.getAll();
-      const data = Array.isArray(res.data?.Clients) ? res.data.Clients : [];
-      setUsers(data.map(mapOrgToUser));
+      const [orgsRes, plansRes] = await Promise.allSettled([
+        orgService.getAll(),
+        plansService.getAll(),
+      ]);
+
+      const planPriceMap: Record<string, number> = {};
+      if (plansRes.status === "fulfilled" && Array.isArray(plansRes.value.data)) {
+        plansRes.value.data.forEach(p => {
+          planPriceMap[p.planName] = parseFloat(p.price as any) || 0;
+        });
+      }
+
+      const data = orgsRes.status === "fulfilled" && Array.isArray(orgsRes.value.data?.Clients)
+        ? orgsRes.value.data.Clients : [];
+      setUsers(data.map(org => mapOrgToUser(org, planPriceMap)));
     } catch (err: any) {
       console.error("Failed to fetch users:", err);
       setError(err?.response?.data?.message ?? "Failed to load users from server.");

@@ -31,6 +31,11 @@ const PremiumPlans = sequelize.define("PremiumPlans",{
     total:{
     type:DataTypes.FLOAT,
     allowNull:true
+  },
+  isActive:{
+    type:DataTypes.BOOLEAN,
+    allowNull:false,
+    defaultValue:true
   }
 });
 

@@ -43,8 +43,8 @@ function mapContactToQuery(c: ApiContact): Query {
     subject: c.CompanyName ?? c.Message?.substring(0, 60) ?? "No subject",
     message: c.Message ?? "",
     status: (c.status as Query["status"]) ?? "open",
-    priority: "medium",
-    category: "general",
+    priority: (c.priority as Query["priority"]) ?? "medium",
+    category: (c.category as Query["category"]) ?? "general",
     createdAt: c.createdAt ? new Date(c.createdAt).toLocaleString() : "—",
     updatedAt: c.updatedAt ? new Date(c.updatedAt).toLocaleString() : "—",
     assignedTo: undefined,
@@ -63,6 +63,8 @@ export function AdminQueries() {
   const [showQueryModal, setShowQueryModal] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState<Query | null>(null);
   const [responseMessage, setResponseMessage] = useState("");
+  const [responsePriority, setResponsePriority] = useState<Query["priority"]>("medium");
+  const [responseCategory, setResponseCategory] = useState<Query["category"]>("general");
 
   const fetchQueries = async () => {
     try {
@@ -137,10 +139,13 @@ export function AdminQueries() {
       await contactService.update(selectedQuery.id, {
         status: "Converted" as any,
         adminResponse: responseMessage,
-        updatedAt: new Date().toISOString()
-      } as any);
+        priority: responsePriority as any,
+        category: responseCategory as any,
+      });
       setQueries(prev => prev.map(q =>
-        q.id === selectedQuery.id ? { ...q, status: "resolved" } : q
+        q.id === selectedQuery.id
+          ? { ...q, status: "resolved", priority: responsePriority, category: responseCategory }
+          : q
       ));
       setShowQueryModal(false);
       setResponseMessage("");
@@ -273,7 +278,7 @@ export function AdminQueries() {
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white"
-                        onClick={() => { setSelectedQuery(query); setResponseMessage(""); setShowQueryModal(true); }}
+                        onClick={() => { setSelectedQuery(query); setResponseMessage(""); setResponsePriority(query.priority); setResponseCategory(query.category); setShowQueryModal(true); }}
                       >
                         View & Respond
                       </Button>
@@ -333,6 +338,34 @@ export function AdminQueries() {
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">Message</label>
               <div className="p-4 rounded-lg bg-white border border-[#937CB4]/30 text-[#5A4079]">{selectedQuery.message}</div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Priority</label>
+                <select
+                  value={responsePriority}
+                  onChange={(e) => setResponsePriority(e.target.value as Query["priority"])}
+                  className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:outline-none focus:ring-2 focus:ring-[#937CB4] text-[#200B43]"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#200B43] mb-2">Category</label>
+                <select
+                  value={responseCategory}
+                  onChange={(e) => setResponseCategory(e.target.value as Query["category"])}
+                  className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:outline-none focus:ring-2 focus:ring-[#937CB4] text-[#200B43]"
+                >
+                  <option value="general">General</option>
+                  <option value="technical">Technical</option>
+                  <option value="billing">Billing</option>
+                  <option value="feature-request">Feature Request</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-[#200B43] mb-2">Your Response</label>

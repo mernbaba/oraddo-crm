@@ -22,6 +22,7 @@ import { orgService } from "../../services/orgService";
 import { plansService } from "../../services/plansService";
 import { revenueService } from "../../services/revenueService";
 import { notificationService } from "../../services/notificationService";
+import { contactService } from "../../services/contactService";
 
 const PLAN_COLORS: Record<string, string> = {
   Free: "#937CB4",
@@ -51,11 +52,12 @@ export function AdminDashboard() {
       setError(null);
 
       // Fetch everything in parallel
-      const [orgsRes, plansRes, revenuesRes, notifRes] = await Promise.allSettled([
+      const [orgsRes, plansRes, revenuesRes, notifRes, queriesRes] = await Promise.allSettled([
         orgService.getAll(),
         plansService.getAll(),
         revenueService.getAll(),
         notificationService.getAll(),
+        contactService.getAll(),
       ]);
 
       // ── Orgs / Users ──────────────────────────────────
@@ -128,13 +130,18 @@ export function AdminDashboard() {
       }));
       setRecentActivity(activity);
 
+      // ── Queries (open = null/Processing status, not Converted/Dead) ──
+      const contacts = queriesRes.status === "fulfilled" && Array.isArray(queriesRes.value.data)
+        ? queriesRes.value.data : [];
+      const openQueries = contacts.filter(q => q.status !== "Converted" && q.status !== "Dead").length;
+
       setStats({
         totalUsers: orgs.length,
         totalRevenue,
         activeSubscriptions,
         mrr,
         newUsersToday,
-        openQueries: 0, // Contact Form API available separately
+        openQueries,
       });
     } catch (err: any) {
       console.error("Dashboard fetch error:", err);
@@ -349,7 +356,7 @@ export function AdminDashboard() {
         {[
           { label: "New Users Today", value: stats.newUsersToday, icon: UserCheck, note: "Live from DB" },
           { label: "Active Subscriptions", value: stats.activeSubscriptions, icon: CreditCard, note: "Paid plans only" },
-          { label: "Total Organizations", value: stats.totalUsers, icon: Users, note: "All registered" },
+          { label: "Open Queries", value: stats.openQueries, icon: UserX, note: "Pending + in-progress" },
         ].map((s) => {
           const Icon = s.icon;
           return (

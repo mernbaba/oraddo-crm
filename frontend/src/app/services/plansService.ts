@@ -8,6 +8,7 @@ export interface ApiPlan {
   employeeLimit: number;
   subscription?: string;
   total?: number;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;

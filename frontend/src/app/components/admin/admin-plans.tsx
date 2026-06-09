@@ -23,9 +23,10 @@ interface Plan {
   id: number;
   name: string;
   price: number;
-  billingPeriod: string;       // maps from model "duration" field
-  features: string[];           // not in model — shown as employeeLimit info
+  billingPeriod: string;
+  features: string[];
   employeeLimit: number;
+  isActive: boolean;
   subscription?: string;
   total?: number;
 }
@@ -39,6 +40,7 @@ function mapApiPlanToLocal(p: ApiPlan): Plan {
     billingPeriod: p.duration ?? "monthly",
     features: typeof p.subscription === "string" ? p.subscription.split("\n").filter(f => f.trim()) : [],
     employeeLimit: p.employeeLimit ?? 0,
+    isActive: p.isActive !== false,
     subscription: p.subscription,
     total: p.total,
   };
@@ -155,10 +157,10 @@ export function AdminPlans() {
   };
 
   const handleToggleActive = async (plan: Plan) => {
-    const newStatus = plan.subscription === "active" ? "inactive" : "active";
+    const newIsActive = !plan.isActive;
     try {
-      await plansService.update(plan.id, { subscription: newStatus });
-      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, subscription: newStatus } : p));
+      await plansService.update(plan.id, { isActive: newIsActive });
+      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, isActive: newIsActive } : p));
     } catch (err: any) {
       alert(err?.response?.data?.message ?? "Failed to update plan status.");
     }
@@ -238,8 +240,8 @@ export function AdminPlans() {
                         <span className="text-sm text-[#5A4079]">/{plan.billingPeriod === "monthly" ? "mo" : "yr"}</span>
                       </div>
                     </div>
-                    <Badge className={plan.subscription === "active" ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
-                      {plan.subscription === "active" ? "Active" : "Inactive"}
+                    <Badge className={plan.isActive ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
+                      {plan.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </CardHeader>

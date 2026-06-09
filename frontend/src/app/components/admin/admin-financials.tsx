@@ -47,21 +47,35 @@ export function AdminFinancials() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // ─── Apply date range filter client-side ────────────────────────────────────
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
+  const cutoffStr = cutoff.toISOString().substring(0, 10);
+
+  const filteredInvoices = invoices.filter(inv => {
+    const d = (inv.Date ?? inv.createdAt ?? "").substring(0, 10);
+    return !d || d >= cutoffStr;
+  });
+  const filteredRevenues = revenues.filter(r => {
+    const d = (r.date ?? r.createdAt ?? "").substring(0, 10);
+    return !d || d >= cutoffStr;
+  });
+
   // ─── Derive summary stats ───────────────────────────────────────────────────
-  const totalRevenue = revenues.reduce((sum, r) => sum + (r.total_calculation ?? r.credit ?? 0), 0);
-  const successInvoices = invoices.filter(i => (i.status ?? "").toLowerCase() === "approved");
-  const pendingInvoices = invoices.filter(i => (i.status ?? "").toLowerCase() === "pending");
-  const failedInvoices = invoices.filter(i => (i.status ?? "").toLowerCase() === "decline");
+  const totalRevenue = filteredRevenues.reduce((sum, r) => sum + (r.total_calculation ?? r.credit ?? 0), 0);
+  const successInvoices = filteredInvoices.filter(i => (i.status ?? "").toLowerCase() === "approved");
+  const pendingInvoices = filteredInvoices.filter(i => (i.status ?? "").toLowerCase() === "pending");
+  const failedInvoices = filteredInvoices.filter(i => (i.status ?? "").toLowerCase() === "decline");
 
   const stats = [
     { label: "Total Revenue", value: `$${totalRevenue.toLocaleString()}`, gradient: "from-[#422462] to-[#5A4079]" },
-    { label: "Total Transactions", value: invoices.length, gradient: "from-[#5A4079] to-[#937CB4]" },
+    { label: "Total Transactions", value: filteredInvoices.length, gradient: "from-[#5A4079] to-[#937CB4]" },
     { label: "Paid Invoices", value: successInvoices.length, gradient: "from-[#937CB4] to-[#5A4079]" },
     { label: "Pending Invoices", value: pendingInvoices.length, gradient: "from-[#422462] to-[#937CB4]" },
   ];
 
-  // Build monthly chart data from revenues
-  const chartData = revenues.slice(-6).map((r, i) => ({
+  // Build monthly chart data from filtered revenues
+  const chartData = filteredRevenues.slice(-6).map((r, i) => ({
     month: r.date ? r.date.substring(0, 7) : r.createdAt?.substring(0, 7) ?? `M${i + 1}`,
     revenue: r.total_calculation ?? r.credit ?? 0,
   }));
@@ -191,18 +205,18 @@ export function AdminFinancials() {
             <CardHeader>
               <CardTitle className="text-[#200B43] flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Recent Transactions ({invoices.length})
+                Recent Transactions ({filteredInvoices.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {invoices.length === 0 ? (
+              {filteredInvoices.length === 0 ? (
                 <div className="py-12 text-center text-[#5A4079]">
                   <DollarSign className="h-10 w-10 mx-auto mb-3 text-[#937CB4]" />
                   <p>No transactions found.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {invoices.slice(0, 20).map((inv) => (
+                  {filteredInvoices.slice(0, 20).map((inv) => (
                     <div
                       key={inv.id}
                       className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-[#F0E9FF] to-white border border-[#937CB4]/20 hover:shadow-md transition-all"

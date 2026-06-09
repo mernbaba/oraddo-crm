@@ -16,72 +16,54 @@ import {
   RefreshCw,
   CheckCircle
 } from "lucide-react";
-import { orgService, ApiOrg } from "../../services/orgService";
-
-// ─── We persist settings into the first org record found ─────────────────────
-// Settings that have no direct DB field are stored only in local state (SMTP
-// passwords, Stripe keys, etc.) since those would live in server env-vars.
+import { adminSettingsService, AdminSettingsData } from "../../services/adminSettingsService";
 
 export function AdminSettings() {
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<AdminSettingsData>({
     siteName: "Oraddo CRM",
     siteUrl: "https://app.oraddo.com",
     supportEmail: "support@oraddo.com",
     timezone: "UTC",
-
     emailProvider: "smtp",
     smtpHost: "smtp.gmail.com",
     smtpPort: "587",
     smtpUser: "noreply@oraddo.com",
-
+    smtpPassword: "",
     emailNotifications: true,
     smsNotifications: false,
     pushNotifications: true,
     notifyNewUser: true,
     notifyNewQuery: true,
     notifyPayment: true,
-
     twoFactorAuth: true,
     sessionTimeout: "30",
     passwordExpiry: "90",
     maxLoginAttempts: "5",
-
     currency: "USD",
     taxRate: "0",
     stripePublicKey: "",
     stripeSecretKey: "",
-
     autoApproveUsers: false,
     defaultPlan: "Free",
     trialPeriod: "14",
-    maxUsers: "10000"
+    maxUsers: "10000",
   });
 
-  // Load org data and pre-fill relevant fields
   const loadOrgSettings = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await orgService.getAll();
-      const orgs: ApiOrg[] = Array.isArray(res.data) ? res.data : [];
-      if (orgs.length > 0) {
-        const org = orgs[0];
-        setOrgId(org._id);
-        setSettings(prev => ({
-          ...prev,
-          siteName: org.orgName ?? org.name ?? prev.siteName,
-          supportEmail: org.email ?? prev.supportEmail,
-          siteUrl: org.website ?? org.siteUrl ?? prev.siteUrl,
-        }));
+      const res = await adminSettingsService.get();
+      if (res.data?.data) {
+        setSettings(prev => ({ ...prev, ...res.data.data }));
       }
     } catch (err: any) {
-      console.error("Failed to load org settings:", err);
+      console.error("Failed to load settings:", err);
       setError(err?.response?.data?.message ?? "Failed to load settings from server.");
     } finally {
       setLoading(false);
@@ -91,18 +73,9 @@ export function AdminSettings() {
   useEffect(() => { loadOrgSettings(); }, []);
 
   const handleSave = async () => {
-    if (!orgId) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-      return;
-    }
     setSaving(true);
     try {
-      await orgService.update(orgId, {
-        orgName: settings.siteName,
-        email: settings.supportEmail,
-        website: settings.siteUrl,
-      });
+      await adminSettingsService.update(settings);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -170,7 +143,7 @@ export function AdminSettings() {
         <CardHeader>
           <CardTitle className="text-[#200B43] flex items-center gap-2">
             <Globe className="h-5 w-5" /> General Settings
-            {orgId && <span className="text-xs font-normal text-green-600 ml-2 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Synced with DB</span>}
+            {!loading && <span className="text-xs font-normal text-green-600 ml-2 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Synced with DB</span>}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -226,6 +199,7 @@ export function AdminSettings() {
               { label: "SMTP Host", key: "smtpHost", type: "text" },
               { label: "SMTP Port", key: "smtpPort", type: "text" },
               { label: "SMTP User", key: "smtpUser", type: "email" },
+              { label: "SMTP Password", key: "smtpPassword", type: "password" },
             ].map(f => (
               <div key={f.key}>
                 <label className="block text-sm font-medium text-[#200B43] mb-2">{f.label}</label>

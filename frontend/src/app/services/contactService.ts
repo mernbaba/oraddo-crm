@@ -10,6 +10,9 @@ export interface ApiContact {
   Message?: string;
   CompanyName?: string;
   status?: "Converted" | "Dead" | "Processing";
+  priority?: "low" | "medium" | "high" | "urgent";
+  category?: "technical" | "billing" | "feature-request" | "general";
+  adminResponse?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
