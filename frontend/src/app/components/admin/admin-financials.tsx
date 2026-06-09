@@ -136,10 +136,10 @@ export function AdminFinancials() {
               </select>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF]" onClick={fetchData}>
+              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]" onClick={fetchData}>
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
-              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF]">
+              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]">
                 <Download className="h-4 w-4 mr-2" /> Export Report
               </Button>
             </div>

@@ -221,7 +221,7 @@ export function AdminCoupons() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]"
                       onClick={() => handleCopyCouponCode(coupon.code)}
                     >
                       <Copy className="h-3 w-3 mr-1" />
@@ -266,7 +266,7 @@ export function AdminCoupons() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                    className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]"
                     onClick={() => handleEditCoupon(coupon)}
                   >
                     <Edit className="h-4 w-4" />
@@ -274,7 +274,7 @@ export function AdminCoupons() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`border-[#937CB4]/30 ${coupon.active ? "hover:bg-yellow-50" : "hover:bg-green-50"}`}
+                    className={`border-[#937CB4]/30 text-[#5A4079] ${coupon.active ? "hover:bg-yellow-50 hover:text-yellow-800" : "hover:bg-green-50 hover:text-green-800"}`}
                     onClick={() => handleToggleActive(coupon)}
                   >
                     {coupon.active ? "Disable" : "Enable"}
@@ -282,10 +282,10 @@ export function AdminCoupons() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-red-300 hover:bg-red-50"
+                    className="border-red-300 hover:bg-red-50 hover:text-red-700 text-red-600"
                     onClick={() => handleDeleteCoupon(coupon.id)}
                   >
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

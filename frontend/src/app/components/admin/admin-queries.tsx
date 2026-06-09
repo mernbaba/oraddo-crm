@@ -223,7 +223,7 @@ export function AdminQueries() {
                 <option value="high">High</option>
                 <option value="urgent">Urgent</option>
               </select>
-              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF]" onClick={fetchQueries}>
+              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]" onClick={fetchQueries}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>

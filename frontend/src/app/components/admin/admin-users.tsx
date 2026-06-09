@@ -291,12 +291,12 @@ export function AdminUsers() {
                 <option value="suspended">Suspended</option>
               </select>
 
-              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF]">
+              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
 
-              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF]" onClick={fetchUsers}>
+              <Button variant="outline" className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]" onClick={fetchUsers}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
@@ -366,7 +366,7 @@ export function AdminUsers() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]"
                       onClick={() => handleChangePlan(user)}
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
@@ -375,7 +375,7 @@ export function AdminUsers() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                      className="border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]"
                       onClick={() => handleEditUser(user)}
                     >
                       <Edit className="h-4 w-4" />
@@ -383,7 +383,7 @@ export function AdminUsers() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className={`border-[#937CB4]/30 ${user.status === "suspended" ? "bg-green-50 hover:bg-green-100" : "bg-yellow-50 hover:bg-yellow-100"}`}
+                      className={`border-[#937CB4]/30 hover:text-[#200B43] text-[#5A4079] ${user.status === "suspended" ? "bg-green-50 hover:bg-green-100" : "bg-yellow-50 hover:bg-yellow-100"}`}
                       onClick={() => handleSuspendUser(user)}
                     >
                       <Ban className="h-4 w-4" />

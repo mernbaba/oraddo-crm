@@ -274,7 +274,7 @@ export function AdminPlans() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 border-[#937CB4]/30 hover:bg-[#F0E9FF]"
+                      className="flex-1 border-[#937CB4]/30 hover:bg-[#F0E9FF] hover:text-[#200B43] text-[#5A4079]"
                       onClick={() => handleEditPlan(plan)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
@@ -283,7 +283,7 @@ export function AdminPlans() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#937CB4]/30 hover:bg-yellow-50"
+                      className="border-[#937CB4]/30 hover:bg-yellow-50 hover:text-yellow-800 text-[#5A4079]"
                       onClick={() => handleToggleActive(plan)}
                     >
                       Update
@@ -291,10 +291,10 @@ export function AdminPlans() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-red-300 hover:bg-red-50"
+                      className="border-red-300 hover:bg-red-50 hover:text-red-700 text-red-600"
                       onClick={() => handleDeletePlan(plan)}
                     >
-                      <Trash2 className="h-3 w-3 text-red-600" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </CardContent>
