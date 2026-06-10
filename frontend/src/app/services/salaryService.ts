@@ -51,10 +51,47 @@ export interface SalaryAdvancePayload {
   organizationId?: number;
 }
 
+// Response wrapper for the org-scoped list endpoint. employesCount is the
+// org's active head-count (independent of the month filter); approveCount is
+// the number of approved slips within the filter.
+export interface OrgSalariesResponse {
+  salaries: SalaryRecord[];
+  totalSalaries: number;
+  totalNetPay: number | string;
+  employesCount: number;
+  approveCount: number;
+}
+
 export const salaryService = {
   // All monthly salary slips for the logged-in employee, oldest first.
   getByEmployee: (empId: number) => {
     return api.get<SalaryRecord[]>(`/api/salariesByEmployee/${empId}`);
+  },
+
+  // Salary slips for one organization, filtered to a single month.
+  // NOTE: `month` is ZERO-based (0 = January) — the backend filters on
+  // DATE_PART(month) = month + 1. Both year and month must be sent; a missing
+  // month becomes NaN server-side and matches nothing.
+  getByOrganization: (
+    orgId: number,
+    params: { year: number; month: number; search?: string; page?: number; pageSize?: number }
+  ) => {
+    return api.get<OrgSalariesResponse>(`/api/salariesbyorganization/${orgId}`, {
+      params: { page: 0, pageSize: 200, ...params },
+    });
+  },
+
+  // Server-generated Excel workbook of the month's salaries (same 0-based month).
+  exportByOrganization: (orgId: number, params: { year: number; month: number }) => {
+    return api.get<Blob>(`/api/export-salaries/${orgId}`, {
+      params,
+      responseType: "blob",
+    });
+  },
+
+  // Mark one salary slip approved (paid). :id is the salary row id.
+  approve: (salaryId: number, isApproved = true) => {
+    return api.put(`/api/approveSalary/${salaryId}`, { isApproved });
   },
 
   // Submit a salary-advance / loan request.

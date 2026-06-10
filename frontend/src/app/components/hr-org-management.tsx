@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Users, LogOut, Edit, Eye, Trash2, Plus, Download, Upload, Search, Filter, Calendar, Clock, Check, X, AlertCircle, User, Mail, Phone, Briefcase, CheckCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
@@ -7,57 +7,274 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
 import { HROrgOnboarding as HROnboardingSystem } from "./hr-onboarding-system";
+import { resignationService } from "../services/resignationService";
+import { employeeService } from "../services/employeeService";
 
  
+type ApprovalStatus = "Pending" | "Approved" | "Declined";
+type ResignationStatus = "Pending" | "Approved" | "Rejected" | "Completed";
+
+interface ResignationRow {
+  resignationId: number;
+  empId: number;
+  employeeName: string;
+  employeeCode: string;
+  department: string;
+  position: string;
+  submissionDate: string;
+  lastWorkingDay: string;
+  noticePeriod: string;
+  reason: string;
+  resignationType: string;
+  status: ResignationStatus;
+  letterUrl: string | null;
+  employeeComments: string;
+  hrStatus: ApprovalStatus;
+  hrComments: string;
+  teamLeadStatus: ApprovalStatus;
+  teamLeadComments: string;
+  managerStatus: ApprovalStatus;
+  managerComments: string;
+}
+
+const fmtDate = (value?: string | null) => (value ? String(value).slice(0, 10) : "");
+
+// Mirrors deriveStatus in the employee portal (hr-all-remaining.tsx): any decline
+// rejects, HR approval finalizes; "Completed" once the last working day has passed.
+const deriveOverallStatus = (rec: any): ResignationStatus => {
+  if ([rec?.hr_status, rec?.manager_status, rec?.team_lead_status].includes("Declined")) return "Rejected";
+  if (rec?.hr_status === "Approved") {
+    const lwd = fmtDate(rec?.last_working_date);
+    if (lwd && new Date(lwd) < new Date()) return "Completed";
+    return "Approved";
+  }
+  return "Pending";
+};
+
 export function HROrgResignationManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewModal, setViewModal] = useState<number | null>(null);
   const [editModal, setEditModal] = useState<number | null>(null);
 
-  const resignations = [
-    {
-      id: 1,
-      employeeName: "John Anderson",
-      employeeId: "EMP-001",
-      department: "Engineering",
-      position: "Senior Developer",
-      submissionDate: "2024-01-10",
-      lastWorkingDay: "2024-02-10",
-      noticePeriod: "30 days",
-      reason: "Career Growth",
-      status: "Pending",
-      email: "john.anderson@company.com",
-      phone: "+1 234 567 8900",
-    },
-    {
-      id: 2,
-      employeeName: "Sarah Martinez",
-      employeeId: "EMP-045",
-      department: "Marketing",
-      position: "Marketing Manager",
-      submissionDate: "2024-01-08",
-      lastWorkingDay: "2024-02-23",
-      noticePeriod: "45 days",
-      reason: "Personal Reasons",
-      status: "Approved",
-      email: "sarah.martinez@company.com",
-      phone: "+1 234 567 8901",
-    },
-    {
-      id: 3,
-      employeeName: "Michael Chen",
-      employeeId: "EMP-023",
-      department: "Sales",
-      position: "Sales Executive",
-      submissionDate: "2024-01-05",
-      lastWorkingDay: "2024-01-20",
-      noticePeriod: "15 days",
-      reason: "Better Opportunity",
-      status: "Completed",
-      email: "michael.chen@company.com",
-      phone: "+1 234 567 8902",
-    },
-  ];
+  const [orgId, setOrgId] = useState<number | null>(null);
+  const [resignations, setResignations] = useState<ResignationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [employees, setEmployees] = useState<{ id: number; emp_name: string; personal_email?: string; bussiness_email?: string }[]>([]);
+  const emptyCreateForm = {
+    empId: "",
+    resignationDate: new Date().toISOString().slice(0, 10),
+    lastWorkingDay: "",
+    noticePeriod: "30",
+    resignationType: "Voluntary",
+    reason: "",
+  };
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const [creating, setCreating] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    lastWorkingDay: "",
+    noticePeriod: "",
+    reason: "",
+    teamLeadStatus: "Pending" as ApprovalStatus,
+    teamLeadComments: "",
+    managerStatus: "Pending" as ApprovalStatus,
+    managerComments: "",
+    hrStatus: "Pending" as ApprovalStatus,
+    hrComments: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  // ── Read org context from the logged-in session ──────────────────────────
+  useEffect(() => {
+    const raw = sessionStorage.getItem("userData");
+    if (!raw) {
+      setError("No organization is linked to your account. Please log in again.");
+      setLoading(false);
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      const org = u?.organizationId != null ? Number(u.organizationId) : null;
+      setOrgId(org);
+      if (org == null) {
+        setError("No organization is linked to your account. Please log in again.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Could not read your session. Please log in again.");
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orgId == null) return;
+    loadResignations(orgId);
+    loadEmployees(orgId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  // Rows come back as Emp_onboarding records with the resignation nested
+  // under emp_Resignation (hasOne), so employee fields live on the outer row.
+  const mapRow = (r: any): ResignationRow | null => {
+    const rec = r?.emp_Resignation;
+    if (!rec?.id) return null;
+    return {
+      resignationId: Number(rec.id),
+      empId: Number(r.id),
+      employeeName: r.emp_name || `Employee #${r.id}`,
+      employeeCode: `EMP-${String(r.id).padStart(3, "0")}`,
+      department: r.department || "—",
+      position: r.position || "—",
+      submissionDate: fmtDate(rec.resignation_date || rec.createdAt) || "—",
+      lastWorkingDay: fmtDate(rec.last_working_date) || "—",
+      noticePeriod: rec.notice_period ? `${String(rec.notice_period).replace(/\D/g, "") || rec.notice_period} days` : "—",
+      reason: rec.resignation_reason || "—",
+      resignationType: rec.resignation_type || "—",
+      status: deriveOverallStatus(rec),
+      letterUrl: rec.resignation_letter || null,
+      employeeComments: rec.employee_comments || "",
+      hrStatus: rec.hr_status || "Pending",
+      hrComments: rec.hr_comments || "",
+      teamLeadStatus: rec.team_lead_status || "Pending",
+      teamLeadComments: rec.team_lead_comments || "",
+      managerStatus: rec.manager_status || "Pending",
+      managerComments: rec.manager_comments || "",
+    };
+  };
+
+  const loadResignations = async (org: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await resignationService.getByOrg(org);
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setResignations((data as any[]).map(mapRow).filter((x): x is ResignationRow => x !== null));
+    } catch (e) {
+      console.error("Failed to load resignations", e);
+      setError("Failed to load resignation requests. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEmployees = async (org: number) => {
+    try {
+      const res = await employeeService.getEmployeesByOrg(org);
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setEmployees(
+        (data as any[]).map((e) => ({
+          id: Number(e.id),
+          emp_name: e.emp_name || `Employee #${e.id}`,
+          personal_email: e.personal_email,
+          bussiness_email: e.bussiness_email,
+        }))
+      );
+    } catch (e) {
+      console.error("Failed to load employees", e);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (orgId == null) return;
+    const emp = employees.find((x) => x.id === Number(createForm.empId));
+    if (!emp) {
+      alert("Please select an employee.");
+      return;
+    }
+    const empEmail = emp.personal_email || emp.bussiness_email;
+    if (!empEmail) {
+      alert("This employee has no email address on file. Please add one to their onboarding record first.");
+      return;
+    }
+    if (!createForm.lastWorkingDay) {
+      alert("Please choose the last working day.");
+      return;
+    }
+    if (!createForm.reason.trim()) {
+      alert("Please enter the reason for resignation.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await resignationService.create({
+        emp_onboarding_id: emp.id,
+        personal_email_address: empEmail,
+        resignation_reason: createForm.reason.trim(),
+        resignation_type: createForm.resignationType,
+        notice_period: createForm.noticePeriod,
+        last_working_date: createForm.lastWorkingDay,
+        resignation_date: createForm.resignationDate,
+        organizationID: orgId,
+        hr_status: "Pending",
+        team_lead_status: "Pending",
+        manager_status: "Pending",
+      });
+      // The server answers 201 with { success:false } when the employee still
+      // has an open salary loan — treat it as a validation failure.
+      if (res.data?.success === false) {
+        alert(res.data.message || "Unable to process this resignation.");
+        return;
+      }
+      setShowCreateModal(false);
+      setCreateForm(emptyCreateForm);
+      await loadResignations(orgId);
+    } catch (err) {
+      console.error("Failed to create resignation", err);
+      alert("Failed to process the resignation. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const openEdit = (row: ResignationRow) => {
+    setEditForm({
+      lastWorkingDay: row.lastWorkingDay !== "—" ? row.lastWorkingDay : "",
+      noticePeriod: row.noticePeriod !== "—" ? row.noticePeriod.replace(/\D/g, "") : "",
+      reason: row.reason !== "—" ? row.reason : "",
+      teamLeadStatus: row.teamLeadStatus,
+      teamLeadComments: row.teamLeadComments,
+      managerStatus: row.managerStatus,
+      managerComments: row.managerComments,
+      hrStatus: row.hrStatus,
+      hrComments: row.hrComments,
+    });
+    setViewModal(null);
+    setEditModal(row.resignationId);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editModal == null || orgId == null) return;
+    setSaving(true);
+    try {
+      await resignationService.update(editModal, {
+        // null (not undefined) so an emptied field actually clears in the DB;
+        // axios drops undefined keys. resignation_reason is NOT NULL, so skip it when empty.
+        last_working_date: editForm.lastWorkingDay || null,
+        notice_period: editForm.noticePeriod || null,
+        resignation_reason: editForm.reason || undefined,
+        team_lead_status: editForm.teamLeadStatus,
+        team_lead_comments: editForm.teamLeadComments,
+        manager_status: editForm.managerStatus,
+        manager_comments: editForm.managerComments,
+        hr_status: editForm.hrStatus,
+        hr_comments: editForm.hrComments,
+      });
+      setEditModal(null);
+      await loadResignations(orgId);
+    } catch (err) {
+      console.error("Failed to update resignation", err);
+      alert("Failed to save the updates. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const initials = (name: string) =>
+    name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -159,45 +376,80 @@ export function HROrgResignationManagement() {
                 </tr>
               </thead>
               <tbody>
-                {resignations.map((resignation) => (
-                  <tr key={resignation.id} className="border-b border-[#937CB4]/10 hover:bg-[#F0E9FF]/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <div>
-                        <p className="text-sm font-medium text-[#200B43]">{resignation.employeeName}</p>
-                        <p className="text-xs text-[#5A4079]">{resignation.employeeId}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.department}</td>
-                    <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.submissionDate}</td>
-                    <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.lastWorkingDay}</td>
-                    <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.noticePeriod}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(resignation.status)}`}>
-                        {resignation.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setViewModal(resignation.id)}
-                          className="text-[#422462] hover:bg-[#F0E9FF]"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditModal(resignation.id)}
-                          className="text-[#422462] hover:bg-[#F0E9FF]"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center">
+                      <div className="flex items-center justify-center gap-3 text-sm text-[#5A4079]">
+                        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-[#422462]"></div>
+                        Loading resignation requests…
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : error ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <p className="text-sm text-red-600">{error}</p>
+                        {orgId != null && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => loadResignations(orgId)}
+                            className="border-[#937CB4]/30"
+                          >
+                            Retry
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : resignations.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-sm text-[#5A4079]">
+                      No resignation requests yet.
+                    </td>
+                  </tr>
+                ) : (
+                  resignations.map((resignation) => (
+                    <tr key={resignation.resignationId} className="border-b border-[#937CB4]/10 hover:bg-[#F0E9FF]/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="text-sm font-medium text-[#200B43]">{resignation.employeeName}</p>
+                          <p className="text-xs text-[#5A4079]">{resignation.employeeCode}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.department}</td>
+                      <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.submissionDate}</td>
+                      <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.lastWorkingDay}</td>
+                      <td className="py-3 px-4 text-sm text-[#5A4079]">{resignation.noticePeriod}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(resignation.status)}`}>
+                          {resignation.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setViewModal(resignation.resignationId)}
+                            className="text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462]"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openEdit(resignation)}
+                            className="text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462]"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -205,47 +457,93 @@ export function HROrgResignationManagement() {
       </div>
  
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Process Resignation" size="lg">
-        <form className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="employeeId">Employee ID</Label>
-              <Input id="employeeId" placeholder="EMP-XXX" className="border-[#937CB4]/30" />
-            </div>
-            <div>
-              <Label htmlFor="employeeName">Employee Name</Label>
-              <Input id="employeeName" placeholder="Full name" className="border-[#937CB4]/30" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="department">Department</Label>
-              <Input id="department" placeholder="Department" className="border-[#937CB4]/30" />
-            </div>
-            <div>
-              <Label htmlFor="position">Position</Label>
-              <Input id="position" placeholder="Position" className="border-[#937CB4]/30" />
-            </div>
+        <form className="space-y-4" onSubmit={handleCreate}>
+          <div>
+            <Label htmlFor="employee">Employee</Label>
+            <select
+              id="employee"
+              value={createForm.empId}
+              onChange={(e) => setCreateForm({ ...createForm, empId: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm"
+            >
+              <option value="">Select an employee…</option>
+              {employees
+                .filter((emp) => !resignations.some((r) => r.empId === emp.id))
+                .map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.emp_name} (EMP-{String(emp.id).padStart(3, "0")})
+                  </option>
+                ))}
+            </select>
+            <p className="text-xs text-[#5A4079] mt-1">Employees with an existing resignation are not listed.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="submissionDate">Submission Date</Label>
-              <Input id="submissionDate" type="date" className="border-[#937CB4]/30" />
+              <Input
+                id="submissionDate"
+                type="date"
+                value={createForm.resignationDate}
+                onChange={(e) => setCreateForm({ ...createForm, resignationDate: e.target.value })}
+                className="border-[#937CB4]/30"
+              />
             </div>
             <div>
               <Label htmlFor="lastWorkingDay">Last Working Day</Label>
-              <Input id="lastWorkingDay" type="date" className="border-[#937CB4]/30" />
+              <Input
+                id="lastWorkingDay"
+                type="date"
+                value={createForm.lastWorkingDay}
+                onChange={(e) => setCreateForm({ ...createForm, lastWorkingDay: e.target.value })}
+                className="border-[#937CB4]/30"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="create-notice-period">Notice Period (days)</Label>
+              <Input
+                id="create-notice-period"
+                type="number"
+                min={0}
+                value={createForm.noticePeriod}
+                onChange={(e) => setCreateForm({ ...createForm, noticePeriod: e.target.value })}
+                className="border-[#937CB4]/30"
+              />
+            </div>
+            <div>
+              <Label htmlFor="resignationType">Resignation Type</Label>
+              <select
+                id="resignationType"
+                value={createForm.resignationType}
+                onChange={(e) => setCreateForm({ ...createForm, resignationType: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm"
+              >
+                <option value="Voluntary">Voluntary</option>
+                <option value="Retirement">Retirement</option>
+                <option value="Relocation">Relocation</option>
+                <option value="Personal Reasons">Personal Reasons</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
           <div>
             <Label htmlFor="reason">Reason for Resignation</Label>
-            <Textarea id="reason" rows={3} placeholder="Enter reason..." className="border-[#937CB4]/30" />
+            <Textarea
+              id="reason"
+              rows={3}
+              placeholder="Enter reason..."
+              value={createForm.reason}
+              onChange={(e) => setCreateForm({ ...createForm, reason: e.target.value })}
+              className="border-[#937CB4]/30"
+            />
           </div>
           <div className="flex gap-3 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} className="border-[#937CB4]/30">
               Cancel
             </Button>
-            <Button type="submit" className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white">
-              Process Resignation
+            <Button type="submit" disabled={creating} className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white">
+              {creating ? "Processing…" : "Process Resignation"}
             </Button>
           </div>
         </form>
@@ -253,17 +551,17 @@ export function HROrgResignationManagement() {
  
       {viewModal !== null && (
         <Modal isOpen={true} onClose={() => setViewModal(null)} title="Resignation & Exit Process Timeline" size="lg">
-          {resignations.filter(r => r.id === viewModal).map((resignation) => (
-            <div key={resignation.id} className="space-y-6">
+          {resignations.filter((r) => r.resignationId === viewModal).map((resignation) => (
+            <div key={resignation.resignationId} className="space-y-6">
               {/* Employee Info Card */}
               <div className="bg-gradient-to-r from-[#F0E9FF] to-[#FFFFFF] rounded-lg p-4 border border-[#937CB4]/20">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold">
-                    {resignation.employeeName.split(' ').map(n => n[0]).join('')}
+                    {initials(resignation.employeeName)}
                   </div>
                   <div>
                     <h3 className="font-semibold text-[#200B43]">{resignation.employeeName}</h3>
-                    <p className="text-sm text-[#5A4079]">{resignation.employeeId} • {resignation.department} • {resignation.position}</p>
+                    <p className="text-sm text-[#5A4079]">{resignation.employeeCode} • {resignation.department} • {resignation.position}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-sm">
@@ -287,150 +585,101 @@ export function HROrgResignationManagement() {
                   <Clock className="h-5 w-5 text-[#422462]" />
                   Resignation & Exit Process Steps
                 </h3>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-green-500 border-4 border-white flex items-center justify-center">
-                    <Check className="h-3 w-3 text-white" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 1: Resignation Submission</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+
+                {[
+                  {
+                    title: "Step 1: Resignation Submission",
+                    state: "done",
+                    badge: "Completed",
+                    description: "Resignation request recorded",
+                    details: (
+                      <>
+                        <p><strong>Date:</strong> {resignation.submissionDate}</p>
+                        <p><strong>Reason:</strong> {resignation.reason}</p>
+                        <p><strong>Type:</strong> {resignation.resignationType}</p>
+                        <p><strong>Notice Period:</strong> {resignation.noticePeriod}</p>
+                        {resignation.employeeComments && <p><strong>Employee Comments:</strong> {resignation.employeeComments}</p>}
+                        {resignation.letterUrl && (
+                          <p>
+                            <strong>Resignation Letter:</strong>{" "}
+                            <a href={resignation.letterUrl} target="_blank" rel="noreferrer" className="text-[#422462] underline">
+                              View letter
+                            </a>
+                          </p>
+                        )}
+                      </>
+                    ),
+                  },
+                  ...[
+                    { title: "Step 2: Team Lead Approval", status: resignation.teamLeadStatus, comments: resignation.teamLeadComments, description: "Team lead reviews the resignation request" },
+                    { title: "Step 3: Manager Approval", status: resignation.managerStatus, comments: resignation.managerComments, description: "Manager reviews the resignation request" },
+                    { title: "Step 4: HR Approval", status: resignation.hrStatus, comments: resignation.hrComments, description: "HR reviews and finalizes the resignation" },
+                  ].map((s) => ({
+                    title: s.title,
+                    state: s.status === "Approved" ? "done" : s.status === "Declined" ? "declined" : "pending",
+                    badge: s.status,
+                    description: s.description,
+                    details: (
+                      <>
+                        <p><strong>Status:</strong> {s.status}</p>
+                        {s.comments && <p><strong>Comments:</strong> {s.comments}</p>}
+                      </>
+                    ),
+                  })),
+                  {
+                    title: "Step 5: Exit Complete",
+                    state: resignation.status === "Completed" ? "done" : "pending",
+                    badge: resignation.status === "Completed" ? "Completed" : "Pending",
+                    description: "Final exit on the last working day",
+                    details: (
+                      <>
+                        <p><strong>Last Working Day:</strong> {resignation.lastWorkingDay}</p>
+                        <p><strong>Status:</strong> {resignation.status === "Completed" ? "Exit completed" : "Process ongoing"}</p>
+                      </>
+                    ),
+                  },
+                ].map((step, index, steps) => (
+                  <div
+                    key={step.title}
+                    className={`relative pl-8 ${
+                      index < steps.length - 1
+                        ? `pb-8 border-l-2 ${step.state === "pending" ? "border-[#937CB4]/30" : "border-[#422462]"}`
+                        : ""
+                    }`}
+                  >
+                    <div
+                      className={`absolute -left-3 top-0 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center ${
+                        step.state === "done" ? "bg-green-500" : step.state === "declined" ? "bg-red-500" : "bg-gray-300"
+                      }`}
+                    >
+                      {step.state === "done" ? (
+                        <Check className="h-3 w-3 text-white" />
+                      ) : step.state === "declined" ? (
+                        <X className="h-3 w-3 text-white" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-gray-600" />
+                      )}
                     </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Employee submitted resignation letter</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Date:</strong> {resignation.submissionDate}</p>
-                      <p><strong>Reason:</strong> {resignation.reason}</p>
-                      <p><strong>Notice Period:</strong> {resignation.noticePeriod}</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-green-500 border-4 border-white flex items-center justify-center">
-                    <Check className="h-3 w-3 text-white" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 2: Manager Approval</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Direct manager reviewed and approved resignation</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Approved By:</strong> Manager Name</p>
-                      <p><strong>Date:</strong> 2024-01-11</p>
-                      <p><strong>Comments:</strong> Approved. Good luck with future endeavors.</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#422462]">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-blue-500 border-4 border-white flex items-center justify-center">
-                    <Clock className="h-3 w-3 text-white" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 3: HR Processing</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">In Progress</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">HR department processing resignation documentation</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Assigned To:</strong> HR Admin</p>
-                      <p><strong>Started:</strong> 2024-01-12</p>
-                      <p><strong>Tasks:</strong> Prepare exit documents, schedule exit interview</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
-                    <AlertCircle className="h-3 w-3 text-gray-600" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm opacity-60">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 4: Department Clearances</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Obtain clearance from all departments</p>
-                    <div className="text-xs text-[#5A4079] space-y-1">
-                      <p>• IT Department - Assets return pending</p>
-                      <p>• Finance - Pending advance settlement</p>
-                      <p>• Admin - Access card return pending</p>
-                      <p>• Library - Pending</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
-                    <AlertCircle className="h-3 w-3 text-gray-600" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm opacity-60">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 5: Knowledge Transfer & Handover</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Transfer responsibilities and knowledge to replacement/team</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Handover To:</strong> Not assigned yet</p>
-                      <p><strong>Documentation:</strong> Not started</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
-                    <AlertCircle className="h-3 w-3 text-gray-600" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm opacity-60">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 6: Exit Interview</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Conduct exit interview to gather feedback</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Scheduled Date:</strong> Not scheduled</p>
-                      <p><strong>Interviewer:</strong> HR Manager</p>
+                    <div className={`bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm ${step.state === "pending" ? "opacity-60" : ""}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-[#200B43]">{step.title}</h4>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            step.state === "done"
+                              ? "bg-green-100 text-green-800"
+                              : step.state === "declined"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {step.badge}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#5A4079] mb-2">{step.description}</p>
+                      <div className="text-xs text-[#5A4079]">{step.details}</div>
                     </div>
                   </div>
-                </div>
- 
-                <div className="relative pl-8 pb-8 border-l-2 border-[#937CB4]/30">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
-                    <AlertCircle className="h-3 w-3 text-gray-600" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm opacity-60">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 7: Final Settlement</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Process final salary, benefits, and settlements</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Pending Items:</strong></p>
-                      <p>• Final salary calculation</p>
-                      <p>• Leave encashment</p>
-                      <p>• Gratuity calculation</p>
-                      <p>• PF settlement</p>
-                    </div>
-                  </div>
-                </div>
- 
-                <div className="relative pl-8">
-                  <div className="absolute -left-3 top-0 h-6 w-6 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center">
-                    <AlertCircle className="h-3 w-3 text-gray-600" />
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border border-[#937CB4]/20 shadow-sm opacity-60">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-[#200B43]">Step 8: Exit Complete</h4>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
-                    </div>
-                    <p className="text-sm text-[#5A4079] mb-2">Final exit formalities completed</p>
-                    <div className="text-xs text-[#5A4079]">
-                      <p><strong>Exit Date:</strong> {resignation.lastWorkingDay}</p>
-                      <p><strong>Status:</strong> Process ongoing</p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
  
               <div className="flex gap-3 justify-end pt-4 border-t border-[#937CB4]/20">
@@ -441,11 +690,8 @@ export function HROrgResignationManagement() {
                 >
                   Close
                 </Button>
-                <Button 
-                  onClick={() => {
-                    setViewModal(null);
-                    setEditModal(resignation.id);
-                  }}
+                <Button
+                  onClick={() => openEdit(resignation)}
                   className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white"
                 >
                   <Edit className="mr-2 h-4 w-4" />
@@ -459,17 +705,17 @@ export function HROrgResignationManagement() {
  
       {editModal !== null && (
         <Modal isOpen={true} onClose={() => setEditModal(null)} title="Update Resignation & Exit Process" size="lg">
-          {resignations.filter(r => r.id === editModal).map((resignation) => (
-            <form key={resignation.id} className="space-y-6 max-h-[70vh] overflow-y-auto">
+          {resignations.filter((r) => r.resignationId === editModal).map((resignation) => (
+            <form key={resignation.resignationId} className="space-y-6 max-h-[70vh] overflow-y-auto" onSubmit={handleSave}>
               {/* Employee Info (Read-only) */}
               <div className="bg-[#F0E9FF]/30 rounded-lg p-4 border border-[#937CB4]/20 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white font-bold text-sm">
-                    {resignation.employeeName.split(' ').map(n => n[0]).join('')}
+                    {initials(resignation.employeeName)}
                   </div>
                   <div>
                     <p className="font-medium text-[#200B43]">{resignation.employeeName}</p>
-                    <p className="text-xs text-[#5A4079]">{resignation.employeeId} • {resignation.department}</p>
+                    <p className="text-xs text-[#5A4079]">{resignation.employeeCode} • {resignation.department}</p>
                   </div>
                 </div>
               </div>
@@ -477,244 +723,161 @@ export function HROrgResignationManagement() {
               <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
                 <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">1</div>
-                  Resignation Submission
+                  Resignation Details
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="step1-status">Status</Label>
-                    <select id="step1-status" defaultValue="Completed" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Completed">Completed</option>
-                      <option value="Pending">Pending</option>
-                    </select>
+                    <Label htmlFor="edit-lwd">Last Working Day</Label>
+                    <Input
+                      id="edit-lwd"
+                      type="date"
+                      value={editForm.lastWorkingDay}
+                      onChange={(e) => setEditForm({ ...editForm, lastWorkingDay: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
                   </div>
                   <div>
-                    <Label htmlFor="step1-date">Submission Date</Label>
-                    <Input id="step1-date" type="date" defaultValue={resignation.submissionDate} className="border-[#937CB4]/30 text-sm" />
+                    <Label htmlFor="edit-notice">Notice Period (days)</Label>
+                    <Input
+                      id="edit-notice"
+                      type="number"
+                      min={0}
+                      value={editForm.noticePeriod}
+                      onChange={(e) => setEditForm({ ...editForm, noticePeriod: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="step1-reason">Resignation Reason</Label>
-                    <Textarea id="step1-reason" rows={2} defaultValue={resignation.reason} className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">2</div>
-                  Manager Approval
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="step2-status">Approval Status</Label>
-                    <select id="step2-status" defaultValue="Approved" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Pending">Pending</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="step2-approver">Approved By</Label>
-                    <Input id="step2-approver" placeholder="Manager name" defaultValue="Manager Name" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="step2-comments">Manager Comments</Label>
-                    <Textarea id="step2-comments" rows={2} placeholder="Comments..." className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">3</div>
-                  HR Processing
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="step3-status">Processing Status</Label>
-                    <select id="step3-status" defaultValue="In Progress" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="step3-assignee">Assigned To</Label>
-                    <Input id="step3-assignee" placeholder="HR personnel" defaultValue="HR Admin" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="step3-notes">Processing Notes</Label>
-                    <Textarea id="step3-notes" rows={2} placeholder="Tasks and notes..." className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">4</div>
-                  Department Clearances
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">IT Department (Assets Return)</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Cleared">Cleared</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Finance (Advance Settlement)</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Cleared">Cleared</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Admin (Access Card Return)</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Cleared">Cleared</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Library Clearance</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Cleared">Cleared</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">5</div>
-                  Knowledge Transfer & Handover
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="step5-status">Handover Status</Label>
-                    <select id="step5-status" defaultValue="Pending" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="step5-assignee">Handover To</Label>
-                    <Input id="step5-assignee" placeholder="Replacement employee" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="step5-docs">Documentation Status</Label>
-                    <Textarea id="step5-docs" rows={2} placeholder="Document handover details..." className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">6</div>
-                  Exit Interview
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="step6-status">Interview Status</Label>
-                    <select id="step6-status" defaultValue="Pending" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Pending">Pending</option>
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="step6-date">Scheduled Date</Label>
-                    <Input id="step6-date" type="date" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div>
-                    <Label htmlFor="step6-interviewer">Interviewer</Label>
-                    <Input id="step6-interviewer" placeholder="HR Manager" defaultValue="HR Manager" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div>
-                    <Label htmlFor="step6-time">Time</Label>
-                    <Input id="step6-time" type="time" className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">7</div>
-                  Final Settlement
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Final Salary Calculation</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Leave Encashment</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">Gratuity Calculation</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-[#F0E9FF]/20 rounded">
-                    <Label className="text-sm">PF Settlement</Label>
-                    <select className="px-2 py-1 rounded border border-[#937CB4]/30 text-xs">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">8</div>
-                  Exit Complete
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="step8-status">Exit Status</Label>
-                    <select id="step8-status" defaultValue="Pending" className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="step8-exitdate">Actual Exit Date</Label>
-                    <Input id="step8-exitdate" type="date" defaultValue={resignation.lastWorkingDay} className="border-[#937CB4]/30 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="step8-notes">Final Notes</Label>
-                    <Textarea id="step8-notes" rows={2} placeholder="Any final remarks or notes..." className="border-[#937CB4]/30 text-sm" />
+                    <Label htmlFor="edit-reason">Resignation Reason</Label>
+                    <Textarea
+                      id="edit-reason"
+                      rows={2}
+                      value={editForm.reason}
+                      onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
                   </div>
                 </div>
               </div>
 
+              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">2</div>
+                  Team Lead Approval
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-tl-status">Approval Status</Label>
+                    <select
+                      id="edit-tl-status"
+                      value={editForm.teamLeadStatus}
+                      onChange={(e) => setEditForm({ ...editForm, teamLeadStatus: e.target.value as ApprovalStatus })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="edit-tl-comments">Team Lead Comments</Label>
+                    <Textarea
+                      id="edit-tl-comments"
+                      rows={2}
+                      placeholder="Comments..."
+                      value={editForm.teamLeadComments}
+                      onChange={(e) => setEditForm({ ...editForm, teamLeadComments: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">3</div>
+                  Manager Approval
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-mgr-status">Approval Status</Label>
+                    <select
+                      id="edit-mgr-status"
+                      value={editForm.managerStatus}
+                      onChange={(e) => setEditForm({ ...editForm, managerStatus: e.target.value as ApprovalStatus })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="edit-mgr-comments">Manager Comments</Label>
+                    <Textarea
+                      id="edit-mgr-comments"
+                      rows={2}
+                      placeholder="Comments..."
+                      value={editForm.managerComments}
+                      onChange={(e) => setEditForm({ ...editForm, managerComments: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-[#937CB4]/20 rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-[#200B43] mb-3 flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#422462] text-white flex items-center justify-center text-xs">4</div>
+                  HR Decision
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit-hr-status">Approval Status</Label>
+                    <select
+                      id="edit-hr-status"
+                      value={editForm.hrStatus}
+                      onChange={(e) => setEditForm({ ...editForm, hrStatus: e.target.value as ApprovalStatus })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#937CB4]/30 focus:border-[#422462] focus:ring-2 focus:ring-[#422462]/20 outline-none text-sm"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="edit-hr-comments">HR Comments</Label>
+                    <Textarea
+                      id="edit-hr-comments"
+                      rows={2}
+                      placeholder="Comments..."
+                      value={editForm.hrComments}
+                      onChange={(e) => setEditForm({ ...editForm, hrComments: e.target.value })}
+                      className="border-[#937CB4]/30 text-sm"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-[#5A4079] mt-2">
+                  HR approval finalizes the resignation. Declining any step marks the request as rejected.
+                </p>
+              </div>
+
               <div className="flex gap-3 justify-end pt-4 border-t border-[#937CB4]/20 sticky bottom-0 bg-white">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setEditModal(null)} 
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditModal(null)}
                   className="border-[#937CB4]/30"
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
+                  disabled={saving}
                   className="bg-gradient-to-r from-[#422462] to-[#5A4079] text-white"
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  Save All Updates
+                  {saving ? "Saving…" : "Save All Updates"}
                 </Button>
               </div>
             </form>
@@ -780,7 +943,7 @@ export function HROrgDailyReport() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50">
+          <Button variant="outline" className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50 hover:text-[#422462]">
             <Filter className="mr-2 h-4 w-4" />
             Filter by Date
           </Button>
@@ -887,7 +1050,7 @@ export function HROrgDailyReport() {
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
+                className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462]"
                 onClick={() => setViewDetailsModal(report.id)}
               >
                 <Eye className="h-4 w-4 mr-1" />
@@ -1066,7 +1229,7 @@ export function HROrgDailyReport() {
                 <Button 
                   variant="outline" 
                   onClick={() => setViewDetailsModal(null)}
-                  className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
+                  className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462]"
                 >
                   Close
                 </Button>
@@ -1244,7 +1407,7 @@ export function HROrgDocumentation() {
             className="pl-10 border-[#937CB4]/30 focus:border-[#422462]"
           />
         </div>
-        <Button variant="outline" className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50">
+        <Button variant="outline" className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50 hover:text-[#422462]">
           <Filter className="mr-2 h-4 w-4" />
           Filter
         </Button>
@@ -1298,14 +1461,14 @@ export function HROrgDocumentation() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setViewModal(doc.id)}
-                          className="text-[#422462] hover:bg-[#F0E9FF] h-8 w-8 p-0"
+                          className="text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462] h-8 w-8 p-0"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-[#422462] hover:bg-[#F0E9FF] h-8 w-8 p-0"
+                          className="text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462] h-8 w-8 p-0"
                         >
                           <Download className="h-4 w-4" />
                         </Button>

@@ -5,13 +5,13 @@ export interface EmployeeResignation {
   id: number;
   emp_onboarding_id?: number;
   resignation_date?: string;
-  last_working_date?: string;
+  last_working_date?: string | null;
   resignation_letter?: string;
   alternative_mobile_number?: string;
   personal_email_address?: string;
   resignation_reason?: string;
   resignation_type?: string;
-  notice_period?: string;
+  notice_period?: string | null;
   employee_comments?: string;
   exit_interview_preference?: string;
   other_documents?: string[];

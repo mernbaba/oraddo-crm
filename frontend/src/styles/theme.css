@@ -25,8 +25,12 @@
   --secondary-foreground: #FFFFFF;
   --muted: #F0E9FF;
   --muted-foreground: #5A4079;
-  --accent: #937CB4;
-  --accent-foreground: #FFFFFF;
+  /* Hover/focus highlight for ghost+outline buttons, menus and list items.
+     Must stay a LIGHT bg with DARK text: pages hand-code hover:bg-[#F0E9FF]
+     without a hover text color, so a light accent-foreground makes labels
+     and icons vanish on hover (matches --sidebar-accent pairing below). */
+  --accent: #F0E9FF;
+  --accent-foreground: #422462;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
   --border: rgba(66, 36, 98, 0.15);

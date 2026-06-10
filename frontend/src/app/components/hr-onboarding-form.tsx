@@ -1,4 +1,4 @@
-import { Upload, Plus } from "lucide-react";
+import { Upload, Plus, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
@@ -8,9 +8,13 @@ interface HROnboardingFormProps {
   setFormData: (data: any) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  submitting?: boolean;
+  // "create" requires login credentials; "edit" hides the password field
+  // (password changes go through the employee's own profile flow).
+  mode?: "create" | "edit";
 }
 
-export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: HROnboardingFormProps) {
+export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel, submitting, mode = "create" }: HROnboardingFormProps) {
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
  
@@ -70,7 +74,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
               <SelectContent>
                 <SelectItem value="Male">Male</SelectItem>
                 <SelectItem value="Female">Female</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                <SelectItem value="Others">Others</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -245,26 +249,20 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Full-Time">Full-Time</SelectItem>
-                <SelectItem value="Contract">Contract</SelectItem>
-                <SelectItem value="Part-Time">Part-Time</SelectItem>
+                <SelectItem value="Permanent">Permanent</SelectItem>
+                <SelectItem value="Internship">Internship</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-[#200B43]">Work From Home *</label>
-            <Select
-              value={formData.workFromHome}
-              onValueChange={(value) => setFormData({ ...formData, workFromHome: value })}
-            >
-              <SelectTrigger className="border-[#937CB4]/30 focus:border-[#422462] h-9 text-sm">
-                <SelectValue placeholder="Select option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Yes">Yes</SelectItem>
-                <SelectItem value="No">No</SelectItem>
-              </SelectContent>
-            </Select>
+            <label className="text-xs font-semibold text-[#200B43]">WFH Bucket (Days)</label>
+            <Input
+              type="number"
+              placeholder="Enter WFH days"
+              value={formData.wfhDays}
+              onChange={(e) => setFormData({ ...formData, wfhDays: e.target.value })}
+              className="border-[#937CB4]/30 focus:border-[#422462] h-9 text-sm"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-semibold text-[#200B43]">Leave Bucket (Days) *</label>
@@ -306,16 +304,18 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
               className="border-[#937CB4]/30 focus:border-[#422462] h-9 text-sm"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-[#200B43]">Password *</label>
-            <Input
-              type="password"
-              placeholder="Enter password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="border-[#937CB4]/30 focus:border-[#422462] h-9 text-sm"
-            />
-          </div>
+          {mode === "create" && (
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-[#200B43]">Password *</label>
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="border-[#937CB4]/30 focus:border-[#422462] h-9 text-sm"
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-semibold text-[#200B43]">Business Email *</label>
             <Input
@@ -391,7 +391,7 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-[#937CB4] to-[#422462] flex items-center justify-center text-white text-xs font-bold">
             8
           </div>
-          Documents Upload
+          Profile Photo
         </h3>
         <div className="relative overflow-hidden rounded-lg border-2 border-dashed border-[#937CB4]/40 bg-gradient-to-br from-white to-[#F0E9FF]/20 p-6">
           <div className="text-center space-y-3">
@@ -401,17 +401,23 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#200B43]">Upload Employee Documents</p>
-              <p className="text-xs text-[#5A4079] mt-1">Supported formats: PDF, JPG, PNG (Max 5MB each)</p>
+              <p className="text-sm font-semibold text-[#200B43]">Upload Profile Photo (optional)</p>
+              <p className="text-xs text-[#5A4079] mt-1">
+                {formData.profileImage ? formData.profileImage.name : "Supported formats: JPG, PNG (Max 5MB)"}
+              </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] text-xs h-8"
-            >
-              <Upload className="mr-2 h-3 w-3" />
-              Choose Files
-            </Button>
+            <label className="inline-flex items-center justify-center gap-2 cursor-pointer rounded-md border border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462] text-xs h-8 px-3 font-medium transition-all">
+              <Upload className="h-3 w-3" />
+              Choose File
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) =>
+                  setFormData({ ...formData, profileImage: e.target.files?.[0] ?? null })
+                }
+              />
+            </label>
           </div>
         </div>
       </div>
@@ -420,16 +426,22 @@ export function HROnboardingForm({ formData, setFormData, onSubmit, onCancel }: 
         <Button
           variant="outline"
           onClick={onCancel}
-          className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]"
+          disabled={submitting}
+          className="border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462]"
         >
           Cancel
         </Button>
         <Button
           onClick={onSubmit}
+          disabled={submitting}
           className="bg-gradient-to-r from-[#422462] to-[#937CB4] text-white hover:from-[#200B43] hover:to-[#422462]"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Employee
+          {submitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {mode === "edit" ? "Save Changes" : "Create Employee"}
         </Button>
       </div>
     </div>
