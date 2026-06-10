@@ -3,15 +3,16 @@ const fs = require('fs');
 require('dotenv').config();
 
 
-AWS_ACCESS_KEY_ID =  'AKIAQEFWAZYR2INXZ427'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_BUCKET = 'tridizi-s3-bucket'
+const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+const AWS_REGION = process.env.AWS_REGION;
+const AWS_BUCKET = process.env.AWS_BUCKET;
 
 
 const s3 = new AWS.S3({
-  region: 'ap-south-1',
+  region: AWS_REGION,
   accessKeyId: AWS_ACCESS_KEY_ID,
-  secretAccessKey: AWS_SECRET_ACCESS_KEY, 
+  secretAccessKey: AWS_SECRET_ACCESS_KEY,
   s3ForcePathStyle: true, // required for localstack
 });
 

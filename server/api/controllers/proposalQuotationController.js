@@ -135,6 +135,18 @@ const deletePraposal = async (req, res) => {
   }
 };
 
+const generateProposalAi = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    const draft = await praposalService.generateProposal(prompt);
+    res.status(200).json(draft);
+  } catch (error) {
+    const status = error.status || 500;
+    res.status(status).json({ error: error.message });
+    console.log(error, "ai proposal generation error");
+  }
+};
+
 module.exports = {
   createPraposal,
   getPraposal,
@@ -145,4 +157,5 @@ module.exports = {
   updateService,
   getProposalByOrgIdForBilling,
   getproposalByOrgIdForTable,
+  generateProposalAi,
 };

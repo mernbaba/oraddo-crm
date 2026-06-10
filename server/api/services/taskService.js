@@ -33,7 +33,7 @@ function getAllFuncs(toCheck) {
     console.log("errorrrrr", error);
   }
 }
-console.log(getAllFuncs, "get all functionsss");
+// console.log(getAllFuncs, "get all functionsss");
 
 const createTask = async (data) => {
   try {

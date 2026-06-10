@@ -13,9 +13,8 @@ import {
   UserPlus, 
   StickyNote, 
   MessageCircle, 
-  Bell, 
-  Sparkles, 
-  ChevronRight, 
+  Bell,
+  ChevronRight,
   ChevronDown, 
   Shield, 
   Building2, 
@@ -101,6 +100,7 @@ export default function AppLayout() {
       "/app/chat": { title: "Chat", subtitle: "Team communication and collaboration" },
       "/app/notifications": { title: "Notifications", subtitle: "Stay updated with system alerts" },
       "/app/profile": { title: "My Profile", subtitle: "Manage your personal information and preferences" },
+      "/app/settings/organization": { title: "Organization Settings", subtitle: "Manage your company branding and logo" },
       "/app/hr/attendance": { title: "Attendance", subtitle: "Monitor employee attendance and leave" },
       "/app/hr/performance-metrics": { title: "My Performance Metrics", subtitle: "Track your monthly performance and achievements" },
       "/app/hr/salary-structure": { title: "My Salary Structure", subtitle: "View your salary breakdown and compensation details" },
@@ -139,7 +139,7 @@ export default function AppLayout() {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="absolute inset-0 bg-[#422462] blur-xl opacity-40 animate-pulse"></div>
-                <Sparkles className="h-8 w-8 text-[#422462] relative z-10" />
+                <img src="/favicon.png" alt="Oraddo" className="h-8 w-8 relative z-10 object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-[#422462] via-[#5A4079] to-[#937CB4] bg-clip-text text-transparent">
@@ -845,6 +845,20 @@ export default function AppLayout() {
             >
               <UserPlus className="mr-3 h-5 w-5" />
               <span className="relative z-10">Lead Generation</span>
+            </Button>
+          </Link>
+
+          <Link to="/app/settings/organization" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start transition-all duration-300 group relative overflow-hidden ${
+                isActive("/app/settings/organization")
+                  ? 'bg-gradient-to-r from-[#422462] to-[#5A4079] text-white hover:from-[#422462] hover:to-[#5A4079] shadow-lg shadow-[#937CB4]/30'
+                  : 'text-[#200B43] hover:bg-[#F0E9FF]/70 hover:text-[#200B43]'
+              }`}
+            >
+              <Building2 className="mr-3 h-5 w-5" />
+              <span className="relative z-10">Settings</span>
             </Button>
           </Link>
         </div>

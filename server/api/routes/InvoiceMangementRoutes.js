@@ -5,6 +5,7 @@ const { Middleware } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.post("/invoices",invoiceController.createInvoice);
+router.post("/invoices/ai/generate", invoiceController.generateInvoiceAi);
 router.get("/invoices",invoiceController.getInvoices);
 router.get("/invoiceByOrganization/:id",invoiceController.getInvoiceByOrgId);
 router.get("/invoiceByorgId/:id",invoiceController.getInvoiceByOrgIdInInvoicePage);

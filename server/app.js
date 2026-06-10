@@ -651,16 +651,18 @@ app.get("/*", (req, res) => {
   );
 });
 
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+const shouldAlter = process.env.DB_ALTER === "true";
 sequelize
-  .sync({ alter: true })
+  .sync({ alter: shouldAlter })
   .then(() => {
-    server.listen(PORT, () => {
-      console.log("removedall");
-      console.log(`Server is running on http://localhost:${PORT}`);
-    });
+    console.log(`Database synced (alter: ${shouldAlter})`);
   })
   .catch((err) => {
-    console.error("Unable to connect to the database:", err);
+    console.error("Unable to sync database:", err);
   });
 
 

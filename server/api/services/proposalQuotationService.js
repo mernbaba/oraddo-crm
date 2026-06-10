@@ -1,7 +1,104 @@
 const { Op, Sequelize } = require("sequelize");
 const praposalService = require("../models/praposalServices");
 const Praposal = require("../models/ProposalQuotation");
+const Organization = require("../models/OrganizationModule");
 const moment = require("moment");
+const aiService = require("./aiService");
+
+// JSON Schema describing the proposal fields the model should fill in. Mirrors
+// the frontend ProposalForm so the generated object can pre-fill the form 1:1.
+const PROPOSAL_SCHEMA = {
+  type: "object",
+  properties: {
+    companyname: {
+      type: "string",
+      description: "Client's company name. If only a person/client name is given, use that.",
+    },
+    name: {
+      type: "string",
+      description: "Client name (person or company the proposal is addressed to).",
+    },
+    requirements: {
+      type: "string",
+      description:
+        "One-line 'Your Requirements' summary, e.g. 'Website ReDesigning for Saksam Sol'.",
+    },
+    service: {
+      type: "array",
+      description:
+        "Proposal body sections. Each section's content is Markdown using '-' for bullets and indentation for sub-bullets.",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Section heading, e.g. 'Website Redesigning'." },
+          content: {
+            type: "string",
+            description: "Markdown bullet list describing the scope/deliverables for this section.",
+          },
+        },
+      },
+    },
+    timeline: {
+      type: "string",
+      description:
+        "'Timeline and Resources' paragraph stating the delivery duration in plain language.",
+    },
+    pricing: {
+      type: "number",
+      description: "Total project price as a number only (no currency symbol or commas).",
+    },
+    currency: {
+      type: "string",
+      enum: ["INR", "USD", "AUD", "CAD"],
+      description: "Currency for the pricing amount. Default to INR if unspecified.",
+    },
+    pricing_note: {
+      type: "string",
+      description: "Short pricing note such as '+ GST'.",
+    },
+    togetstarted: {
+      type: "string",
+      description: "Closing 'To get started' paragraph about advance payment / next steps.",
+    },
+  },
+};
+
+const PROPOSAL_SYSTEM_PROMPT = [
+  "You are a CRM assistant that writes professional software-agency business proposals.",
+  "Given a short brief, produce a complete, well-structured proposal that fills every field.",
+  "Section content must be Markdown bullet lists (use '-' for bullets, two-space indent for sub-bullets).",
+  "Be concrete and client-ready: describe deliverables, tech stack, deployment, maintenance terms.",
+  "Infer a sensible price, currency, and timeline from the brief when given; otherwise use reasonable defaults.",
+  "Never invent a different client name than the one in the brief.",
+].join(" ");
+
+/**
+ * Generate a structured proposal draft from a free-form prompt using the shared
+ * AI service. Returns a plain object matching the proposal form shape (already
+ * typed/parsed — no JSON parsing needed by the caller).
+ */
+const generateProposal = async (prompt) => {
+  if (!prompt || !String(prompt).trim()) {
+    const error = new Error("A prompt describing the project is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const draft = await aiService.generateStructured({
+    name: "ProposalDraft",
+    schema: PROPOSAL_SCHEMA,
+    system: PROPOSAL_SYSTEM_PROMPT,
+    prompt: `Write a complete business proposal for the following brief:\n\n${prompt}`,
+    // A full proposal (several Markdown sections) can be long, so give the
+    // output plenty of headroom to avoid the JSON being truncated mid-stream.
+    maxTokens: 8000,
+    // Reasoning models otherwise burn most of the token budget on hidden
+    // reasoning, leaving the proposal JSON incomplete. We don't need that here.
+    extra: { reasoning: { enabled: false } },
+  });
+
+  return draft;
+};
 
 const setAttendeesForMeetings = async (praposal) => {
   try {
@@ -35,18 +132,7 @@ const setAttendeesForMeetings = async (praposal) => {
 
 const createPraposal = async (data) => {
   try {
-    const praposalData = data;
-    console.log(praposalData, "jhbvhbv");
-
-    const praposal = await Praposal.create(praposalData);
-    console.log(praposal, "hvhvbn");
-
-    // const praposalService = {[praposal.id] : services};
-    // const serviceData = await setAttendeesForMeetings(praposalService);
-    // if(services){
-    //   const service = await praposalService.create({Services:services,proposal_Id:praposal?.id})
-    //   console.log(service,"hghghjbhj");
-    // }
+    const praposal = await Praposal.create(data);
     return { praposal };
   } catch (error) {
     throw error;
@@ -153,7 +239,7 @@ const getProposalByOrgId = async (
       whereClause.companyname = { [Op.iLike]: `%${search.toLowerCase()}%` }; // Adjust `title` with the correct field for searching
     }
 
-    if (year && month !== undefined) {
+    if (year && month) {
       whereClause[Op.and] = [
         Sequelize.where(
           Sequelize.fn("DATE_PART", "year", Sequelize.col("createdAt")),
@@ -169,7 +255,7 @@ const getProposalByOrgId = async (
         Sequelize.fn("DATE_PART", "year", Sequelize.col("createdAt")),
         year
       );
-    } else if (month !== undefined) {
+    } else if (month) {
       whereClause.createdAt = Sequelize.where(
         Sequelize.fn("DATE_PART", "month", Sequelize.col("createdAt")),
         month
@@ -322,7 +408,7 @@ const getproposalByOrgIdForTable = async (id, page, pageSize, year, monthName) =
 
     const whereClause = { organizationID: id };
 
-    if (year && month !== undefined) {
+    if (year && month) {
       whereClause[Op.and] = [
         Sequelize.where(
           Sequelize.fn("DATE_PART", "year", Sequelize.col("createdAt")),
@@ -338,7 +424,7 @@ const getproposalByOrgIdForTable = async (id, page, pageSize, year, monthName) =
         Sequelize.fn("DATE_PART", "year", Sequelize.col("createdAt")),
         year
       );
-    } else if (month !== undefined) {
+    } else if (month) {
       whereClause.createdAt = Sequelize.where(
         Sequelize.fn("DATE_PART", "month", Sequelize.col("createdAt")),
         month
@@ -364,7 +450,24 @@ const getproposalByOrgIdForTable = async (id, page, pageSize, year, monthName) =
 const getPraposalById = async (id) => {
   try {
     const praposal = await Praposal.findByPk(id);
-    return praposal;
+    if (!praposal) return praposal;
+
+    // Attach the organization's branding (logo + company details) so the
+    // rendered proposal document can use the org's uploaded logo.
+    const org = await Organization.findByPk(praposal.organizationID, {
+      attributes: [
+        "id",
+        "companyName",
+        "companyLogo",
+        "companyAddress",
+        "phoneNumber",
+        "email",
+        "companyWebsite",
+      ],
+    });
+    const result = praposal.toJSON();
+    result.organization = org ? org.toJSON() : null;
+    return result;
   } catch (error) {
     throw error;
   }
@@ -401,4 +504,5 @@ module.exports = {
   updateService,
   getProposalByOrgIdForBilling,
   getproposalByOrgIdForTable,
+  generateProposal,
 };

@@ -131,6 +131,18 @@ const deleteInvoice = async (req, res) => {
   }
 };
 
+const generateInvoiceAi = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    const draft = await invoiceService.generateInvoice(prompt);
+    res.status(200).json(draft);
+  } catch (error) {
+    const status = error.status || 500;
+    res.status(status).json({ error: error.message });
+    console.log(error, "ai invoice generation error");
+  }
+};
+
 module.exports = {
   createInvoice,
   getInvoices,
@@ -139,5 +151,6 @@ module.exports = {
   updateInvoice,
   deleteInvoice,
   getInvoiceByOrgIdInInvoicePage,
-  getInvoiceByOrgIdForFinance
+  getInvoiceByOrgIdForFinance,
+  generateInvoiceAi,
 };

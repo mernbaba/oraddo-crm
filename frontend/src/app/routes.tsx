@@ -8,7 +8,9 @@ import AdminLayout from "./layouts/admin-layout";
 import { Dashboard } from "./components/dashboard";
 import { BusinessDevelopment } from "./components/business-development";
 import { BizDevProposal } from "./components/bizdev-proposal";
+import { ProposalPreview } from "./components/proposal/proposal-preview";
 import { BizDevInvoice } from "./components/bizdev-invoice";
+import { InvoicePreview } from "./components/invoice/invoice-preview";
 import { BizDevBilling } from "./components/bizdev-billing";
 import { Marketing } from "./components/marketing";
 import { MarketingCalendar } from "./components/marketing-calendar";
@@ -44,6 +46,7 @@ import { HRTeamPerformanceManagement } from "./components/hr-team-performance";
 import { HROrgSalaryAdvance } from "./components/hr-org-management";
 import { Diagnostics } from "./components/diagnostics";
 import { HRPerformanceMetrics, HRSalaryStructure, HRResignation } from "./components/hr-all-remaining";
+import { OrganizationSettings } from "./components/organization-settings";
 
 // Admin Components
 import { AdminDashboard } from "./components/admin/admin-dashboard";
@@ -69,16 +72,18 @@ export const router = createBrowserRouter([
       // Business Development
       { path: "business-development", element: <BusinessDevelopment /> },
       { path: "business-development/proposal", element: <BizDevProposal /> },
+      { path: "business-development/proposal/:id", element: <ProposalPreview /> },
       { path: "business-development/invoice", element: <BizDevInvoice /> },
+      { path: "business-development/invoice/:id", element: <InvoicePreview /> },
       { path: "business-development/billing", element: <BizDevBilling /> },
-      
+
       // Marketing
       { path: "marketing", element: <Marketing /> },
       { path: "marketing/calendar", element: <MarketingCalendar /> },
       { path: "marketing/strategies", element: <MarketingStrategies /> },
       { path: "marketing/blogs", element: <MarketingBlogs /> },
       { path: "marketing/meetings", element: <MarketingMeetings /> },
-      
+
       // HR
       { path: "hr", element: <HumanResources /> },
       { path: "hr/attendance", element: <HRAttendance /> },
@@ -119,6 +124,7 @@ export const router = createBrowserRouter([
       { path: "chat", element: <Chat /> },
       { path: "notifications", element: <Notifications /> },
       { path: "profile", element: <Profile /> },
+      { path: "settings/organization", element: <OrganizationSettings /> },
       { path: "support", element: <Support /> },
       { path: "diagnostics", element: <Diagnostics /> },
     ],
@@ -136,15 +142,16 @@ export const router = createBrowserRouter([
       { path: "business-development", element: <BusinessDevelopment /> },
       { path: "business-development/proposal", element: <BizDevProposal /> },
       { path: "business-development/invoice", element: <BizDevInvoice /> },
+      { path: "business-development/invoice/:id", element: <InvoicePreview /> },
       { path: "business-development/billing", element: <BizDevBilling /> },
-      
+
       // Marketing
       { path: "marketing", element: <Marketing /> },
       { path: "marketing/calendar", element: <MarketingCalendar /> },
       { path: "marketing/strategies", element: <MarketingStrategies /> },
       { path: "marketing/blogs", element: <MarketingBlogs /> },
       { path: "marketing/meetings", element: <MarketingMeetings /> },
-      
+
       // HR (No Organization Management)
       { path: "hr", element: <HumanResources /> },
       { path: "hr/attendance", element: <HRAttendance /> },

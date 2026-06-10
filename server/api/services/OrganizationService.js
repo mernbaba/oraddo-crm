@@ -360,6 +360,7 @@ const getCompanyById = async (id) => {
         model: Employee_Onboarding,
         as: 'Employees_data', // Correct alias
         where: { isDelete: false }, // Ensure only active employees are returned
+        required: false, // LEFT JOIN: still return the org when it has no active employees
         attributes: ['id', 'emp_name', 'bussiness_email', 'role'], // Ensure only required fields are returned
       },
       {
@@ -413,8 +414,14 @@ const updateCompany = async (id, files, data) => {
     }
 
     const uploadData = await uploadFiles([file]);
-    data.companyLogo = uploadData.image_URL;
     console.log(uploadData,"uploadDataaaa")
+    // Guard against a failed upload (bad creds, network, or rejected mimetype):
+    // uploadFiles resolves with image_URL=null instead of throwing, and writing
+    // that null would silently wipe the org's existing logo. Fail loudly instead.
+    if (!uploadData || !uploadData.image_URL) {
+      throw new Error('Logo upload failed. Please check the file type and try again.');
+    }
+    data.companyLogo = uploadData.image_URL;
 
   }
   try{

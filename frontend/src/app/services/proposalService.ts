@@ -1,26 +1,57 @@
 import api from "../api";
 
+export type ProposalStatus = "Pending" | "Approval" | "Declined";
+export type ProposalCurrency = "INR" | "USD" | "AUD" | "CAD";
+
+/** A single section of the proposal body. `content` is markdown. */
+export interface ProposalServiceItem {
+  title: string;
+  content: string;
+}
+
 export interface Proposal {
   id: number;
   companyname: string;
   name: string;
-  status: "Pending" | "Approval" | "Declined";
+  status: ProposalStatus;
+  /** "Your Requirements" paragraph. */
   requirements?: string;
+  /** Numeric total — drives stats/billing. */
   pricing?: number;
+  /** Pricing display line / GST note (e.g. "+ GST"). */
+  pricing_note?: string;
+  /** "Timeline and Resources" paragraph. */
   timeline?: string;
   comments?: string;
-  service?: any[];
+  /** Proposal body sections: [{ title, content(markdown) }]. */
+  service?: ProposalServiceItem[];
+  /** Closing "To get started" paragraph. */
+  togetstarted?: string;
+  currency?: ProposalCurrency;
+  organizationID?: number;
+  /** Raw prompt used to (dummy) generate this proposal. */
+  ai_prompt?: string;
   timeline_table?: any[];
   resource_table?: any[];
-  organizationID?: number;
-  togetstarted?: string;
-  currency?: "INR" | "USD" | "AUD" | "CAD";
+  /** Issuing organization's branding, attached by the getById endpoint. */
+  organization?: OrganizationBrand | null;
   createdAt?: string;
   updatedAt?: string;
-  // AI Generated fields for UI display
-  description?: string;
-  resources?: string;
-  services?: string;
+}
+
+/** Subset of the Organization record used for document branding. */
+export interface OrganizationBrand {
+  id?: number;
+  companyName?: string;
+  companyLogo?: string | null;
+  companyAddress?: string;
+  phoneNumber?: string;
+  email?: string;
+  companyWebsite?: string;
+  accountNumber?: string;
+  bankName?: string;
+  IFSC_Code?: string;
+  GSTIN?: string;
 }
 
 export interface ProposalTableResponse {
@@ -72,5 +103,23 @@ export const proposalService = {
   // Get available services for dropdowns
   getAvailableServicesByOrg: (orgId: number) => {
     return api.get(`/api/praposalServiceByOrgId/${orgId}`);
+  },
+
+  // Generate a proposal draft from a free-form prompt using AI
+  generateAi: (prompt: string) => {
+    return api.post<ProposalAiDraft>("/api/praposals/ai/generate", { prompt });
   }
 };
+
+/** Shape returned by the AI proposal generator (all fields best-effort). */
+export interface ProposalAiDraft {
+  companyname?: string;
+  name?: string;
+  requirements?: string;
+  service?: ProposalServiceItem[];
+  timeline?: string;
+  pricing?: number;
+  currency?: ProposalCurrency;
+  pricing_note?: string;
+  togetstarted?: string;
+}

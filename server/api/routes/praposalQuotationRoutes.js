@@ -6,6 +6,7 @@ const router = express.Router();
 // console.log("routessssss");
 
 router.post("/praposals", praposalController.createPraposal);
+router.post("/praposals/ai/generate", praposalController.generateProposalAi);
 router.post('/updateServcies', praposalController.updateService);
 router.get("/praposalOrganizationId/:id", praposalController.getPraposalByOrgId);
 router.get("/praposalsformanagement/:id", praposalController.getProposalByOrgIdForBilling);

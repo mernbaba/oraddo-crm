@@ -11,7 +11,6 @@ import {
   Tag,
   MessageSquare,
   Settings,
-  Shield,
   ChevronDown,
   Bell,
   Search,
@@ -84,7 +83,7 @@ export default function AdminLayout() {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="absolute inset-0 bg-[#422462] blur-xl opacity-40 animate-pulse"></div>
-                <Shield className="h-8 w-8 text-[#422462] relative z-10" />
+                <img src="/favicon.png" alt="Oraddo" className="h-8 w-8 relative z-10 object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-[#422462] via-[#5A4079] to-[#937CB4] bg-clip-text text-transparent">

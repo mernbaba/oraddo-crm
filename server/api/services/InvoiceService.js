@@ -4,6 +4,104 @@ const invoiveModuleService = require("../models/invoiceModuleServices");
 const HttpException = require("../utils/utils");
 const organization = require("../models/OrganizationModule");
 const { where, Op, Sequelize } = require("sequelize");
+const aiService = require("./aiService");
+
+// JSON Schema describing the invoice fields the model should fill in. Mirrors
+// the frontend InvoiceForm so the generated object can pre-fill the form 1:1.
+const INVOICE_SCHEMA = {
+  type: "object",
+  properties: {
+    clientName: {
+      type: "string",
+      description:
+        "Person the invoice is billed to (the contact name, e.g. 'K Raghavendra').",
+    },
+    billTo: {
+      type: "string",
+      description:
+        "Multi-line 'Bill To' block for the client — company name, phone, email and website, each on its own line.",
+    },
+    items: {
+      type: "array",
+      description:
+        "Invoice line items. One entry per module/service being billed.",
+      items: {
+        type: "object",
+        properties: {
+          module: {
+            type: "string",
+            description: "Module/service name, e.g. 'Website Redesigning'.",
+          },
+          base: {
+            type: "string",
+            description:
+              "Payment basis for this line, e.g. 'Advance Payment', 'Full Payment', 'Milestone 1'.",
+          },
+          amount: {
+            type: "number",
+            description:
+              "Amount billed for this line item, number only (no currency symbol or commas).",
+          },
+        },
+      },
+    },
+    totalPrize: {
+      type: "number",
+      description:
+        "Total full project price as a number only (no currency symbol or commas).",
+    },
+    gst: {
+      type: "string",
+      description: "GST as a percentage like '18%', or '0' when not applicable.",
+    },
+    currency: {
+      type: "string",
+      enum: ["INR", "USD", "AUD", "CAD"],
+      description: "Currency for the amounts. Default to INR if unspecified.",
+    },
+    invoiceType: {
+      type: "string",
+      description: "Short invoice type/category, e.g. 'Professional Services'.",
+    },
+    comments: {
+      type: "string",
+      description: "Optional notes/description shown on the invoice.",
+    },
+  },
+};
+
+const INVOICE_SYSTEM_PROMPT = [
+  "You are a CRM assistant that prepares professional billing invoices for a software agency.",
+  "Given a short brief, produce a complete invoice that fills every field.",
+  "Derive the line items (module, basis, amount), the full project price, GST and currency from the brief.",
+  "When only an advance is being billed, set the line item 'base' to 'Advance Payment' and 'amount' to the advance, while 'totalPrize' is the full project price.",
+  "Never invent a different client than the one named in the brief. Default the currency to INR.",
+].join(" ");
+
+/**
+ * Generate a structured invoice draft from a free-form prompt using the shared
+ * AI service. Returns a plain object matching the invoice form shape (already
+ * typed/parsed — no JSON parsing needed by the caller).
+ */
+const generateInvoice = async (prompt) => {
+  if (!prompt || !String(prompt).trim()) {
+    const error = new Error("A prompt describing the work/invoice is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const draft = await aiService.generateStructured({
+    name: "InvoiceDraft",
+    schema: INVOICE_SCHEMA,
+    system: INVOICE_SYSTEM_PROMPT,
+    prompt: `Prepare a billing invoice for the following brief:\n\n${prompt}`,
+    maxTokens: 4000,
+    // We don't need provider-side reasoning here; it just burns the token budget.
+    extra: { reasoning: { enabled: false } },
+  });
+
+  return draft;
+};
 const createModulesId = async (invoice) => {
   try {
     console.log("jnjucnd", invoice);
@@ -130,7 +228,6 @@ const createInvoice = async (data) => {
 
     invoiceData.invoiceId = await generateInvoiceId(invoiceData.organizationID);
 
-    invoiceData.module = module;
     console.log(data, "create invoice");
 
     const invoice = await InvoiceManagement.create(invoiceData);
@@ -360,7 +457,28 @@ const getInvoiceById = async (id) => {
         },
       ],
     });
-    return invoice;
+
+    // Attach the issuing organization's branding (logo + company details) so the
+    // rendered invoice document can use the org's uploaded logo. Kept as a plain
+    // join (no association needed) and tolerant of a missing org.
+    const org = await organization.findByPk(invoice.organizationID, {
+      attributes: [
+        "id",
+        "companyName",
+        "companyLogo",
+        "companyAddress",
+        "phoneNumber",
+        "email",
+        "accountNumber",
+        "bankName",
+        "IFSC_Code",
+        "GSTIN",
+        "companyWebsite",
+      ],
+    });
+    const result = invoice.toJSON();
+    result.organization = org ? org.toJSON() : null;
+    return result;
   } catch (error) {
     throw error;
   }
@@ -419,4 +537,5 @@ module.exports = {
   getInvoiceByOrgIdInInvoicePage,
   getInvoiceByOrgIdForFinance,
   generateInvoiceId,
+  generateInvoice,
 };

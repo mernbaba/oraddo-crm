@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight, User, Building2, Phone, Briefcase } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, Building2, Phone, Briefcase } from "lucide-react";
 import api from "../api";
 
 type UserType = "user" | "admin" | "employee";
@@ -66,12 +66,7 @@ export function Signup({ role, onSwitchRole, onShowLogin }: SignupProps) {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <div className="relative h-16 w-16 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4] via-[#5A4079] to-[#422462] animate-gradient"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-white animate-pulse-glow" />
-                </div>
-              </div>
+              <img src="/favicon.png" alt="Oraddo" className="h-16 w-16 object-contain" />
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
               <h1 className="text-4xl font-bold gradient-text">Oraddo</h1>

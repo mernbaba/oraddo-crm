@@ -27,17 +27,31 @@ const Praposal = sequelize.define("Praposal", {
     type: DataTypes.FLOAT,
     allowNull: true,
   },
+  // Optional display line for the pricing block (e.g. "+ GST" or a fully
+  // custom sentence). When empty, the preview generates a default sentence
+  // from `pricing` + `currency`.
+  pricing_note: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   timeline: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   comments: {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  // Each entry is a section of the proposal:
+  //   { title: string, content: string /* markdown */ }
   service: {
     type: DataTypes.ARRAY(DataTypes.JSONB),
     allowNull: true
+  },
+  // The raw prompt used to (dummy) generate this proposal, kept for re-runs.
+  ai_prompt: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   timeline_table: {
     type: DataTypes.ARRAY(DataTypes.JSONB),

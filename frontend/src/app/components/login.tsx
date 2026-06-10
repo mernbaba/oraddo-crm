@@ -88,12 +88,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
  
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <div className="relative h-16 w-16 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#937CB4] via-[#5A4079] to-[#422462] animate-gradient"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-white animate-pulse-glow" />
-                </div>
-              </div>
+              <img src="/favicon.png" alt="Oraddo" className="h-16 w-16 object-contain" />
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
               <h1 className="text-4xl font-bold gradient-text">Oraddo</h1>
@@ -122,7 +117,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079]" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079] z-10 pointer-events-none" />
                     <input
                       type="email"
                       value={email}
@@ -138,7 +133,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A4079] z-10 pointer-events-none" />
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
@@ -149,7 +144,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A4079] hover:text-[#422462] transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-[#5A4079] hover:text-[#422462] transition-colors"
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -164,13 +159,14 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
+                      defaultChecked
                       className="rounded border-[#937CB4]/30 text-[#422462] focus:ring-[#937CB4]"
                     />
                     <span className="text-sm text-[#5A4079]">Remember me</span>
                   </label>
                   <button
                     type="button"
-                    className="text-sm text-[#422462] hover:text-[#5A4079] font-medium transition-colors"
+                    className="text-sm text-[#422462] hover:text-[#200B43] font-medium transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -192,7 +188,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                   type="button"
                   onClick={handleDemoLogin}
                   variant="outline"
-                  className="w-full py-3 border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF]/50"
+                  className="w-full py-3 border-[#937CB4]/30 text-[#422462] hover:bg-[#F0E9FF] hover:text-[#422462] hover:border-[#937CB4]/50"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Demo: {demoCredentials[demoIndex].label}
@@ -203,7 +199,7 @@ export function Login({ onLogin, onShowSignup }: LoginProps) {
                   <button
                     type="button"
                     onClick={onShowSignup}
-                    className="font-semibold text-[#422462] hover:text-[#5A4079] transition-colors"
+                    className="font-semibold text-[#422462] hover:text-[#200B43] transition-colors"
                   >
                     Create account
                   </button>

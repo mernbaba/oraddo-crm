@@ -35,6 +35,20 @@ export interface ApiInvoice {
   organizationID?: number;
   services?: string[];
   invoiceType?: string;
+  /** Issuing organization's branding, attached by the getById endpoint. */
+  organization?: {
+    id?: number;
+    companyName?: string;
+    companyLogo?: string | null;
+    companyAddress?: string;
+    phoneNumber?: string;
+    email?: string;
+    companyWebsite?: string;
+    accountNumber?: string;
+    bankName?: string;
+    IFSC_Code?: string;
+    GSTIN?: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -53,7 +67,32 @@ export const invoiceService = {
     api.get<{invoices: ApiInvoice[], totalInvoice: number}>(`/api/invoiceByorgIdForFinance/${orgId}`, { params: { year } }),
   getTableData: (orgId: number, params: { page?: number; pageSize?: number; month?: string; year?: number }) =>
     api.get<{invoices: ApiInvoice[], totalInvoice: number}>(`/api/invoiceByorgId/${orgId}`, { params }),
+  getById: (id: number) => api.get<ApiInvoice>(`/api/invoices/${id}`),
   create: (data: Partial<ApiInvoice>) => api.post<ApiInvoice>("/api/invoices", data),
   update: (id: number, data: Partial<ApiInvoice>) => api.put<ApiInvoice>(`/api/invoices/${id}`, data),
   delete: (id: number) => api.delete(`/api/invoices/${id}`),
+  // Generate an invoice draft from a free-form prompt using AI.
+  generateAi: (prompt: string) =>
+    api.post<InvoiceAiDraft>("/api/invoices/ai/generate", { prompt }),
 };
+
+export type InvoiceCurrency = "INR" | "USD" | "AUD" | "CAD";
+
+/** A single billed line of the invoice (Module / Base / Amount columns). */
+export interface InvoiceAiLineItem {
+  module?: string;
+  base?: string;
+  amount?: number;
+}
+
+/** Shape returned by the AI invoice generator (all fields best-effort). */
+export interface InvoiceAiDraft {
+  clientName?: string;
+  billTo?: string;
+  items?: InvoiceAiLineItem[];
+  totalPrize?: number;
+  gst?: string;
+  currency?: InvoiceCurrency;
+  invoiceType?: string;
+  comments?: string;
+}
