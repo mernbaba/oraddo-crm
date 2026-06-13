@@ -56,6 +56,14 @@ const Job_Creation = sequelize.define("Job_Creation", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  department: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 
 module.exports = Job_Creation;

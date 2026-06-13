@@ -658,8 +658,16 @@ server.listen(PORT, () => {
 const shouldAlter = process.env.DB_ALTER === "true";
 sequelize
   .sync({ alter: shouldAlter })
-  .then(() => {
+  .then(async () => {
     console.log(`Database synced (alter: ${shouldAlter})`);
+    // Add job management columns that may not exist yet
+    try {
+      await sequelize.query(`ALTER TABLE "Job_Creations" ADD COLUMN IF NOT EXISTS department VARCHAR(255)`);
+      await sequelize.query(`ALTER TABLE "Job_Creations" ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
+      console.log("Job_Creations columns ensured.");
+    } catch (err) {
+      console.error("Job_Creations column migration error:", err.message);
+    }
   })
   .catch((err) => {
     console.error("Unable to sync database:", err);
