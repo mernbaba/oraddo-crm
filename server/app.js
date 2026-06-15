@@ -630,6 +630,10 @@ app.use("/api", chatRoutes);
 app.use("/api", supportRoutes);
 app.use("/api", adminSettingsRoute);
 
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Oraddo Server Healthy" });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
