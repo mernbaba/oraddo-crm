@@ -109,7 +109,7 @@ const GroupChat = require("./api/models/GroupModel");
 // const Company = require("./api/models/OrganizationModule");
 
 const app = express();
-const PORT = process.env.PORT || 11512;
+const PORT = process.env.PORT || 5002;
 app.use(cookieParser());
 
 // Set up HTTP server and integrate with Socket.io
